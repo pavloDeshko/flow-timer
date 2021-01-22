@@ -1,0 +1,18 @@
+{
+  "manifest_version":2,
+  "name":"Ketchup Timer",
+  "version":"0.1.0",
+  "description":"Smart and flexible pommodoro timer for timing your rests.",
+  "icons":{
+    "48":"icons/timer.png"
+  },
+  "permissions":[
+    "alarms",
+    "notifications"
+  ],
+  "browser_action":{
+    "default_icon":"icons/timer.png",
+    "default_title":"Ketchup Timer",
+    "default_popup":"popup/index.html"
+  }
+}
