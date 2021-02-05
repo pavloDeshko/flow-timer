@@ -14,5 +14,8 @@
     "default_icon":"icons/timer.png",
     "default_title":"Ketchup Timer",
     "default_popup":"popup/index.html"
+  },
+  "background":{
+    "scripts":["index.js"]
   }
 }
