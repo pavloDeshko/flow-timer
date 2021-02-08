@@ -1,30 +1,18 @@
+//ACTION TYPES
 const WORK = 'WORK'
 const REST = 'REST'
 const STATE = 'STATE'
-const POKE = 'POKE'
 
 //DOM 
 let workButton = document.querySelector('.workButton')
 let restButton = document.querySelector('.restButton')
+let legendCount = document.querySelector('.legendCount')
 
 let timeCount = {
   h : document.querySelector('.hCount'),
   m : document.querySelector('.mCount'),
   s : document.querySelector('.sCount'),
 }
-
-workButton.addEventListener('click', e => {
-  dispatch({type: WORK})
-})
-restButton.addEventListener('click', e => {
-  dispatch({type: REST})
-})
-
-browser.runtime.onMessage.addListener(action => {
-  if (action.type == STATE){
-    updateCount(action.state.timer)
-  }
-})
 
 //HANDLERS
 const updateCount = ({h,m,s}) => {
@@ -33,9 +21,29 @@ const updateCount = ({h,m,s}) => {
   timeCount.s.innerText = s + ''
 }
 
-const dispatch = action => {
-  browser.runtime.sendMessage(action)
+const updateLegend = ({working, resting}) => {
+  legendCount.innerText = working ? 'working..' : resting ? 'resting..' : '...'
 }
 
-//STATE
-dispatch({type: POKE})
+const react = action => {
+  if (action.type == STATE){
+    updateCount(action.state.timer)
+    updateLegend(action.state)
+  }
+}
+
+const dispatch = action => {
+  port.postMessage(action)
+  //browser.runtime.sendMessage(action)
+}
+
+//SETUP
+const port = browser.runtime.connect()
+port.onMessage.addListener(react)
+
+workButton.addEventListener('click', e => {
+  dispatch({type: WORK})
+})
+restButton.addEventListener('click', e => {
+  dispatch({type: REST})
+})

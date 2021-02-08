@@ -76,49 +76,27 @@ class Timer{
   }
 }
 
-
+// ACTION TYPES
 const WORK = 'WORK'
 const REST = 'REST'
 const STATE = 'STATE'
-const POKE = 'POKE'
 
-//STATE
-const state = {
-  working: null,
-  resting: null,
-  timer: {h:0, m:0, s:0}
-}
-const timerInstance = new Timer(
-  timer => {
-    state.timer = timer
-    dispatch()
-  }, () => {
-    browser.notifications.create({
-      type: 'basic',
-      title: 'Time to work!',
-      message: 'your rest time is up'
-  })
-})
+//ICONS
+const defaultIcon = 'icons/timer_32.png'
+const workIcon = 'icons/timer_work_32.png'
+const restIcon = 'icons/timer_rest_32.png'
 
-browser.runtime.onMessage.addListener(action => {
-  if (action.type == WORK){
-    state.working ? stopWork() : startWork()
-  } else if (action.type == REST){
-    state.resting ? stopRest() : startRest()
-  } else if (action.type == POKE){
-    dispatch()
-  }
-})
-
-// HANDLERS
+// LOGICAL ACTIONS
 const startWork = () => {
   state.resting = null
   state.working = Date.now()
+  changeIcon(workIcon)
   timerInstance.countUp()
 }
 
 const stopWork = () => {
   state.working = null
+  changeIcon(defaultIcon)
   timerInstance.reset()
 }
 
@@ -126,14 +104,64 @@ const startRest = () => {
   const rest = getRestTime(Date.now() - (state.working || Date.now()))
   state.working = null
   state.resting = Date.now()
+  changeIcon(restIcon)
   timerInstance.countDown(rest)
 }
 
 const stopRest = () => {
   state.resting = null
+  changeIcon(defaultIcon)
   timerInstance.reset()
 }
 
-const dispatch = () => {
-  browser.runtime.sendMessage({type: STATE, state})
+//TIMER CBs
+const notify = () => {
+  browser.notifications.create({
+    type: 'basic',
+    title: 'Time to work!',
+    message: 'your rest time is up'
+  })
 }
+
+const update = timer => {
+  state.timer = timer
+  dispatch()
+}
+
+//IO
+const react = action => {
+  if (action.type == WORK){
+    state.working ? stopWork() : startWork()
+  } else if (action.type == REST){
+    state.resting ? stopRest() : startRest()
+  }
+}
+
+const dispatch = () => {
+  port && port.postMessage({type: STATE, state})
+  //browser.runtime.sendMessage({type: STATE, state})
+}
+
+const changeIcon = path => {
+  browser.browserAction.setIcon({path})
+}
+
+//SETUP
+const state = {
+  working: null,
+  resting: null,
+  timer: {h:0, m:0, s:0}
+}
+
+const timerInstance = new Timer(update, notify)
+
+let port = null
+browser.runtime.onConnect.addListener(p => {
+  port = p
+  port.onMessage.addListener(react)
+  port.onDisconnect.addListener(() => {
+    port = null
+  })
+  dispatch()
+})
+
