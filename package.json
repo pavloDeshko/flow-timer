@@ -1,0 +1,16 @@
+{
+  "name": "timer-firefox",
+  "version": "0.1.0",
+  "main": "index.js",
+  "repository": "https://github.com/pavloDeshko/ketchup-timer.git",
+  "author": "Pavlo Deshko <pavlodeshko92@gmail.com>",
+  "license": "Copyright",
+  "private": true,
+  "dependencies": {
+    "easytimer.js": "^4.3.1"
+  },
+  "scripts": {
+    "dev": "webextension-toolbox dev firefox",
+    "build": "webextension-toolbox build firefox"
+  }
+}

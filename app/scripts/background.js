@@ -1,3 +1,5 @@
+import easyTimer from 'easytimer.js'
+t = new easyTimer()
 // UTILS
 const MIN_REST = 10e3//5 * 60e3
 const MAX_REST = 60 * 60e3
