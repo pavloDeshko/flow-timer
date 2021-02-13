@@ -15,10 +15,10 @@ let timeCount = {
 }
 
 //HANDLERS
-const updateCount = ({h,m,s}) => {
-  timeCount.h.innerText = h + ''
-  timeCount.m.innerText = m + ''
-  timeCount.s.innerText = s + ''
+const updateCount = ({hours,minutes,seconds}) => {
+  timeCount.h.innerText = hours + ''
+  timeCount.m.innerText = minutes + ''
+  timeCount.s.innerText = seconds + ''
 }
 
 const updateLegend = ({working, resting}) => {

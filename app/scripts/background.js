@@ -1,24 +1,4 @@
-import easyTimer from 'easytimer.js'
-const t = new easyTimer()
-// UTILS
-const MIN_REST = 10e3//5 * 60e3
-const MAX_REST = 60 * 60e3
-const TICK = 1000
-const INITIAL_STATE = () => ({ current: 0 })
-
-const getRestTime = (workTime) => {
-  const rest = workTime / 6
-  return rest < MIN_REST ? 
-    MIN_REST : 
-    rest > MAX_REST ? 
-      MAX_REST : 
-      rest
-}
-
-const padZero = (number, length = 2) => {
-  return number.toString().padStart(2,'0')
-}
-
+/*
 class Timer{
   constructor(onChange = () => {}, onEnd = () => {} ) {
     this.state = INITIAL_STATE()
@@ -76,6 +56,24 @@ class Timer{
       this.reset(false)
     }
   }
+} */
+import easyTimer from 'easytimer.js'
+
+// UTILS
+const MIN_REST = 10e3//5 * 60e3
+const MAX_REST = 60 * 60e3
+
+const getRestTime = (workTime) => {
+  const rest = workTime / 6
+  return rest < MIN_REST ? 
+    MIN_REST : 
+    rest > MAX_REST ? 
+      MAX_REST : 
+      rest
+}
+
+const padZero = (number, length = 2) => {
+  return number.toString().padStart(2,'0')
 }
 
 // ACTION TYPES
@@ -93,13 +91,13 @@ const startWork = () => {
   state.resting = null
   state.working = Date.now()
   changeIcon(workIcon)
-  timerInstance.countUp()
+  timerInstance.start()
 }
 
 const stopWork = () => {
   state.working = null
   changeIcon(defaultIcon)
-  timerInstance.reset()
+  timerInstance.stop()
 }
 
 const startRest = () => {
@@ -107,13 +105,13 @@ const startRest = () => {
   state.working = null
   state.resting = Date.now()
   changeIcon(restIcon)
-  timerInstance.countDown(rest)
+  timerInstance.start({countdown: true, startValues: {seconds: Math.floor(rest / 1000)}, target: {seconds: 0}})
 }
 
 const stopRest = () => {
   state.resting = null
   changeIcon(defaultIcon)
-  timerInstance.reset()
+  timerInstance.stop()
 }
 
 //TIMER CBs
@@ -125,8 +123,8 @@ const notify = () => {
   })
 }
 
-const update = timer => {
-  state.timer = timer
+const update = () => {
+  state.timer = timerInstance.getTimeValues()
   dispatch()
 }
 
@@ -141,7 +139,6 @@ const react = action => {
 
 const dispatch = () => {
   port && port.postMessage({type: STATE, state})
-  //browser.runtime.sendMessage({type: STATE, state})
 }
 
 const changeIcon = path => {
@@ -152,10 +149,11 @@ const changeIcon = path => {
 const state = {
   working: null,
   resting: null,
-  timer: {h:0, m:0, s:0}
+  timer: {hours:0, minutes:0, seconds:0}
 }
 
-const timerInstance = new Timer(update, notify)
+const timerInstance = new easyTimer({callback: update})
+timerInstance.on('targetAchieved', notify)
 
 let port = null
 browser.runtime.onConnect.addListener(p => {
@@ -166,4 +164,3 @@ browser.runtime.onConnect.addListener(p => {
   })
   dispatch()
 })
-
