@@ -9,16 +9,32 @@ let restButton = document.querySelector('.restButton')
 let legendCount = document.querySelector('.legendCount')
 
 let timeCount = {
-  h : document.querySelector('.hCount'),
-  m : document.querySelector('.mCount'),
-  s : document.querySelector('.sCount'),
+  h : document.querySelector('.timeCount .hCount'),
+  m : document.querySelector('.timeCount .mCount'),
+  s : document.querySelector('.timeCount .sCount'),
+}
+
+let nextRestCount = {
+  h : document.querySelector('.nextRestCount .hCount'),
+  m : document.querySelector('.nextRestCount .mCount'),
+  s : document.querySelector('.nextRestCount .sCount'),
 }
 
 //HANDLERS
+const padTwoZeros = number => {
+  return ('00' + str).slice(-2)
+}
+
 const updateCount = ({hours,minutes,seconds}) => {
-  timeCount.h.innerText = hours + ''
-  timeCount.m.innerText = minutes + ''
-  timeCount.s.innerText = seconds + ''
+  timeCount.h.innerText = hours || '0'
+  timeCount.m.innerText = padTwoZeros(minutes)
+  timeCount.s.innerText = padTwoZeros(seconds)
+}
+
+const updateNextRest = ({hours,minutes,seconds}) => {
+  nextRestCount.h.innerText = hours || '0'
+  nextRestCount.m.innerText = padTwoZeros(minutes)
+  nextRestCount.s.innerText = padTwoZeros(seconds)
 }
 
 const updateLegend = ({working, resting}) => {
@@ -28,6 +44,7 @@ const updateLegend = ({working, resting}) => {
 const react = action => {
   if (action.type == STATE){
     updateCount(action.state.timer)
+    updateNextRest(action.state.nextRest)
     updateLegend(action.state)
   }
 }
