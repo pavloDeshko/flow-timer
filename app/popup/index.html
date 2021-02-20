@@ -9,10 +9,12 @@
       <div class="buttonsBlock">
         <input class="workButton" type="button" value="work">
         <input class="restButton" type="button" value="rest">
-        Next rest: <div class="nextRestCount">
+        <div class="nextRestCount">
+          Next rest: 
           <span class="hCount">-</span>:<span class="mCount">-</span>:<span class="sCount">-</span>
         </div>
       </div>
+      <br/>
       <div class="countBlock">
         <div class="timeCount">
           <span class="hCount">-</span>:<span class="mCount">-</span>:<span class="sCount">-</span>
@@ -20,6 +22,19 @@
         <div class="legendCount">
           ... ...
         </div>
+      </div>
+      <div class="configBlock">
+        <label>
+          Rest ratio:
+          <input 
+            class="ratioInput" 
+            type="range" 
+            value="2"
+            min="1"
+            max="10"
+            step="1"
+          >
+        </label> 
       </div>
     </div>
     <script src="../scripts/popup.js"></script>

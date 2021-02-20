@@ -1,12 +1,14 @@
 //ACTION TYPES
 const WORK = 'WORK'
 const REST = 'REST'
+const CONFIG = 'CONFIG'
 const STATE = 'STATE'
 
 //DOM 
 let workButton = document.querySelector('.workButton')
 let restButton = document.querySelector('.restButton')
 let legendCount = document.querySelector('.legendCount')
+let ratioInput = document.querySelector('.ratioInput')
 
 let timeCount = {
   h : document.querySelector('.timeCount .hCount'),
@@ -22,13 +24,13 @@ let nextRestCount = {
 
 //HANDLERS
 const padTwoZeros = number => {
-  return ('00' + str).slice(-2)
+  return ('00' + number).slice(-2)
 }
 
 const updateCount = ({hours,minutes,seconds}) => {
   timeCount.h.innerText = hours || '0'
-  timeCount.m.innerText = padTwoZeros(minutes)
-  timeCount.s.innerText = padTwoZeros(seconds)
+  timeCount.m.innerText = padTwoZeros(minutes || '0')
+  timeCount.s.innerText = padTwoZeros(seconds || '0')
 }
 
 const updateNextRest = ({hours,minutes,seconds}) => {
@@ -51,7 +53,6 @@ const react = action => {
 
 const dispatch = action => {
   port.postMessage(action)
-  //browser.runtime.sendMessage(action)
 }
 
 //SETUP
@@ -63,4 +64,10 @@ workButton.addEventListener('click', e => {
 })
 restButton.addEventListener('click', e => {
   dispatch({type: REST})
+})
+ratioInput.addEventListener('change', e => {
+  dispatch({
+    type: CONFIG,
+    config: {ratio: Number(e.target.value)}
+  })
 })

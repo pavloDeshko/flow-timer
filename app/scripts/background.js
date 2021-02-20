@@ -1,27 +1,45 @@
 import easyTimer from 'easytimer.js'
 
 // UTILS
-const MIN_REST = 10
+const MIN_REST = 4
 const MAX_REST = 3600
+const DEFAULT_RATIO = 2
 
-const getRestTime = workTime => {
-  const rest = Math.floor(workTime / 6)
-  return rest < MIN_REST ? 
-    MIN_REST : 
-    rest > MAX_REST ? 
-      MAX_REST : 
-      rest
+const getRestTime = workTimeObj => {
+  const restSeconds = Math.floor(objectToSeconds(workTimeObj) / state.config.ratio)
+  return restSeconds < MIN_REST ? 
+    secondsToObject(MIN_REST) : 
+    restSeconds > MAX_REST ? 
+      secondsToObject(MAX_REST) : 
+      secondsToObject(restSeconds) 
 }
 
-const dummyTimer = new easyTimer
-const convert = s => {
-  dummyTimer.start({ startValues: s, target: s})
-  return dummyTimer.getTimeValues()
+const secondsToObject = totalSeconds => {
+  const values = {}
+
+  values.days = Math.floor(totalSeconds / 86400), totalSeconds %= 86400
+  values.hours = Math.floor(totalSeconds / 3600), totalSeconds %= 3600
+  values.minutes = Math.floor(totalSeconds / 60), totalSeconds %= 60
+  values.seconds = Math.floor(totalSeconds / 1), totalSeconds %= 1
+  values.secondTenths = Math.floor(totalSeconds / 0.1)
+  
+  return values
+}
+const objectToSeconds = obj => {
+  let seconds = 0
+  seconds += (obj.days || 0) * 86400
+  seconds += (obj.hours || 0) * 3600
+  seconds += (obj.minutes || 0) * 60
+  seconds += (obj.seconds || 0) * 1
+  seconds += (obj.secondTenths || 0) * 0.1
+
+  return seconds
 }
 
 // ACTION TYPES
 const WORK = 'WORK'
 const REST = 'REST'
+const CONFIG = 'CONFIG'
 const STATE = 'STATE'
 
 //ICONS
@@ -35,27 +53,37 @@ const startWork = () => {
   state.working = Date.now()
   changeIcon(workIcon)
   timerInstance.start()
+  _toZero()
 }
 
 const stopWork = () => {
   state.working = null
   changeIcon(defaultIcon)
   timerInstance.stop()
+  _toZero()
 }
 
 const startRest = () => {
-  const rest = state.nextRest
-  state.nextRest = convert(MIN_REST)
   state.working = null
   state.resting = Date.now()
   changeIcon(restIcon)
-  timerInstance.start({countdown: true, startValues: {seconds: Math.floor(rest / 1000)}, target: {seconds: 0}})
+  console.log('start values: ', state.nextRest)
+  timerInstance.start({countdown: true, startValues: state.nextRest})
+  state.timer = state.nextRest
+  state.nextRest = secondsToObject(MIN_REST)
+  dispatch()
 }
 
 const stopRest = () => {
   state.resting = null
   changeIcon(defaultIcon)
   timerInstance.stop()
+  _toZero()
+}
+
+const _toZero = () => {
+  state.timer = {}
+  dispatch()
 }
 
 //TIMER CBs
@@ -68,9 +96,10 @@ const notify = () => {
 }
 
 const update = () => {
-  state.timer = timerInstance.getTimeValues()
+  const timeObject = {...timerInstance.getTimeValues()}
+  state.timer = timeObject
   if (state.working){
-    state.nextRest = convert(getRestTime(timerInstance.getTotalTimeValues().seconds))
+    state.nextRest = getRestTime(timeObject)
   }
   dispatch()
 }
@@ -81,6 +110,8 @@ const react = action => {
     state.working ? stopWork() : startWork()
   } else if (action.type == REST){
     state.resting ? stopRest() : startRest()
+  } else if (action.type == CONFIG) {
+    state.config = {...state.config, ...action.config}
   }
 }
 
@@ -96,11 +127,13 @@ const changeIcon = path => {
 const state = {
   working: null,
   resting: null,
-  timer: { hours:0, minutes:0, seconds:0 },
-  nextRest: convert(MIN_REST)
+  timer: secondsToObject(0),
+  nextRest: secondsToObject(MIN_REST),
+  config: {ratio: DEFAULT_RATIO}
 }
 
-const timerInstance = new easyTimer({callback: update})
+const timerInstance = new easyTimer()
+timerInstance.on('secondsUpdated', update)
 timerInstance.on('targetAchieved', notify)
 
 let port = null
