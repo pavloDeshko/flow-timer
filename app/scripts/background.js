@@ -52,6 +52,7 @@ const startWork = () => {
   state.resting = null
   state.working = Date.now()
   changeIcon(workIcon)
+  timerInstance.stop()
   timerInstance.start()
   _toZero()
 }
@@ -67,7 +68,7 @@ const startRest = () => {
   state.working = null
   state.resting = Date.now()
   changeIcon(restIcon)
-  console.log('start values: ', state.nextRest)
+  timerInstance.stop()
   timerInstance.start({countdown: true, startValues: state.nextRest})
   state.timer = state.nextRest
   state.nextRest = secondsToObject(MIN_REST)
