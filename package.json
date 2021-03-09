@@ -7,7 +7,9 @@
   "license": "Copyright",
   "private": true,
   "dependencies": {
-    "easytimer.js": "^4.3.1"
+    "easytimer.js": "^4.3.1",
+    "htm": "^3.0.4",
+    "preact": "^10.5.12"
   },
   "scripts": {
     "dev": "webextension-toolbox dev firefox",

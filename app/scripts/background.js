@@ -1,46 +1,7 @@
 import easyTimer from 'easytimer.js'
 
-// UTILS
-const MIN_REST = 4
-const MAX_REST = 3600
-const DEFAULT_RATIO = 2
-
-const getRestTime = workTimeObj => {
-  const restSeconds = Math.floor(objectToSeconds(workTimeObj) / state.config.ratio)
-  return restSeconds < MIN_REST ? 
-    secondsToObject(MIN_REST) : 
-    restSeconds > MAX_REST ? 
-      secondsToObject(MAX_REST) : 
-      secondsToObject(restSeconds) 
-}
-
-const secondsToObject = totalSeconds => {
-  const values = {}
-
-  values.days = Math.floor(totalSeconds / 86400), totalSeconds %= 86400
-  values.hours = Math.floor(totalSeconds / 3600), totalSeconds %= 3600
-  values.minutes = Math.floor(totalSeconds / 60), totalSeconds %= 60
-  values.seconds = Math.floor(totalSeconds / 1), totalSeconds %= 1
-  values.secondTenths = Math.floor(totalSeconds / 0.1)
-  
-  return values
-}
-const objectToSeconds = obj => {
-  let seconds = 0
-  seconds += (obj.days || 0) * 86400
-  seconds += (obj.hours || 0) * 3600
-  seconds += (obj.minutes || 0) * 60
-  seconds += (obj.seconds || 0) * 1
-  seconds += (obj.secondTenths || 0) * 0.1
-
-  return seconds
-}
-
-// ACTION TYPES
-const WORK = 'WORK'
-const REST = 'REST'
-const CONFIG = 'CONFIG'
-const STATE = 'STATE'
+import actions from './modules/actions'
+import {MIN_REST, DEFAULT_RATIO, getRestTime, secondsToObject} from './modules/utils'
 
 //ICONS
 const defaultIcon = 'icons/timer_32.png'
@@ -48,13 +9,17 @@ const workIcon = 'icons/timer_work_32.png'
 const restIcon = 'icons/timer_rest_32.png'
 
 // LOGICAL ACTIONS
-const startWork = () => {
+const startWork = toggl => {
   state.resting = null
   state.working = Date.now()
   changeIcon(workIcon)
   timerInstance.stop()
   timerInstance.start()
   _toZero()
+  if (toggl && state.token) {
+    state.toggling = true
+    togglStart(toggl.togglDesc)
+  }
 }
 
 const stopWork = () => {
@@ -62,10 +27,12 @@ const stopWork = () => {
   changeIcon(defaultIcon)
   timerInstance.stop()
   _toZero()
+  _stopToggl()
 }
 
 const startRest = () => {
   state.working = null
+  _stopToggl()
   state.resting = Date.now()
   changeIcon(restIcon)
   timerInstance.stop()
@@ -85,6 +52,18 @@ const stopRest = () => {
 const _toZero = () => {
   state.timer = {}
   dispatch()
+}
+
+const _stopToggl = () => {
+  if(state.toggling){
+    state.toggling = false
+    togglStop()
+  }
+}
+
+const updateToken = (token) => {
+  state.token = token
+  state.token ? togglConnect() : togglDisconnect()
 }
 
 //TIMER CBs
@@ -108,29 +87,47 @@ const update = () => {
 //IO
 const react = action => {
   if (action.type == WORK){
-    state.working ? stopWork() : startWork()
+    state.working ? stopWork() : startWork(action.toggl)
   } else if (action.type == REST){
     state.resting ? stopRest() : startRest()
   } else if (action.type == CONFIG) {
     state.config = {...state.config, ...action.config}
+  } else if (action.type == TOKEN_INPUT) {
+    updateToken(action.token)
   }
 }
 
-const dispatch = () => {
-  port && port.postMessage({type: STATE, state})
+const dispatch = (action) => {
+  port && port.postMessage(action || {type: STATE, state})
 }
 
 const changeIcon = path => {
   browser.browserAction.setIcon({path})
 }
 
+const togglConnect = () => {
+  dispatch({type: TOKEN_CHANGED, token: state.token})
+}
+
+const togglDisconnect = () => {
+  dispatch({type: TOKEN_CHANGED, token: state.token})
+}
+
+const togglStart = desc => {
+  console.log('TOGGLE STARTED ', desc)
+}
+
+const togglStop = () => {
+  console.log('TOGGLE STOPPED ')
+}
 //SETUP
 const state = {
   working: null,
   resting: null,
   timer: secondsToObject(0),
   nextRest: secondsToObject(MIN_REST),
-  config: {ratio: DEFAULT_RATIO}
+  config: {ratio: DEFAULT_RATIO},
+  token: null
 }
 
 const timerInstance = new easyTimer()
