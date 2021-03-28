@@ -1,7 +1,8 @@
 import easyTimer from 'easytimer.js'
 
-import actions from './modules/actions'
+import actions, {actionTypes} from './modules/actions'
 import {MIN_REST, DEFAULT_RATIO, getRestTime, secondsToObject} from './modules/utils'
+import {togglApiStart, togglApiStop, togglApiAdd, togglApiCancel, togglApiConnect, togglApiDisconnect} from './modules/service'
 
 //ICONS
 const defaultIcon = 'icons/timer_32.png'
@@ -9,30 +10,29 @@ const workIcon = 'icons/timer_work_32.png'
 const restIcon = 'icons/timer_rest_32.png'
 
 // LOGICAL ACTIONS
-const startWork = toggl => {
+const startWork = () => {
   state.resting = null
   state.working = Date.now()
   changeIcon(workIcon)
   timerInstance.stop()
   timerInstance.start()
-  _toZero()
-  if (toggl && state.token) {
-    state.toggling = true
-    togglStart(toggl.togglDesc)
-  }
+  _togglStart()
+  state.timer = {}
+  dispatch()
 }
 
 const stopWork = () => {
+  _togglStop()
   state.working = null
   changeIcon(defaultIcon)
   timerInstance.stop()
-  _toZero()
-  _stopToggl()
+  state.timer = {}
+  dispatch()
 }
 
 const startRest = () => {
+  _togglStop()
   state.working = null
-  _stopToggl()
   state.resting = Date.now()
   changeIcon(restIcon)
   timerInstance.stop()
@@ -46,27 +46,85 @@ const stopRest = () => {
   state.resting = null
   changeIcon(defaultIcon)
   timerInstance.stop()
-  _toZero()
-}
-
-const _toZero = () => {
   state.timer = {}
   dispatch()
 }
 
-const _stopToggl = () => {
-  if(state.toggling){
-    state.toggling = false
-    togglStop()
+const _togglStart = async () => {
+  if(state.toggl.form.active){
+    try{
+      await togglApiStart(state.toggl.form.desc)
+    }catch(e){
+      state.toggl.error = e.message
+      dispatch()
+    }
   }
 }
 
-const updateToken = (token) => {
-  state.token = token
-  state.token ? togglConnect() : togglDisconnect()
+const _togglStop = async () => {
+  let call = null
+  try{
+    if(state.toggl.toggling){
+      if(state.toggl.form.active){
+        await togglApiStop(state.toggl.toggling)
+      } else {
+        await togglApiCancel(state.toggl.toggling)
+      }
+    } else if(state.toggl.form.active){
+      await togglApiAdd(state.working, Date.now() ,state.toggl.form.desc)
+    }
+  }catch(e){
+      state.toggl.error = e.message
+      dispatch()
+  }
+  
 }
 
-//TIMER CBs
+const connectToggl = async token => {
+  try{
+    state.toggl.loading = true
+    dispatch()
+    await togglApiConnect(token)
+    state.toggl.token = token
+    state.toggl.error = null
+    dispatch()
+  }catch (error){
+    state.toggl.error = error.message
+  }finally{
+    state.toggl.loading = false
+    dispatch()
+  }
+}
+
+const disconnectToggl = async () => {
+  state.toggl.token = null
+  state.toggl.error = null
+  dispatch()
+  try{
+    await togglApiDisconnect(state.toggl.token)
+  }catch(e){
+    state.toggl.error = e.message
+    dispatch()
+  }
+}
+
+//IO
+const react = action => {
+  if (action.type == actionTypes.WORK){
+    state.working ? stopWork() : startWork()
+  } else if (action.type == actionTypes.REST){
+    state.resting ? stopRest() : startRest()
+  } else if (action.type == actionTypes.CONFIG) {
+    state.config = {...state.config, ...action.config}
+  } else if (action.type == actionTypes.TOKEN) {
+    connectToggl(action.token)
+  } else if (action.type == actionTypes.TOKEN_OUT){
+    disconnectToggl()
+  } else if (action.type == actionTypes.TOGGL_CONFIG){
+    state.toggl.form = {...state.toggl.form, ...action.config}
+  }
+}
+
 const notify = () => {
   browser.notifications.create({
     type: 'basic',
@@ -84,50 +142,29 @@ const update = () => {
   dispatch()
 }
 
-//IO
-const react = action => {
-  if (action.type == WORK){
-    state.working ? stopWork() : startWork(action.toggl)
-  } else if (action.type == REST){
-    state.resting ? stopRest() : startRest()
-  } else if (action.type == CONFIG) {
-    state.config = {...state.config, ...action.config}
-  } else if (action.type == TOKEN_INPUT) {
-    updateToken(action.token)
-  }
-}
-
 const dispatch = (action) => {
-  port && port.postMessage(action || {type: STATE, state})
+  port && port.postMessage(action || actions.STATE(state))
 }
 
 const changeIcon = path => {
   browser.browserAction.setIcon({path})
 }
 
-const togglConnect = () => {
-  dispatch({type: TOKEN_CHANGED, token: state.token})
-}
-
-const togglDisconnect = () => {
-  dispatch({type: TOKEN_CHANGED, token: state.token})
-}
-
-const togglStart = desc => {
-  console.log('TOGGLE STARTED ', desc)
-}
-
-const togglStop = () => {
-  console.log('TOGGLE STOPPED ')
-}
 //SETUP
+
 const state = {
-  working: null,
-  resting: null,
   timer: secondsToObject(0),
-  nextRest: secondsToObject(MIN_REST),
+  nextRest:  secondsToObject(MIN_REST),
+  working: null, 
+  resting: null,
   config: {ratio: DEFAULT_RATIO},
-  token: null
+  toggl: {
+    token: null,
+    error: null,
+    loading: false,
+    form: {active: false, desc: ''},
+    toggling: null
+  }
 }
 
 const timerInstance = new easyTimer()

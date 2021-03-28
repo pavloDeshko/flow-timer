@@ -33,3 +33,7 @@ export const objectToSeconds = obj => {
 
   return seconds
 }
+
+export const padTwoZeros = number => {
+  return ('00' + number).slice(-2)
+}

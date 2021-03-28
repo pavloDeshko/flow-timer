@@ -1,82 +1,160 @@
-import {render} from 'preact'
+import {render, createContext, useContext, useState, useRef, useEffect} from 'preact'
 import {html as _} from 'htm/preact'
 
 import actions from './modules/actions'
+import {padTwoZeros} from './modules/utils'
 
-const Counter = ({h, m, s}) => {
+const context = { Dispatch: createContext(null) }
+
+const Counter = ({hours: h, minutes: m, seconds: s}) => {
   return _`
-    <div className="counterBlock">
+    <div className="counterContainer">
       <div className="timeCounter">
         <span className="hCount">${h}</span>:<span className="mCount">${m}</span>:<span className="sCount">${s}</span>
       </div>
     </div>
   `
 }
+
 const Controls = () => {
+  const dispatch = useContext(context.Dispatch)
+
+  const work = e => dispatch(actions.WORK())
+  const rest = e => dispatch(actions.REST())
+
   return _`
-    <div className="buttonsBlock">
-      <input className="workButton" type="button" value="work">
-      <input className="restButton" type="button" value="rest">
+    <div className="controlsContainer">
+      <input className="workButton" type="button" value="work" onClick=${work}>
+      <input className="restButton" type="button" value="rest" onClick=${rest}>
     </div>
   `
 }
-const Options = () => {
+
+const TogglForm = ({token: logged, active, desc}) => {
+  const dispatch = useContext(context.Dispatch)
+  
+  const setActive = e => dispatch(actions.TOGGL_CONFIG({
+    active: e.target.checked
+  }))
+  const setDesc = e => dispatch(actions.TOGGL_CONFIG({
+    desc: e.target.value
+  }))
+
+  return logged ? _`
+    Start Toggle: 
+    <input className="ifToggl" type="checkbox" checked=${active} onChange=${setActive}>
+    <input className="togglDesc" type="text" placeholder="description.." value=${desc} onChange=${setDesc}>
+  ` : null
+}
+
+const Options = ({ratio}) => {
+  const dispatch = useContext(context.Dispatch)
+
+  const setRatio = e => dispatch(actions.CONFIG({
+    ratio: e.target.value
+  }))
+
   return _`
-    <div className="configBlock">
+    <div className="optionsContainer">
       <label>
         Rest ratio:
         <input 
           className="ratioInput" 
           type="range" 
-          value="2"
+          defaultValue=${ratio}
           min="1"
           max="10"
           step="1"
+          onChange=${setRatio}
         >
       </label> 
     </div>
   `
 }
-const Legend = ({message}) => {
+
+const Legend = ({working, resting}) => {
+  const message = working ? 'working..' : resting ? 'resting..' : ''
   return _`
-    <div className="legendBlock">
+    <div className="legendContainer">
+      <span>${working ? 'working..' : resting ? 'resting..' : ''}</span>
       <span className="legendMessage">${message}</span>
     </div>
   `
 }
-const Toggl = ({connected}) => {
-  const content = connected ? _` 
+
+const TogglProfile = ({logged, error, loading}) => {
+  const dispatch = useContext(context.Dispatch)
+  const tokenRef = useRef(null)
+
+  const logIn = e => {
+    dispatch(actions.TOKEN(tokenRef.current.value))
+  }
+  const logOut = e => dispatch(actions.TOKEN_OUT())
+
+  const content = logged ? _` 
     <div className="togglPromt">
       Enter your toggl token to connect:
-      <input className="tokenInput" type="text" maxlength="100">
-      <input className="connectInput" type="button" value="connect">
+      <input className="tokenInput" type="text" maxlength="100" ref=${tokenRef}>
+      <input className="connectInput" type="button" value="connect" onClick=${logIn}>
     </div>
   ` : _`
     <div className="togglLogged">
-      Start Toggle: <input className="ifToggl" type="checkbox">
-      <input className="togglDesc" type="text" placeholder="description..">
-      <input className="logoutInput" type="button" value="logout">
+      <input className="logoutInput" type="button" value="logout" onClick=${logOut} active=${!loading}>
     </div>
   `
+
+  const error = error ? _`
+    <div className="togglError">
+      Error! ${error}
+    </div>
+  `: null
   return  _`
-    <div className="togglBlock">
+    <div className="togglContainer">
       ${content}
     </div>
   `
 }
 
 const App = () => {
+  const initial = null
 
-  return _`
-    <${Counter}  ...${null}/>
-    <${Controls} />
-    <${Legend} message=${null} />
-    <${Options} />
-    <${Toggl} connected=${null} />
+  [dispatch, setDispatch] = useState(()=>{})
+  [state, setState] = useState(initial)
+
+  useEffect(() => {
+    const port = browser.runtime.connect()
+    port.onMessage.addListener( action => action.type == 'STATE' && setState(action.state))
+    setDispatch(action => {
+      port.postMessage(action)
+    })
+  }, [])
+  
+  return state &&  _`
+    <${context.Dispatch}.Provider value=${dispatch}>
+      <div className="counterBlock">
+        <${Counter}  ...${state.timer}/>
+      </div>
+      <div className="controlsBlock">
+        <${Controls} />
+        <${TogglForm} logged=${state.toggl.token} ...${state.toggl.form} />
+      </div>
+      <div className="legendBlock">
+        <${Legend} working=${state.working} resting=${state.resting} />
+      </div>
+      <div className="optionsBlock">
+        <${Options} ...${state.config} />
+      </div>
+      <div className="togglBlock">
+        <${TogglProfile} logged=${!!state.toggl.token} error=${state.toggle.error} loading=${state.toggle.loading} />
+      </div>
+    <//>
   `
 }
 
-render(App,document.body)
+render(App,document.getElementById('appContainer'))
+
+//SETUP
+
 //DOM 
 /* let workButton = document.querySelector('.workButton')
 let restButton = document.querySelector('.restButton')
@@ -142,17 +220,6 @@ const react = action => {
   }
 } */
 
-const padTwoZeros = number => {
-  return ('00' + number).slice(-2)
-}
-
-const dispatch = action => {
-  port.postMessage(action)
-}
-
-//SETUP
-const port = browser.runtime.connect()
-port.onMessage.addListener(react)
 
 /* workButton.addEventListener('click', e => {
   dispatch({
