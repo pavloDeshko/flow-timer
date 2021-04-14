@@ -12,7 +12,12 @@
     "preact": "^10.5.12"
   },
   "scripts": {
-    "dev": "webextension-toolbox dev firefox",
-    "build": "webextension-toolbox build firefox"
+    "ts": "rimraf app/scripts && tsc",
+    "dev": "ts && webextension-toolbox dev firefox",
+    "build": "ts && webextension-toolbox build firefox"
+  },
+  "devDependencies": {
+    "rimraf": "^3.0.2",
+    "web-ext-types": "^3.2.1"
   }
 }

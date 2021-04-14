@@ -1,16 +1,20 @@
-import {render, createContext, useContext, useState, useRef, useEffect} from 'preact'
+import {render, createContext} from 'preact'
+import {useContext, useState, useRef, useEffect} from 'preact/hooks'
 import {html as _} from 'htm/preact'
 
-import actions from './modules/actions'
+import {State, Time, Config} from './modules/types'
+import {Action, Actions} from './modules/actions'
 import {padTwoZeros} from './modules/utils'
 
-const context = { Dispatch: createContext(null) }
+const context = { Dispatch: createContext((a: Action)=>{})} //TODO
 
-const Counter = ({hours: h, minutes: m, seconds: s}) => {
+const Counter = ({hours, minutes, seconds} :Time) => {
   return _`
     <div className="counterContainer">
       <div className="timeCounter">
-        <span className="hCount">${h}</span>:<span className="mCount">${m}</span>:<span className="sCount">${s}</span>
+        <span className="hCount">${padTwoZeros(hours)}</span> :
+        <span className="mCount">${padTwoZeros(minutes)}</span> :
+        <span className="sCount">${padTwoZeros(seconds)}</span>
       </div>
     </div>
   `
@@ -19,8 +23,8 @@ const Counter = ({hours: h, minutes: m, seconds: s}) => {
 const Controls = () => {
   const dispatch = useContext(context.Dispatch)
 
-  const work = e => dispatch(actions.WORK())
-  const rest = e => dispatch(actions.REST())
+  const work = () => dispatch({type: Actions.WORK})
+  const rest = () => dispatch({type: Actions.REST})
 
   return _`
     <div className="controlsContainer">
@@ -30,15 +34,17 @@ const Controls = () => {
   `
 }
 
-const TogglForm = ({token: logged, active, desc}) => {
+const TogglForm = ({token: logged, active, desc} : {token :string, active :boolean, desc :string}) => {
   const dispatch = useContext(context.Dispatch)
   
-  const setActive = e => dispatch(actions.TOGGL_CONFIG({
-    active: e.target.checked
-  }))
-  const setDesc = e => dispatch(actions.TOGGL_CONFIG({
-    desc: e.target.value
-  }))
+  const setActive = (e :Event & {target :HTMLInputElement}) => dispatch({
+    type : Actions.TOGGL_FORM,
+    form : {active: e.target.checked}
+  })
+  const setDesc = (e :Event & {target :HTMLInputElement}) => dispatch({
+    type : Actions.TOGGL_FORM,
+    form: {desc: e.target.value}
+  })
 
   return logged ? _`
     Start Toggle: 
@@ -47,12 +53,13 @@ const TogglForm = ({token: logged, active, desc}) => {
   ` : null
 }
 
-const Options = ({ratio}) => {
+const Options = ({ratio} :Config) => {
   const dispatch = useContext(context.Dispatch)
 
-  const setRatio = e => dispatch(actions.CONFIG({
-    ratio: e.target.value
-  }))
+  const setRatio = (e :Event & {target :HTMLInputElement}) => dispatch({
+    type: Actions.CONFIG,
+    config: {ratio : Number(e.target.value)}
+  })
 
   return _`
     <div className="optionsContainer">
@@ -72,7 +79,7 @@ const Options = ({ratio}) => {
   `
 }
 
-const Legend = ({working, resting}) => {
+const Legend = ({working, resting} :{working :number, resting :number}) => {
   const message = working ? 'working..' : resting ? 'resting..' : ''
   return _`
     <div className="legendContainer">
@@ -82,14 +89,21 @@ const Legend = ({working, resting}) => {
   `
 }
 
-const TogglProfile = ({logged, error, loading}) => {
+const TogglProfile = ({logged, error, loading} :{logged :string, error :Error, loading: boolean}) => {
   const dispatch = useContext(context.Dispatch)
-  const tokenRef = useRef(null)
+  const tokenRef = useRef()
 
-  const logIn = e => {
-    dispatch(actions.TOKEN(tokenRef.current.value))
+  const logIn = () => {
+    dispatch({
+      type: Actions.TOGGL_IN, 
+      token: (tokenRef.current as HTMLInputElement).value // TODO
+    })
   }
-  const logOut = e => dispatch(actions.TOKEN_OUT())
+  const logOut = () => {
+    dispatch({
+      type : Actions.TOGGL_OUT
+    })
+  }
 
   const content = logged ? _` 
     <div className="togglPromt">
@@ -103,7 +117,7 @@ const TogglProfile = ({logged, error, loading}) => {
     </div>
   `
 
-  const error = error ? _`
+  const ifError = error ? _`
     <div className="togglError">
       Error! ${error}
     </div>
@@ -111,32 +125,36 @@ const TogglProfile = ({logged, error, loading}) => {
   return  _`
     <div className="togglContainer">
       ${content}
+      ${ifError}
     </div>
   `
 }
 
 const App = () => {
-  const initial = null
+  const react = (action :Action) => {
+    action.type == Actions.STATE && setAppState(action.state)
+  }
+  const dispatch = (action :Action) => {
+    port?.postMessage(action)
+  }
 
-  [dispatch, setDispatch] = useState(()=>{})
-  [state, setState] = useState(initial)
+  const [port, setPort] = useState(null as (null | browser.runtime.Port))
+  const [state, setAppState] = useState(null as (null | State))
 
   useEffect(() => {
-    const port = browser.runtime.connect()
-    port.onMessage.addListener( action => action.type == 'STATE' && setState(action.state))
-    setDispatch(action => {
-      port.postMessage(action)
-    })
+    const p = browser.runtime.connect()
+    p.onMessage.addListener(react as ({}) => void)
+    setPort(p)
   }, [])
   
-  return state &&  _`
+  return port && state &&  _`
     <${context.Dispatch}.Provider value=${dispatch}>
       <div className="counterBlock">
         <${Counter}  ...${state.timer}/>
       </div>
       <div className="controlsBlock">
         <${Controls} />
-        <${TogglForm} logged=${state.toggl.token} ...${state.toggl.form} />
+        <${TogglForm} logged=${!!state.toggl.login.token} ...${state.toggl.form} />
       </div>
       <div className="legendBlock">
         <${Legend} working=${state.working} resting=${state.resting} />
@@ -145,13 +163,13 @@ const App = () => {
         <${Options} ...${state.config} />
       </div>
       <div className="togglBlock">
-        <${TogglProfile} logged=${!!state.toggl.token} error=${state.toggle.error} loading=${state.toggle.loading} />
+        <${TogglProfile} ...${state.toggl.login} />
       </div>
     <//>
   `
 }
 
-render(App,document.getElementById('appContainer'))
+render(App,document.getElementById('appContainer')!) //TODO
 
 //SETUP
 
