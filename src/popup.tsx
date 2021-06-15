@@ -82,8 +82,8 @@ const Options = ({ratio} :Config) => {
         Rest ratio:
         <input 
           className="ratioInput" 
-          type="range" 
-          //default={ratio}  TODO
+          type="range"
+          value={ratio}  //any bugs?
           min="1"
           max="10"
           step="1"
@@ -98,7 +98,6 @@ const Legend = ({working, resting} :{working :boolean, resting :boolean}) => {
   const message = working ? 'working..' : resting ? 'resting..' : ''
   return (
     <div className="legendContainer">
-      <span>{working ? 'working..' : resting ? 'resting..' : ''}</span>
       <span className="legendMessage">{message}</span>
     </div>
   )
@@ -120,7 +119,7 @@ const TogglProfile = ({token : logged, error, loading} :TogglLogin) => {
     })
   }
 
-  const content = logged ? ( 
+  const content = !logged ? ( 
     <div className="togglPromt">
       Enter your toggl token to connect:
       <input className="tokenInput" type="text" maxLength={100} ref={tokenRef} />
@@ -134,14 +133,14 @@ const TogglProfile = ({token : logged, error, loading} :TogglLogin) => {
 
   const ifError = error ? (
     <div className="togglError">
-      {error.message}
+      {error}
     </div>
   ): null
 
   return  (
     <div className="togglContainer">
-      ${content}
-      ${ifError}
+      {content}
+      {ifError}
     </div>
   )
 }
@@ -151,6 +150,7 @@ const App = () => {
     action.type == Actions.STATE ? setAppState(action.state) : logUnexpected(new Error('Unexpected object at popup port: ' + JSON.stringify(action)))
   }
   const dispatch = (action :Action) => {
+    console.log('Dispatched: ', action)
     port ? port.postMessage(action) : logUnexpected(new Error('Action dispatched on popup while no port is present: ' + JSON.stringify(action)))
   }
 
@@ -163,6 +163,7 @@ const App = () => {
     setPort(p)
   }, [])
   
+  console.log('Port:', port, '\nState:', state)
   return port && state &&  (
     <DispatchContext.Provider value={dispatch}>
       <div className="counterBlock">
@@ -185,7 +186,7 @@ const App = () => {
   )
 }
 
-render(App,document.getElementById('appContainer')!) //TODO
+render(<App />,document.getElementById('appContainer')!) //TODO
 
 //SETUP
 

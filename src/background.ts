@@ -17,7 +17,7 @@ class App{
 
   constructor(){
     this.eTimer.on('secondsUpdated', this.out_Timer)
-    this.eTimer.on('targetAchieved', this.out_Notify)
+    this.eTimer.on('targetAchieved', this.onRestEnd)
     browser.runtime.onConnect.addListener(this.in_Connection)
   }
   
@@ -129,6 +129,11 @@ class App{
     
     this.out_ChangeIcon(DEFAULT_ICON)
     this.out_Dispatch()
+  }
+
+  onRestEnd = () => {
+    this.stopRest()
+    this.out_Notify()
   }
 
   toggl_Save = async (retroSave = false)=> {

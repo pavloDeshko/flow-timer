@@ -9,7 +9,7 @@ const TOGGL_USER_URL = '/me?with_related_data=true'
 const w = wretch()
   .url(TOGGL_URL)
 
-const getAuth = (auth :Toggl_Auth) => typeof auth == 'string' ? `Basic ${auth}:api_token` : `Basic ${auth.user}:${auth.pass}`
+const getAuth = (auth :Toggl_Auth) => 'Basic ' + btoa(typeof auth == 'string' ? `${auth}:api_token` : `${auth.user}:${auth.pass}`)
 
 const handle403 = (err :Error) => {throw new Error('Looks like your credentials are wrong :(')}
 const handleOther = (err :Error) => {throw new Error(`Can't reach out to Toggl :(`)}
