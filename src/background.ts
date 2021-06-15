@@ -2,189 +2,202 @@ import easyTimer from 'easytimer.js'
 
 import {Actions, Action} from './modules/actions'
 import {State} from './modules/types'
-import {MIN_REST, DEFAULT_RATIO, ZERO_TIMER, getRestTime, secondsToObject} from './modules/utils'
-import {togglApiStart, togglApiStop, togglApiAdd, togglApiCancel, togglApiConnect, togglApiDisconnect} from './modules/service'
+import {MIN_REST, DEFAULT_RATIO, ZERO_TIMER, getRestTime, secondsToObject, logUnexpected} from './modules/utils'
+import { togglApiAdd, togglApiConnect, togglApiDisconnect} from './modules/service'
 
 //ICONS
-const defaultIcon = 'icons/timer_32.png'
-const workIcon = 'icons/timer_work_32.png'
-const restIcon = 'icons/timer_rest_32.png'
+const DEFAULT_ICON = 'icons/timer_32.png'
+const WORK_ICON = 'icons/timer_work_32.png'
+const REST_ICON = 'icons/timer_rest_32.png'
 
-// LOGICAL ACTIONS
-const startWork = () => {
-  state.resting = null
-  state.working = Date.now()
-  changeIcon(workIcon)
-  timerInstance.stop()
-  timerInstance.start()
-  _togglStart()
-  state.timer = ZERO_TIMER
-}
+class App{
+  eTimer = new easyTimer()
+  state = new State()
+  port :(null | browser.runtime.Port) = null
 
-const stopWork = () => {
-  _togglStop()
-  state.working = null
-  changeIcon(defaultIcon)
-  timerInstance.stop()
-  state.timer = ZERO_TIMER
-  dispatch()
-}
-
-const startRest = () => {
-  _togglStop()
-  state.working = null
-  state.resting = Date.now()
-  changeIcon(restIcon)
-  timerInstance.stop()
-  timerInstance.start({countdown: true, startValues: state.nextRest})
-  state.timer = state.nextRest
-  state.nextRest = secondsToObject(MIN_REST)
-  dispatch()
-}
-
-const stopRest = () => {
-  state.resting = null
-  changeIcon(defaultIcon)
-  timerInstance.stop()
-  state.timer = ZERO_TIMER
-  dispatch()
-}
-
-const _togglStart = async () => {
-  if(state.toggl.form.active){
-    try{
-      await togglApiStart(state.toggl.form.desc)
-    }catch(e){
-      state.toggl.login.error = e.message
-      dispatch()
-    }
-  }
-}
-
-const _togglStop = async () => {
-  const f = state.toggl.form
-  try{
-    if(f.toggling){
-      if(state.toggl.form.active){
-        await togglApiStop(f.toggling, f.desc)
-      } else {
-        await togglApiCancel(f.toggling)
-      }
-    } else if(f.active && state.working != null){
-      await togglApiAdd(state.working, Date.now(), f.desc)
-    }
-  }catch(e){
-      state.toggl.login.error = e.message
-      dispatch()
+  constructor(){
+    this.eTimer.on('secondsUpdated', this.out_Timer)
+    this.eTimer.on('targetAchieved', this.out_Notify)
+    browser.runtime.onConnect.addListener(this.in_Connection)
   }
   
-}
-
-const connectToggl = async (token :string) => {
-  const t = state.toggl.login
-  try{
-    t.loading = true
-    dispatch()
-    await togglApiConnect(token)
-    t.token = token
-    t.error = null
-    dispatch()
-  }catch (error){
-    t.error = error.message
-  }finally{
-    t.loading = false
-    dispatch()
-  }
-}
-
-const disconnectToggl = async () => {
-  const t = state.toggl.login
-
-  const token = t.token
-  t.token = null
-  t.error = null
-  dispatch()
-  try{
-    if(token){
-      await togglApiDisconnect(token)
+  out_Timer = () => {
+    const timeObject = {...this.eTimer.getTimeValues()}
+    this.state.timer = timeObject
+    if (this.state.working != null){
+      this.state.nextRest = getRestTime(timeObject)
     }
-  }catch(e){
-    t.error = e.message
-    dispatch()
+    this.out_Dispatch()
+  }
+
+  out_Notify = () => {
+    browser.notifications.create({
+      type: 'basic',
+      title: 'Time to work!',
+      message: 'your rest time is up'
+    })
+  }
+
+  out_ChangeIcon = (path : string)=> {
+    browser.browserAction.setIcon({path})
+  }
+
+  out_Dispatch = (action :Action = {type: Actions.STATE, state: this.state}) => {
+    this.port && this.port.postMessage(action)
+  }
+
+  in_Connection = (p :browser.runtime.Port) => {
+    p.onMessage.addListener(this.in_React as ({})=>void) // logs error if not Action object
+    p.onDisconnect.addListener(() => {
+      this.port = null
+    })
+    this.port = p
+    this.out_Dispatch()
+  }
+
+  in_React = (action: Action) => {
+    switch (action.type){
+      case Actions.WORK:
+        this.state.working != null ? this.stopWork() : this.startWork()
+        break
+      case Actions.REST:
+        this.state.resting != null ? this.stopRest() : this.startRest()
+        break
+      case Actions.CONFIG:
+        this.state.config = {...this.state.config, ...action.config}
+        break
+      case Actions.TOGGL_IN:
+        this.toggl_Connect(action.token)
+        break
+      case Actions.TOGGL_OUT:
+        this.toggl_Disconnect()
+        break
+      case Actions.TOGGL_FORM:
+        this.state.toggl.form = {...this.state.toggl.form, ...action.form}
+        break
+      case Actions.TOGGL_SAVE_LAST:
+        this.toggl_Save(true)
+        break
+      case Actions.STATE:
+        break
+      default:
+        let _check :never = action
+        logUnexpected(new Error('Unknown object at background port: ' + JSON.stringify(action)))
+    }
+  }
+
+  startWork = () => {
+    this.state.resting = null
+    this.state.working = Date.now()
+    this.state.timer = ZERO_TIMER
+    
+    this.eTimer.stop(), this.eTimer.start()
+
+    this.out_ChangeIcon(WORK_ICON)
+    this.out_Dispatch()
+  }
+  
+  stopWork = () => {
+    this.state.working = null
+    this.state.timer = ZERO_TIMER
+
+    this.eTimer.stop()
+    this.toggl_Save()
+    
+    this.out_ChangeIcon(DEFAULT_ICON)
+    this.out_Dispatch()
+  }
+  
+  startRest = () => {
+    this.state.working = null
+    this.state.resting = Date.now()
+    this.state.timer = this.state.nextRest
+
+    this.eTimer.stop(), this.eTimer.start({countdown: true, startValues: this.state.nextRest})
+    this.state.nextRest = secondsToObject(MIN_REST)
+    this.toggl_Save()
+    
+    this.out_ChangeIcon(REST_ICON)
+    this.out_Dispatch()
+  }
+  
+  stopRest = () => {
+    this.state.resting = null
+    this.state.timer = ZERO_TIMER
+
+    this.eTimer.stop()
+    
+    this.out_ChangeIcon(DEFAULT_ICON)
+    this.out_Dispatch()
+  }
+
+  toggl_Save = async (retroSave = false)=> {
+    const form = this.state.toggl.form, login = this.state.toggl.login // TODO move loading
+    if(!login.token) return// TODO handle errors
+    
+    let start, end
+    if(this.state.working && !retroSave){
+      start = this.state.working
+      end = Date.now()
+    }else if(retroSave && form.unsaved){
+      start = form.unsaved.start
+      end = form.unsaved.end
+    }else{
+      logUnexpected(new Error(`Wrong toogle save action. Retrosave: ${retroSave}.  Working: ${this.state.working}.  Unsaved: ${form.unsaved}.`))
+      return 
+    }
+
+    try{
+      login.loading = true
+      this.out_Dispatch()
+      await togglApiAdd( login.token, start, end, form.desc, form.projectId)
+    }catch(e){
+      login.error = e.message
+    }finally{
+      login.loading = false
+      this.out_Dispatch()
+    }
+  }
+  
+  toggl_Connect = async (token :string) => {
+    const t = this.state.toggl.login
+    try{
+      t.loading = true
+      this.out_Dispatch()
+
+      t.projects = await togglApiConnect(token)
+      t.token = token
+
+      t.error = null
+    }catch (error){
+      t.error = error.message
+    }finally{
+      t.loading = false
+      this.out_Dispatch()
+    }
+  }
+  
+  toggl_Disconnect = async () => {
+    const t = this.state.toggl.login
+    const token = t.token
+
+    t.token = null
+    t.projects = []
+
+    t.error = null
+    this.out_Dispatch()
+    try{
+      if(token){
+        await togglApiDisconnect(`token`)
+      }
+    }catch(e){
+      t.error = e.message
+      this.out_Dispatch()
+    }
   }
 }
 
-//IO
-const react = (action: Action) => {
-  switch (action.type){
-    case Actions.WORK:
-      state.working != null ? stopWork() : startWork()
-      break
-    case Actions.REST:
-      state.resting != null ? stopRest() : startRest()
-      break
-    case Actions.CONFIG:
-      state.config = {...state.config, ...action.config}
-      break
-    case Actions.TOGGL_IN:
-      connectToggl(action.token)
-      break
-    case Actions.TOGGL_OUT:
-      disconnectToggl()
-      break
-    case Actions.TOGGL_FORM:
-      state.toggl.form = {...state.toggl.form, ...action.form}
-      break
-    case Actions.STATE:
-      break
-    default:
-      let _check :never = action 
-  }
-}
-
-const notify = () => {
-  browser.notifications.create({
-    type: 'basic',
-    title: 'Time to work!',
-    message: 'your rest time is up'
-  })
-}
-
-const update = () => {
-  const timeObject = {...timerInstance.getTimeValues()}
-  state.timer = timeObject
-  if (state.working != null){
-    state.nextRest = getRestTime(timeObject)
-  }
-  dispatch()
-}
-
-const dispatch = (action :Action = {type: Actions.STATE, state}) => {
-  port && port.postMessage(action)
-}
-
-const changeIcon = (path : string)=> {
-  browser.browserAction.setIcon({path})
-}
-
-//SETUP
-
-const state = new State()
-
-const timerInstance = new easyTimer()
-timerInstance.on('secondsUpdated', update)
-timerInstance.on('targetAchieved', notify)
-
-let port :(null | browser.runtime.Port) = null
-browser.runtime.onConnect.addListener(p => {
-  port = p
-  port.onMessage.addListener(react as ({})=>void) //TODO
-  port.onDisconnect.addListener(() => {
-    port = null
-  })
-  dispatch()
-})
-
+new App()
 /*
 class Timer{
   constructor(onChange = () => {}, onEnd = () => {} ) {

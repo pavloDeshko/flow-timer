@@ -8,6 +8,7 @@ export enum Actions{
   'TOGGL_OUT',
   'TOGGL_CONFIG',
   'TOGGL_FORM',
+  'TOGGL_SAVE_LAST',
   'STATE'
 }
 
@@ -26,6 +27,8 @@ export type Action = {
 }|{
   type: Actions.TOGGL_FORM,
   form: Partial<TogglForm>
+}|{
+  type: Actions.TOGGL_SAVE_LAST
 }|{
   type: Actions.STATE
   state: State

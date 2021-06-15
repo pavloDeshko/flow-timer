@@ -17,15 +17,17 @@ export type Config = {
 }
 
 export type TogglForm = {
-  active: boolean,
+  shouldSave: boolean,
   desc: string,
-  toggling: null | string
+  unsaved: {start: number, end: number} | null,
+  projectId: number | null
 }
 
 export type TogglLogin = {
   token : string | null,
   error : Error | null,
-  loading : boolean
+  loading : boolean,
+  projects : Array<Toggl_Project>
 }
 
 export class State{
@@ -40,13 +42,38 @@ export class State{
     login : {
       token : null,
       error : null,
-      loading : false
+      loading : false,
+      projects : [] 
     },
     form : {
-      active: false,
-      toggling: null,
-      desc: ''
+      shouldSave: false,
+      unsaved: null,
+      desc: '',
+      projectId: null
     }
+  }
+}
+
+export type Toggl_Entry_Params = {
+  time_entry: {
+    start :string,
+    end :string,
+    desc :string,
+    pid? :number,
+    created_with :"curl"
+  }
+}
+
+export type Toggl_Auth = string | {user :string, pass :string}
+
+export type Toggl_Project = {
+  id : number,
+  name : string
+}
+
+export type Toggl_Me = {
+  data : {
+    projects : Array<Toggl_Project>,
   }
 }
 

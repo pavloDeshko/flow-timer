@@ -1,102 +1,117 @@
-import {render, createContext} from 'preact'
+import { h, render, createContext} from 'preact'
 import {useContext, useState, useRef, useEffect} from 'preact/hooks'
-import {html as _} from 'htm/preact'
 
-import {State, Time, Config} from './modules/types'
+import {State, Time, Config, TogglLogin, TogglForm, Toggl_Project} from './modules/types'
 import {Action, Actions} from './modules/actions'
-import {padTwoZeros} from './modules/utils'
+import {padTwoZeros, logUnexpected} from './modules/utils'
 
-const context = { Dispatch: createContext((a: Action)=>{})} //TODO
+const DispatchContext = createContext((a: Action)=>{}) //TODO
 
 const Counter = ({hours, minutes, seconds} :Time) => {
-  return _`
+  return(
     <div className="counterContainer">
       <div className="timeCounter">
-        <span className="hCount">${padTwoZeros(hours)}</span> :
-        <span className="mCount">${padTwoZeros(minutes)}</span> :
-        <span className="sCount">${padTwoZeros(seconds)}</span>
+        <span className="hCount">{padTwoZeros(hours)}</span> :
+        <span className="mCount">{padTwoZeros(minutes)}</span> :
+        <span className="sCount">{padTwoZeros(seconds)}</span>
       </div>
     </div>
-  `
+  )
 }
 
 const Controls = () => {
-  const dispatch = useContext(context.Dispatch)
+  const dispatch = useContext(DispatchContext)
 
   const work = () => dispatch({type: Actions.WORK})
   const rest = () => dispatch({type: Actions.REST})
 
-  return _`
+  return (
     <div className="controlsContainer">
-      <input className="workButton" type="button" value="work" onClick=${work}>
-      <input className="restButton" type="button" value="rest" onClick=${rest}>
+      <input className="workButton" type="button" value="work" onClick={work} />
+      <input className="restButton" type="button" value="rest" onClick={rest} />
     </div>
-  `
+  )
 }
 
-const TogglForm = ({token: logged, active, desc} : {token :string, active :boolean, desc :string}) => {
-  const dispatch = useContext(context.Dispatch)
+const TogglForm = (
+    {logged, projects, shouldSave, desc, unsaved} : {logged :boolean, projects :Array<Toggl_Project>} & TogglForm
+  ) => {
+  const dispatch = useContext(DispatchContext)
   
-  const setActive = (e :Event & {target :HTMLInputElement}) => dispatch({
+  const setActive = (e :Event) => dispatch({
     type : Actions.TOGGL_FORM,
-    form : {active: e.target.checked}
+    form : {shouldSave: (e.target as HTMLInputElement).checked} // TODO - bug in Preact typings
   })
-  const setDesc = (e :Event & {target :HTMLInputElement}) => dispatch({
+  const setDesc = (e :Event) => dispatch({
     type : Actions.TOGGL_FORM,
-    form: {desc: e.target.value}
+    form: {desc: (e.target as HTMLInputElement).value} // TODO
+  })
+  const retroSave = (e :Event) => dispatch({
+    type : Actions.TOGGL_SAVE_LAST
+  })
+  const setProject = (e :Event) => dispatch({
+    type : Actions.TOGGL_FORM,
+    form: {projectId: Number((e.target as HTMLInputElement).value)} // TODO
   })
 
-  return logged ? _`
-    Start Toggle: 
-    <input className="ifToggl" type="checkbox" checked=${active} onChange=${setActive}>
-    <input className="togglDesc" type="text" placeholder="description.." value=${desc} onChange=${setDesc}>
-  ` : null
+  return logged ? (
+    <div className="togglFormContainer">
+      <label><input className="togglShouldSave" type="checkbox" checked={shouldSave} onChange={setActive} />save work entry in Toggl</label>
+      <input className="togglDesc" type="text" placeholder="description.." value={desc} onChange={setDesc} />
+      {!!unsaved && <input className="togglSave" type="button" value="save last work entry" onClick={retroSave} />}
+      <label>
+        <select className="togglProject" onChange={setProject}>
+          {projects.map(p => <option value={p.id}>{p.name}</option>)}
+        </select>
+      </label>
+    </div>
+   ) : null
 }
 
 const Options = ({ratio} :Config) => {
-  const dispatch = useContext(context.Dispatch)
+  const dispatch = useContext(DispatchContext)
 
-  const setRatio = (e :Event & {target :HTMLInputElement}) => dispatch({
+  const setRatio = (e :Event) => dispatch({
     type: Actions.CONFIG,
-    config: {ratio : Number(e.target.value)}
+    config: {ratio : Number((e.target as HTMLInputElement).value)} //TODO
   })
 
-  return _`
+  return (
     <div className="optionsContainer">
       <label>
         Rest ratio:
         <input 
           className="ratioInput" 
           type="range" 
-          defaultValue=${ratio}
+          //default={ratio}  TODO
           min="1"
           max="10"
           step="1"
-          onChange=${setRatio}
-        >
+          onChange={setRatio}
+        />
       </label> 
     </div>
-  `
+  )
 }
 
-const Legend = ({working, resting} :{working :number, resting :number}) => {
+const Legend = ({working, resting} :{working :boolean, resting :boolean}) => {
   const message = working ? 'working..' : resting ? 'resting..' : ''
-  return _`
+  return (
     <div className="legendContainer">
-      <span>${working ? 'working..' : resting ? 'resting..' : ''}</span>
-      <span className="legendMessage">${message}</span>
+      <span>{working ? 'working..' : resting ? 'resting..' : ''}</span>
+      <span className="legendMessage">{message}</span>
     </div>
-  `
+  )
 }
 
-const TogglProfile = ({logged, error, loading} :{logged :string, error :Error, loading: boolean}) => {
-  const dispatch = useContext(context.Dispatch)
-  const tokenRef = useRef()
+const TogglProfile = ({token : logged, error, loading} :TogglLogin) => {
+  const dispatch = useContext(DispatchContext)
+  const tokenRef = useRef(null)
 
   const logIn = () => {
     dispatch({
       type: Actions.TOGGL_IN, 
-      token: (tokenRef.current as HTMLInputElement).value // TODO
+      token: (tokenRef.current! as HTMLInputElement).value // TODO
     })
   }
   const logOut = () => {
@@ -105,37 +120,38 @@ const TogglProfile = ({logged, error, loading} :{logged :string, error :Error, l
     })
   }
 
-  const content = logged ? _` 
+  const content = logged ? ( 
     <div className="togglPromt">
       Enter your toggl token to connect:
-      <input className="tokenInput" type="text" maxlength="100" ref=${tokenRef}>
-      <input className="connectInput" type="button" value="connect" onClick=${logIn}>
+      <input className="tokenInput" type="text" maxLength={100} ref={tokenRef} />
+      <input className="connectInput" type="button" value="connect" onClick={logIn} />
     </div>
-  ` : _`
+   ) : (
     <div className="togglLogged">
-      <input className="logoutInput" type="button" value="logout" onClick=${logOut} active=${!loading}>
+      <input className="logoutInput" type="button" value="logout" onClick={logOut} disabled={loading} />
     </div>
-  `
+  )
 
-  const ifError = error ? _`
+  const ifError = error ? (
     <div className="togglError">
-      Error! ${error}
+      {error.message}
     </div>
-  `: null
-  return  _`
+  ): null
+
+  return  (
     <div className="togglContainer">
       ${content}
       ${ifError}
     </div>
-  `
+  )
 }
 
 const App = () => {
   const react = (action :Action) => {
-    action.type == Actions.STATE && setAppState(action.state)
+    action.type == Actions.STATE ? setAppState(action.state) : logUnexpected(new Error('Unexpected object at popup port: ' + JSON.stringify(action)))
   }
   const dispatch = (action :Action) => {
-    port?.postMessage(action)
+    port ? port.postMessage(action) : logUnexpected(new Error('Action dispatched on popup while no port is present: ' + JSON.stringify(action)))
   }
 
   const [port, setPort] = useState(null as (null | browser.runtime.Port))
@@ -147,26 +163,26 @@ const App = () => {
     setPort(p)
   }, [])
   
-  return port && state &&  _`
-    <${context.Dispatch}.Provider value=${dispatch}>
+  return port && state &&  (
+    <DispatchContext.Provider value={dispatch}>
       <div className="counterBlock">
-        <${Counter}  ...${state.timer}/>
+        <Counter  {...state.timer}/>
       </div>
       <div className="controlsBlock">
-        <${Controls} />
-        <${TogglForm} logged=${!!state.toggl.login.token} ...${state.toggl.form} />
+        <Controls />
+        <TogglForm logged={!!state.toggl.login.token} projects={state.toggl.login.projects } {...state.toggl.form} />
       </div>
       <div className="legendBlock">
-        <${Legend} working=${state.working} resting=${state.resting} />
+        <Legend working={!!state.working} resting={!!state.resting} />
       </div>
       <div className="optionsBlock">
-        <${Options} ...${state.config} />
+        <Options {...state.config} />
       </div>
       <div className="togglBlock">
-        <${TogglProfile} ...${state.toggl.login} />
+        <TogglProfile {...state.toggl.login} />
       </div>
-    <//>
-  `
+    </ DispatchContext.Provider>
+  )
 }
 
 render(App,document.getElementById('appContainer')!) //TODO

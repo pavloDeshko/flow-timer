@@ -9,12 +9,13 @@
   "dependencies": {
     "easytimer.js": "^4.3.1",
     "htm": "^3.0.4",
-    "preact": "^10.5.12"
+    "preact": "^10.5.12",
+    "wretch": "^1.7.4"
   },
   "scripts": {
     "ts": "rimraf app/scripts && tsc",
-    "dev": "ts && webextension-toolbox dev firefox",
-    "build": "ts && webextension-toolbox build firefox"
+    "dev": "yarn ts && webextension-toolbox dev firefox",
+    "build": "yarn ts && webextension-toolbox build firefox"
   },
   "devDependencies": {
     "rimraf": "^3.0.2",

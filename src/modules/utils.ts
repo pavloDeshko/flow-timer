@@ -44,3 +44,7 @@ export const objectToSeconds = (obj :Time) => {
 export const padTwoZeros = (number :number) => {
   return ('00' + number).slice(-2)
 }
+
+export const logUnexpected = (e :Error) => {
+  console.log(e)
+}
