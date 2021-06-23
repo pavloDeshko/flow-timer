@@ -27,7 +27,8 @@ export type TogglLogin = {
   token : string | null,
   error : Error | null,
   loading : boolean,
-  projects : Array<Toggl_Project>
+  projects : Array<Toggl_Project>,
+  lastProjectId : number | null
 }
 
 export class State{
@@ -43,7 +44,8 @@ export class State{
       token : null,
       error : null,
       loading : false,
-      projects : [] 
+      projects : [],
+      lastProjectId: null
     },
     form : {
       shouldSave: false,
@@ -57,10 +59,11 @@ export class State{
 export type Toggl_Entry_Params = {
   time_entry: {
     start :string,
-    end :string,
-    desc :string,
+    duration :number,
+    //stop :string,
+    description :string,
     pid? :number,
-    created_with :"curl"
+    created_with :string
   }
 }
 

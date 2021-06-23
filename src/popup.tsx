@@ -34,7 +34,7 @@ const Controls = () => {
 }
 
 const TogglForm = (
-    {logged, projects, shouldSave, desc, unsaved} : {logged :boolean, projects :Array<Toggl_Project>} & TogglForm
+    {logged, projects, lastProject, shouldSave, desc, unsaved} : {logged :boolean, projects :Array<Toggl_Project>, lastProject :number|null} & TogglForm
   ) => {
   const dispatch = useContext(DispatchContext)
   
@@ -57,10 +57,10 @@ const TogglForm = (
   return logged ? (
     <div className="togglFormContainer">
       <label><input className="togglShouldSave" type="checkbox" checked={shouldSave} onChange={setActive} />save work entry in Toggl</label>
-      <input className="togglDesc" type="text" placeholder="description.." value={desc} onChange={setDesc} />
+      <input className="togglDesc" type="text" placeholder="description.." value={desc} onInput={setDesc} />
       {!!unsaved && <input className="togglSave" type="button" value="save last work entry" onClick={retroSave} />}
       <label>
-        <select className="togglProject" onChange={setProject}>
+        <select className="togglProject" onChange={setProject} value={lastProject||undefined}>
           {projects.map(p => <option value={p.id}>{p.name}</option>)}
         </select>
       </label>
@@ -171,7 +171,7 @@ const App = () => {
       </div>
       <div className="controlsBlock">
         <Controls />
-        <TogglForm logged={!!state.toggl.login.token} projects={state.toggl.login.projects } {...state.toggl.form} />
+        <TogglForm logged={!!state.toggl.login.token} projects={state.toggl.login.projects} lastProject={state.toggl.login.lastProjectId} {...state.toggl.form} />
       </div>
       <div className="legendBlock">
         <Legend working={!!state.working} resting={!!state.resting} />

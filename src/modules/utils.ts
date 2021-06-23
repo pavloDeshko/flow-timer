@@ -21,7 +21,7 @@ export const getRestTime = (workTimeObj :Time, ratio = DEFAULT_RATIO) => {
 export const secondsToObject = (totalSeconds :number) => {
   const values :Time = {} as Time // TODO
 
-  values.days = Math.floor(totalSeconds / 86400), totalSeconds %= 86400
+  values.days = Math.floor(totalSeconds / 86400), totalSeconds %= 86400 //TODO bitwise?
   values.hours = Math.floor(totalSeconds / 3600), totalSeconds %= 3600
   values.minutes = Math.floor(totalSeconds / 60), totalSeconds %= 60
   values.seconds = Math.floor(totalSeconds / 1), totalSeconds %= 1

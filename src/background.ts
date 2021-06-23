@@ -87,45 +87,45 @@ class App{
   }
 
   startWork = () => {
+    this.eTimer.stop(), this.eTimer.start()
+
     this.state.resting = null
     this.state.working = Date.now()
     this.state.timer = ZERO_TIMER
-    
-    this.eTimer.stop(), this.eTimer.start()
 
     this.out_ChangeIcon(WORK_ICON)
     this.out_Dispatch()
   }
   
   stopWork = () => {
-    this.state.working = null
-    this.state.timer = ZERO_TIMER
-
     this.eTimer.stop()
     this.toggl_Save()
+
+    this.state.working = null
+    this.state.timer = ZERO_TIMER
     
     this.out_ChangeIcon(DEFAULT_ICON)
     this.out_Dispatch()
   }
   
   startRest = () => {
-    this.state.working = null
-    this.state.resting = Date.now()
-    this.state.timer = this.state.nextRest
-
     this.eTimer.stop(), this.eTimer.start({countdown: true, startValues: this.state.nextRest})
     this.state.nextRest = secondsToObject(MIN_REST)
     this.toggl_Save()
+
+    this.state.working = null
+    this.state.resting = Date.now()
+    this.state.timer = this.state.nextRest
     
     this.out_ChangeIcon(REST_ICON)
     this.out_Dispatch()
   }
   
   stopRest = () => {
+    this.eTimer.stop()
+
     this.state.resting = null
     this.state.timer = ZERO_TIMER
-
-    this.eTimer.stop()
     
     this.out_ChangeIcon(DEFAULT_ICON)
     this.out_Dispatch()
@@ -138,7 +138,7 @@ class App{
 
   toggl_Save = async (retroSave = false)=> {
     const form = this.state.toggl.form, login = this.state.toggl.login // TODO move loading
-    if(!login.token) return// TODO handle errors
+    if(!login.token || !form.shouldSave) return// TODO handle errors
     
     let start, end
     if(this.state.working && !retroSave){
@@ -151,7 +151,8 @@ class App{
       logUnexpected(new Error(`Wrong toogle save action. Retrosave: ${retroSave}.  Working: ${this.state.working}.  Unsaved: ${form.unsaved}.`))
       return 
     }
-
+    
+    login.lastProjectId = form.projectId
     try{
       login.loading = true
       this.out_Dispatch()

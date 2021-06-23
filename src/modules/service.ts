@@ -3,8 +3,9 @@ import wretch from 'wretch'
 import {Toggl_Entry_Params, Toggl_Auth, Toggl_Me, Toggl_Project} from './types'
 
 const TOGGL_URL = 'https://api.track.toggl.com/api/v8'
-const TOGGL_ADD_URL = '/time_entries/start'
+const TOGGL_ADD_URL = '/time_entries'
 const TOGGL_USER_URL = '/me?with_related_data=true'
+const CLIENT_NAME = 'Ketchup Timer Web-extension'
 
 const w = wretch()
   .url(TOGGL_URL)
@@ -29,12 +30,13 @@ export const togglApiDisconnect = async (credential :Toggl_Auth) => {
   // api call to end sessino goes here
 }
 
-export const togglApiAdd = async (credential :Toggl_Auth, start :number, end :number, desc :string, project :number | null) => {
+export const togglApiAdd = async (credential :Toggl_Auth, start :number, stop :number, description :string, project :number | null) => {
   const data : Toggl_Entry_Params = {time_entry:{
     start: new Date(start).toISOString(),
-    end: new Date(end).toISOString(),
-    desc,
-    created_with: 'curl',
+    duration: Math.floor((stop - start)/1e3),
+    //stop: new Date(stop).toISOString(),
+    description,
+    created_with: CLIENT_NAME,
     pid: project != null ? project : undefined
   }}
 
