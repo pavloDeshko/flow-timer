@@ -1,9 +1,10 @@
 import { h, render, createContext} from 'preact'
-import {useContext, useState, useRef, useEffect} from 'preact/hooks'
+import {memo} from 'preact/compat'
+import {useContext, useState, useRef, useEffect} from 'preact//hooks'
 
 import {State, Time, Config, TogglLogin, TogglForm, Toggl_Project} from './modules/types'
 import {Action, Actions} from './modules/actions'
-import {padTwoZeros, logUnexpected} from './modules/utils'
+import {padTwoZeros, logUnexpected, jsonMemo} from './modules/utils'
 
 const DispatchContext = createContext((a: Action)=>{}) //TODO
 
@@ -19,7 +20,7 @@ const Counter = ({hours, minutes, seconds} :Time) => {
   )
 }
 
-const Controls = () => {
+const Controls = memo(() => {
   const dispatch = useContext(DispatchContext)
 
   const work = () => dispatch({type: Actions.WORK})
@@ -31,9 +32,9 @@ const Controls = () => {
       <input className="restButton" type="button" value="rest" onClick={rest} />
     </div>
   )
-}
+})
 
-const TogglForm = (
+const TogglForm = memo((
     {logged, projects, lastProject, shouldSave, desc, unsaved} : {logged :boolean, projects :Array<Toggl_Project>, lastProject :number|null} & TogglForm
   ) => {
   const dispatch = useContext(DispatchContext)
@@ -60,15 +61,15 @@ const TogglForm = (
       <input className="togglDesc" type="text" placeholder="description.." value={desc} onInput={setDesc} />
       {!!unsaved && <input className="togglSave" type="button" value="save last work entry" onClick={retroSave} />}
       <label>
-        <select className="togglProject" onChange={setProject} value={lastProject||undefined}>
+        <select className="togglProject" onInput={setProject} value={lastProject||undefined}>
           {projects.map(p => <option value={p.id}>{p.name}</option>)}
         </select>
       </label>
     </div>
    ) : null
-}
+})
 
-const Options = ({ratio} :Config) => {
+const Options = memo(({ratio} :Config) => {
   const dispatch = useContext(DispatchContext)
 
   const setRatio = (e :Event) => dispatch({
@@ -92,18 +93,18 @@ const Options = ({ratio} :Config) => {
       </label> 
     </div>
   )
-}
+})
 
-const Legend = ({working, resting} :{working :boolean, resting :boolean}) => {
+const Legend = memo(({working, resting} :{working :boolean, resting :boolean}) => {
   const message = working ? 'working..' : resting ? 'resting..' : ''
   return (
     <div className="legendContainer">
       <span className="legendMessage">{message}</span>
     </div>
   )
-}
+})
 
-const TogglProfile = ({token : logged, error, loading} :TogglLogin) => {
+const TogglProfile = memo(({token : logged, error, loading} :TogglLogin) => {
   const dispatch = useContext(DispatchContext)
   const tokenRef = useRef(null)
 
@@ -143,35 +144,32 @@ const TogglProfile = ({token : logged, error, loading} :TogglLogin) => {
       {ifError}
     </div>
   )
-}
+})
 
 const App = () => {
-  const react = (action :Action) => {
-    action.type == Actions.STATE ? setAppState(action.state) : logUnexpected(new Error('Unexpected object at popup port: ' + JSON.stringify(action)))
-  }
-  const dispatch = (action :Action) => {
-    console.log('Dispatched: ', action)
-    port ? port.postMessage(action) : logUnexpected(new Error('Action dispatched on popup while no port is present: ' + JSON.stringify(action)))
-  }
-
-  const [port, setPort] = useState(null as (null | browser.runtime.Port))
+  const [[dispatch], setDispatch] = useState([(a :Action)=>{logUnexpected(new Error('Dispatched on popup but no port: ' + JSON.stringify(a)))}])
   const [state, setAppState] = useState(null as (null | State))
 
   useEffect(() => {
     const p = browser.runtime.connect()
-    p.onMessage.addListener(react as ({}) => void)
-    setPort(p)
+    setDispatch([(action :Action) => {
+      p.postMessage(action) 
+    }])
+    p.onMessage.addListener(react as ({}) => void) //TODO
   }, [])
+
+  const react = (action :Action) => {
+    action.type == Actions.STATE ? setAppState(action.state) : logUnexpected(new Error('Unexpected object at popup port: ' + JSON.stringify(action)))
+  }
   
-  console.log('Port:', port, '\nState:', state)
-  return port && state &&  (
+  return state &&  (
     <DispatchContext.Provider value={dispatch}>
       <div className="counterBlock">
         <Counter  {...state.timer}/>
       </div>
       <div className="controlsBlock">
         <Controls />
-        <TogglForm logged={!!state.toggl.login.token} projects={state.toggl.login.projects} lastProject={state.toggl.login.lastProjectId} {...state.toggl.form} />
+        <TogglForm logged={!!state.toggl.login.token} projects={jsonMemo(state.toggl.login.projects)} lastProject={state.toggl.login.lastProjectId} {...state.toggl.form} />
       </div>
       <div className="legendBlock">
         <Legend working={!!state.working} resting={!!state.resting} />
@@ -188,6 +186,22 @@ const App = () => {
 
 render(<App />,document.getElementById('appContainer')!) //TODO
 
+
+/* 
+const ConsoleDummy = memo(({bla} :{bla:number}) => {
+  console.log('dummy rerendered')
+  return <div>bla</div>
+})
+
+const DumbDummy = memo(()=>{
+  console.log('dumb dummy rerendered')
+  return <div>foo</div>
+})
+
+const OutsideDummy = memo(()=>{
+  console.log('outside dummy rerendered')
+  return <div>bar</div>
+}) */
 //SETUP
 
 //DOM 

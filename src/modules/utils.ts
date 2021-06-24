@@ -48,3 +48,13 @@ export const padTwoZeros = (number :number) => {
 export const logUnexpected = (e :Error) => {
   console.log(e)
 }
+
+let last :any = null
+export const jsonMemo = <T>(value :T):T => {
+  if (JSON.stringify(value) == JSON.stringify(last)){
+    return last
+  }else{
+    last = value
+    return value
+  }
+}
