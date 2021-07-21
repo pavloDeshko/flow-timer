@@ -12,8 +12,15 @@ export type Partial<T> = {
   [key in keyof T]?: T[key]
 }
 
+export enum Mode {
+  OFF = 0,
+  PAUSED,
+  ON
+} 
+
 export type Config = {
-  ratio: number
+  ratio: number,
+  mode: Mode
 }
 
 export type TogglForm = {
@@ -27,8 +34,7 @@ export type TogglLogin = {
   token : string | null,
   error : Error | null,
   loading : boolean,
-  projects : Array<Toggl_Project>,
-  lastProjectId : number | null
+  projects : Array<Toggl_Project>
 }
 
 export class State{
@@ -38,14 +44,16 @@ export class State{
   nextRest :Time = secondsToObject(MIN_REST)
   working :(null | number) = null
   resting :(null | number) = null
-  config : Config = {ratio: DEFAULT_RATIO} //TODO
+  config : Config = {
+    ratio: DEFAULT_RATIO, 
+    mode: Mode.ON
+  } //TODO
   toggl :{login :TogglLogin, form :TogglForm} = {
     login : {
       token : null,
       error : null,
       loading : false,
-      projects : [],
-      lastProjectId: null
+      projects : []
     },
     form : {
       shouldSave: false,
@@ -56,15 +64,17 @@ export class State{
   }
 }
 
+export type Toggl_Entry = {
+  start :string,
+  duration :number,
+  //stop :string,
+  description :string,
+  created_with :string,
+  pid? :number
+}
+
 export type Toggl_Entry_Params = {
-  time_entry: {
-    start :string,
-    duration :number,
-    //stop :string,
-    description :string,
-    pid? :number,
-    created_with :string
-  }
+  time_entry: Toggl_Entry
 }
 
 export type Toggl_Auth = string | {user :string, pass :string}
@@ -77,7 +87,16 @@ export type Toggl_Project = {
 export type Toggl_Me = {
   data : {
     projects : Array<Toggl_Project>,
+    time_entries : Array<Toggl_Entry>
   }
+}
+
+export type ExtStorage = {
+  config? : Config,
+  toggle? : {
+    auth : string,
+    form : TogglForm
+  } 
 }
 
 /* {

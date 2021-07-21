@@ -20,8 +20,11 @@ export const togglApiConnect = async (credential :Toggl_Auth) => {
     .auth(getAuth(credential))
     .get()
     .unauthorized(handle403)
-    .json<Array<Toggl_Project>>(
-      d => (d as Toggl_Me).data.projects.map(p => ({id: p.id, name: p.name})) //TODO
+    .json(
+      d => ({
+        projects: (d as Toggl_Me).data.projects.map(p => ({id: p.id, name: p.name})),
+        last: (d as Toggl_Me).data.time_entries[0].pid
+      }) //TODO
     )
     .catch(handleOther)
 }

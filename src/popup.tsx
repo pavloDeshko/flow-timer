@@ -2,7 +2,7 @@ import { h, render, createContext} from 'preact'
 import {memo} from 'preact/compat'
 import {useContext, useState, useRef, useEffect} from 'preact//hooks'
 
-import {State, Time, Config, TogglLogin, TogglForm, Toggl_Project} from './modules/types'
+import {State, Time, Config, TogglLogin, TogglForm, Toggl_Project, Mode} from './modules/types'
 import {Action, Actions} from './modules/actions'
 import {padTwoZeros, logUnexpected, jsonMemo} from './modules/utils'
 
@@ -20,6 +20,49 @@ const Counter = ({hours, minutes, seconds} :Time) => {
   )
 }
 
+const TimeForm = memo(({hours = 0, minutes = 0, seconds = 0}:{hours :number, minutes :number, seconds :number}) => {
+  const dispatch = useContext(DispatchContext)
+  const hoursRef = useRef(null)
+  const minutesRef = useRef(null) //TODO wtf????
+  const secondsRef = useRef(null)
+  
+  const onChange = () =>{
+    dispatch({
+      type: Actions.ADJUST,
+      time: {
+        hours: Number((hoursRef.current! as HTMLInputElement).value),
+        minutes: Number((minutesRef.current! as HTMLInputElement).value),
+        seconds: 0
+      }
+    })
+  }
+
+  return(
+    <div className="timeFormContainer">
+      <div className="timeForm">
+        <input className="hCount" value={padTwoZeros(hours)} ref={hoursRef} onChange={onChange} />h : 
+        <input className="mCount" value={padTwoZeros(minutes)} ref={minutesRef} onChange={onChange}/>m :
+        <input className="sCount" value={padTwoZeros(seconds)} ref={secondsRef} onChange={onChange}/>s
+      </div>
+    </div>
+  )
+})
+
+const Rest = ({nextRest, mode} :{nextRest :Time, mode :Mode}) => {
+  const dispatch = useContext(DispatchContext)
+  const onRecalculate = ()=>{
+    dispatch({
+      type: Actions.ADJUST,
+      time: null
+    })
+  }
+
+  return (<div className="restContainer">
+    Next rest: <TimeForm hours={nextRest.hours} minutes={nextRest.minutes} seconds={nextRest.seconds}/>
+    <input type="button" value="recalcute rest" onClick={onRecalculate} disabled={mode == Mode.ON} />
+  </div>)
+}
+
 const Controls = memo(() => {
   const dispatch = useContext(DispatchContext)
 
@@ -35,7 +78,7 @@ const Controls = memo(() => {
 })
 
 const TogglForm = memo((
-    {logged, projects, lastProject, shouldSave, desc, unsaved} : {logged :boolean, projects :Array<Toggl_Project>, lastProject :number|null} & TogglForm
+    {logged, projects, projectId, shouldSave, desc, unsaved} : {logged :boolean, projects :Array<Toggl_Project>} & TogglForm
   ) => {
   const dispatch = useContext(DispatchContext)
   
@@ -61,7 +104,7 @@ const TogglForm = memo((
       <input className="togglDesc" type="text" placeholder="description.." value={desc} onInput={setDesc} />
       {!!unsaved && <input className="togglSave" type="button" value="save last work entry" onClick={retroSave} />}
       <label>
-        <select className="togglProject" onInput={setProject} value={lastProject||undefined}>
+        <select className="togglProject" onInput={setProject} value={projectId||undefined}>
           {projects.map(p => <option value={p.id}>{p.name}</option>)}
         </select>
       </label>
@@ -69,13 +112,18 @@ const TogglForm = memo((
    ) : null
 })
 
-const Options = memo(({ratio} :Config) => {
+const Options = memo(({ratio, mode} :Config) => {
   const dispatch = useContext(DispatchContext)
 
   const setRatio = (e :Event) => dispatch({
     type: Actions.CONFIG,
     config: {ratio : Number((e.target as HTMLInputElement).value)} //TODO
   })
+  const setMode = (e :Event) => dispatch({
+    type: Actions.CONFIG,
+    config: {mode : (e.target as HTMLInputElement).checked ? Mode.ON : Mode.OFF}
+  })
+
 
   return (
     <div className="optionsContainer">
@@ -90,7 +138,11 @@ const Options = memo(({ratio} :Config) => {
           step="1"
           onChange={setRatio}
         />
-      </label> 
+      </label>
+      <label>
+        <input type="checkbox" checked={!!mode} onChange={setMode}></input>
+        Estimate rest?
+      </label>
     </div>
   )
 })
@@ -111,7 +163,7 @@ const TogglProfile = memo(({token : logged, error, loading} :TogglLogin) => {
   const logIn = () => {
     dispatch({
       type: Actions.TOGGL_IN, 
-      token: (tokenRef.current! as HTMLInputElement).value // TODO
+      token: (tokenRef.current! as HTMLInputElement).value.replace(/(^\s+)|(\s+$)/g,'') // TODO
     })
   }
   const logOut = () => {
@@ -153,6 +205,7 @@ const App = () => {
   useEffect(() => {
     const p = browser.runtime.connect()
     setDispatch([(action :Action) => {
+      console.dir('Action disptched: '+ JSON.stringify(action, undefined, '  '))
       p.postMessage(action) 
     }])
     p.onMessage.addListener(react as ({}) => void) //TODO
@@ -160,6 +213,7 @@ const App = () => {
 
   const react = (action :Action) => {
     action.type == Actions.STATE ? setAppState(action.state) : logUnexpected(new Error('Unexpected object at popup port: ' + JSON.stringify(action)))
+    console.log('New state: ' + JSON.stringify(action, undefined, '  '))
   }
   
   return state &&  (
@@ -167,12 +221,15 @@ const App = () => {
       <div className="counterBlock">
         <Counter  {...state.timer}/>
       </div>
-      <div className="controlsBlock">
-        <Controls />
-        <TogglForm logged={!!state.toggl.login.token} projects={jsonMemo(state.toggl.login.projects)} lastProject={state.toggl.login.lastProjectId} {...state.toggl.form} />
-      </div>
       <div className="legendBlock">
         <Legend working={!!state.working} resting={!!state.resting} />
+      </div>
+      <div className="restBlock">
+        <Rest nextRest={state.nextRest} mode={state.config.mode} ></Rest>
+      </div>
+      <div className="controlsBlock">
+        <Controls />
+        <TogglForm logged={!!state.toggl.login.token} projects={jsonMemo(state.toggl.login.projects)} {...state.toggl.form} />
       </div>
       <div className="optionsBlock">
         <Options {...state.config} />

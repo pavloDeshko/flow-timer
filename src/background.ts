@@ -1,7 +1,7 @@
 import easyTimer from 'easytimer.js'
 
 import {Actions, Action} from './modules/actions'
-import {State} from './modules/types'
+import {Config, State, TogglForm, ExtStorage, Time, Mode} from './modules/types'
 import {MIN_REST, DEFAULT_RATIO, ZERO_TIMER, getRestTime, secondsToObject, logUnexpected} from './modules/utils'
 import { togglApiAdd, togglApiConnect, togglApiDisconnect} from './modules/service'
 
@@ -16,20 +16,13 @@ class App{
   port :(null | browser.runtime.Port) = null
 
   constructor(){
-    this.eTimer.on('secondsUpdated', this.out_Timer)
-    this.eTimer.on('targetAchieved', this.onRestEnd)
+    this.eTimer.on('secondsUpdated', this.on_TimerUpdate)
+    this.eTimer.on('targetAchieved', this.on_RestEnd)
     browser.runtime.onConnect.addListener(this.in_Connection)
+    this.in_Storage()
+    //browser.windows.onRemoved.addListener(()=>this.out_Storage) //TODO whate about multiple windows
   }
   
-  out_Timer = () => {
-    const timeObject = {...this.eTimer.getTimeValues()}
-    this.state.timer = timeObject
-    if (this.state.working != null){
-      this.state.nextRest = getRestTime(timeObject)
-    }
-    this.out_Dispatch()
-  }
-
   out_Notify = () => {
     browser.notifications.create({
       type: 'basic',
@@ -46,8 +39,44 @@ class App{
     this.port && this.port.postMessage(action)
   }
 
+  out_Storage = async () => {
+    const storage = browser.storage.local
+
+    const data :ExtStorage = {
+      config : this.state.config,
+      toggle : this.state.toggl.login.token ? {
+        auth : this.state.toggl.login.token,
+        form : this.state.toggl.form
+      } : undefined
+    }
+    try {
+      await storage.set(data)
+      console.log('storage saved!')
+    } catch (e){
+      console.log('error saving!', e.message)
+    } //TODO error
+  }
+
+  in_Storage = async () => {
+    const storage = browser.storage.local
+    try {
+      const data :ExtStorage = await storage.get(['config', 'toggle']) as ExtStorage //TODO error
+      console.log('storage retrieved ', data)
+      if(data.config){
+        this.state.config = data.config
+      }
+      if(data.toggle){
+        await this.toggl_Connect(data.toggle.auth)
+        this.state.toggl.form = data.toggle.form
+      }
+    } catch (e){
+      console.log('error retrieving!', e.message)
+    }
+    this.out_Dispatch()
+  }
+
   in_Connection = (p :browser.runtime.Port) => {
-    p.onMessage.addListener(this.in_React as ({})=>void) // logs error if not Action object
+    p.onMessage.addListener(this.in_Action as ({})=>void) // logs error if not Action object
     p.onDisconnect.addListener(() => {
       this.port = null
     })
@@ -55,7 +84,7 @@ class App{
     this.out_Dispatch()
   }
 
-  in_React = (action: Action) => {
+  in_Action = (action: Action) => {
     switch (action.type){
       case Actions.WORK:
         this.state.working != null ? this.stopWork() : this.startWork()
@@ -63,8 +92,13 @@ class App{
       case Actions.REST:
         this.state.resting != null ? this.stopRest() : this.startRest()
         break
+      case Actions.ADJUST:
+        this.adjustRest(action.time)
+        break
       case Actions.CONFIG:
         this.state.config = {...this.state.config, ...action.config}
+        this._recalculateRest()
+        this.out_Dispatch()
         break
       case Actions.TOGGL_IN:
         this.toggl_Connect(action.token)
@@ -84,6 +118,18 @@ class App{
         let _check :never = action
         logUnexpected(new Error('Unknown object at background port: ' + JSON.stringify(action)))
     }
+  }
+
+  on_TimerUpdate = () => {
+    const timeObject = {...this.eTimer.getTimeValues()}
+    this.state.timer = timeObject
+    this._recalculateRest()
+    this.out_Dispatch()
+  }
+
+  on_RestEnd = () => {
+    this.stopRest()
+    this.out_Notify()
   }
 
   startWork = () => {
@@ -110,15 +156,19 @@ class App{
   
   startRest = () => {
     this.eTimer.stop(), this.eTimer.start({countdown: true, startValues: this.state.nextRest})
-    this.state.nextRest = secondsToObject(MIN_REST)
     this.toggl_Save()
 
     this.state.working = null
     this.state.resting = Date.now()
     this.state.timer = this.state.nextRest
-    
+    if(this.state.config.mode){
+      this.state.config.mode = Mode.ON
+      this._recalculateRest()
+    }
+
     this.out_ChangeIcon(REST_ICON)
     this.out_Dispatch()
+    this.out_Storage() //to save ratio and mode
   }
   
   stopRest = () => {
@@ -131,9 +181,21 @@ class App{
     this.out_Dispatch()
   }
 
-  onRestEnd = () => {
-    this.stopRest()
-    this.out_Notify()
+  adjustRest = (value :Time | null) => {
+    if(!value){
+      this.state.config.mode = Mode.ON
+      this._recalculateRest()
+    }else{
+      this.state.config.mode = this.state.config.mode && Mode.PAUSED
+      this.state.nextRest = value
+    }
+    this.out_Dispatch()
+  }
+
+  _recalculateRest = () => {
+    if(this.state.config.mode === Mode.ON){
+      this.state.nextRest = getRestTime(this.state.working ? this.state.timer : ZERO_TIMER, this.state.config.ratio)
+    }
   }
 
   toggl_Save = async (retroSave = false)=> {
@@ -152,7 +214,6 @@ class App{
       return 
     }
     
-    login.lastProjectId = form.projectId
     try{
       login.loading = true
       this.out_Dispatch()
@@ -162,6 +223,7 @@ class App{
     }finally{
       login.loading = false
       this.out_Dispatch()
+      this.out_Storage()//to save form
     }
   }
   
@@ -171,8 +233,10 @@ class App{
       t.loading = true
       this.out_Dispatch()
 
-      t.projects = await togglApiConnect(token)
+      const data = await togglApiConnect(token)
+      t.projects = data.projects
       t.token = token
+      this.state.toggl.form.projectId= data.last || null
 
       t.error = null
     }catch (error){
@@ -180,6 +244,7 @@ class App{
     }finally{
       t.loading = false
       this.out_Dispatch()
+      this.out_Storage()
     }
   }
   

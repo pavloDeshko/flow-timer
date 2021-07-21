@@ -38,7 +38,7 @@ export const objectToSeconds = (obj :Time) => {
   seconds += (obj.seconds || 0) * 1
   seconds += (obj.secondTenths || 0) * 0.1
 
-  return seconds
+  return Math.floor(seconds)
 }
 
 export const padTwoZeros = (number :number) => {

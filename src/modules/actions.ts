@@ -1,8 +1,9 @@
-import {Config, TogglLogin, TogglForm, State, Partial} from './types'
+import {Config, TogglLogin, TogglForm, State, Partial, Time} from './types'
 
 export enum Actions{
   'WORK' = 1,
   'REST',
+  'ADJUST',
   'CONFIG',
   'TOGGL_IN',
   'TOGGL_OUT',
@@ -16,6 +17,9 @@ export type Action = {
   type: Actions.WORK
 }|{
   type: Actions.REST
+}|{
+  type: Actions.ADJUST,
+  time: Time | null
 }|{
   type: Actions.CONFIG
   config: Partial<Config>
