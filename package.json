@@ -7,9 +7,11 @@
   "license": "Copyright",
   "private": true,
   "dependencies": {
+    "@material-ui/core": "^4.12.3",
     "easytimer.js": "^4.3.1",
     "htm": "^3.0.4",
-    "preact": "^10.5.12",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
     "wretch": "^1.7.4"
   },
   "scripts": {
@@ -18,6 +20,7 @@
     "build": "yarn ts && webextension-toolbox build firefox"
   },
   "devDependencies": {
+    "@types/react-dom": "^17.0.9",
     "rimraf": "^3.0.2",
     "web-ext-types": "^3.2.1"
   }

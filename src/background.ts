@@ -22,6 +22,18 @@ class App{
     this.in_Storage()
     //browser.windows.onRemoved.addListener(()=>this.out_Storage) //TODO whate about multiple windows
   }
+
+  on_TimerUpdate = () => {
+    const timeObject = {...this.eTimer.getTimeValues()}
+    this.state.timer = timeObject
+    this._recalculateRest()
+    this.out_Dispatch()
+  }
+
+  on_RestEnd = () => {
+    this.stopRest()
+    this.out_Notify()
+  }
   
   out_Notify = () => {
     browser.notifications.create({
@@ -96,9 +108,7 @@ class App{
         this.adjustRest(action.time)
         break
       case Actions.CONFIG:
-        this.state.config = {...this.state.config, ...action.config}
-        this._recalculateRest()
-        this.out_Dispatch()
+        this.reconfig(action.config)
         break
       case Actions.TOGGL_IN:
         this.toggl_Connect(action.token)
@@ -120,18 +130,6 @@ class App{
     }
   }
 
-  on_TimerUpdate = () => {
-    const timeObject = {...this.eTimer.getTimeValues()}
-    this.state.timer = timeObject
-    this._recalculateRest()
-    this.out_Dispatch()
-  }
-
-  on_RestEnd = () => {
-    this.stopRest()
-    this.out_Notify()
-  }
-
   startWork = () => {
     this.eTimer.stop(), this.eTimer.start()
 
@@ -145,6 +143,7 @@ class App{
   
   stopWork = () => {
     this.eTimer.stop()
+
     this.toggl_Save()
 
     this.state.working = null
@@ -156,6 +155,7 @@ class App{
   
   startRest = () => {
     this.eTimer.stop(), this.eTimer.start({countdown: true, startValues: this.state.nextRest})
+
     this.toggl_Save()
 
     this.state.working = null
@@ -180,6 +180,13 @@ class App{
     this.out_ChangeIcon(DEFAULT_ICON)
     this.out_Dispatch()
   }
+  
+  reconfig = (config :Partial<Config>) => {
+    this.state.config = {...this.state.config, ...config}
+    this._recalculateRest()
+
+    this.out_Dispatch()
+  }
 
   adjustRest = (value :Time | null) => {
     if(!value){
@@ -189,6 +196,7 @@ class App{
       this.state.config.mode = this.state.config.mode && Mode.PAUSED
       this.state.nextRest = value
     }
+    
     this.out_Dispatch()
   }
 

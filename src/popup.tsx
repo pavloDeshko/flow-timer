@@ -1,12 +1,16 @@
-import { h, render, createContext} from 'preact'
-import {memo} from 'preact/compat'
-import {useContext, useState, useRef, useEffect} from 'preact//hooks'
+import React, {useContext, useState, useRef, useEffect, memo, ChangeEvent, FormEvent} from 'react'
+import ReactDOM from 'react-dom'
+//import {h, render, createContext} from 'preact'
+//import {memo} from 'preact/compat'
+//import {useContext, useState, useRef, useEffect} from 'preact//hooks'
+import {Button} from '@material-ui/core'
 
 import {State, Time, Config, TogglLogin, TogglForm, Toggl_Project, Mode} from './modules/types'
 import {Action, Actions} from './modules/actions'
 import {padTwoZeros, logUnexpected, jsonMemo} from './modules/utils'
+import * as useStyles from './modules/styles'
 
-const DispatchContext = createContext((a: Action)=>{}) //TODO
+const DispatchContext = React.createContext((a: Action)=>{}) //TODO
 
 const Counter = ({hours, minutes, seconds} :Time) => {
   return(
@@ -65,14 +69,15 @@ const Rest = ({nextRest, mode} :{nextRest :Time, mode :Mode}) => {
 
 const Controls = memo(() => {
   const dispatch = useContext(DispatchContext)
+  const classes = useStyles.controls()
 
   const work = () => dispatch({type: Actions.WORK})
   const rest = () => dispatch({type: Actions.REST})
 
   return (
-    <div className="controlsContainer">
-      <input className="workButton" type="button" value="work" onClick={work} />
-      <input className="restButton" type="button" value="rest" onClick={rest} />
+    <div className={classes.root}>
+      <Button className={classes.controlButton} variant='outlined' color='secondary' onClick={work}>Work</Button>
+      <Button className={classes.controlButton} variant='outlined' color='primary' onClick={rest}>Rest</Button>
     </div>
   )
 })
@@ -82,18 +87,18 @@ const TogglForm = memo((
   ) => {
   const dispatch = useContext(DispatchContext)
   
-  const setActive = (e :Event) => dispatch({
+  const setActive = (e :ChangeEvent) => dispatch({
     type : Actions.TOGGL_FORM,
     form : {shouldSave: (e.target as HTMLInputElement).checked} // TODO - bug in Preact typings
   })
-  const setDesc = (e :Event) => dispatch({
+  const setDesc = (e :FormEvent) => dispatch({
     type : Actions.TOGGL_FORM,
     form: {desc: (e.target as HTMLInputElement).value} // TODO
   })
-  const retroSave = (e :Event) => dispatch({
+  const retroSave = (e :FormEvent) => dispatch({
     type : Actions.TOGGL_SAVE_LAST
   })
-  const setProject = (e :Event) => dispatch({
+  const setProject = (e :FormEvent) => dispatch({
     type : Actions.TOGGL_FORM,
     form: {projectId: Number((e.target as HTMLInputElement).value)} // TODO
   })
@@ -115,11 +120,11 @@ const TogglForm = memo((
 const Options = memo(({ratio, mode} :Config) => {
   const dispatch = useContext(DispatchContext)
 
-  const setRatio = (e :Event) => dispatch({
+  const setRatio = (e :ChangeEvent) => dispatch({
     type: Actions.CONFIG,
     config: {ratio : Number((e.target as HTMLInputElement).value)} //TODO
   })
-  const setMode = (e :Event) => dispatch({
+  const setMode = (e :ChangeEvent) => dispatch({
     type: Actions.CONFIG,
     config: {mode : (e.target as HTMLInputElement).checked ? Mode.ON : Mode.OFF}
   })
@@ -201,6 +206,7 @@ const TogglProfile = memo(({token : logged, error, loading} :TogglLogin) => {
 const App = () => {
   const [[dispatch], setDispatch] = useState([(a :Action)=>{logUnexpected(new Error('Dispatched on popup but no port: ' + JSON.stringify(a)))}])
   const [state, setAppState] = useState(null as (null | State))
+  const classes = useStyles.app()
 
   useEffect(() => {
     const p = browser.runtime.connect()
@@ -218,30 +224,32 @@ const App = () => {
   
   return state &&  (
     <DispatchContext.Provider value={dispatch}>
-      <div className="counterBlock">
-        <Counter  {...state.timer}/>
-      </div>
-      <div className="legendBlock">
-        <Legend working={!!state.working} resting={!!state.resting} />
-      </div>
-      <div className="restBlock">
-        <Rest nextRest={state.nextRest} mode={state.config.mode} ></Rest>
-      </div>
-      <div className="controlsBlock">
-        <Controls />
-        <TogglForm logged={!!state.toggl.login.token} projects={jsonMemo(state.toggl.login.projects)} {...state.toggl.form} />
-      </div>
-      <div className="optionsBlock">
-        <Options {...state.config} />
-      </div>
-      <div className="togglBlock">
-        <TogglProfile {...state.toggl.login} />
+      <div className={classes.root}>
+        <div className="counterBlock">
+          <Counter  {...state.timer}/>
+        </div>
+        <div className="legendBlock">
+          <Legend working={!!state.working} resting={!!state.resting} />
+        </div>
+        <div className="restBlock">
+          <Rest nextRest={state.nextRest} mode={state.config.mode} ></Rest>
+        </div>
+        <div className="controlsBlock">
+          <Controls />
+          <TogglForm logged={!!state.toggl.login.token} projects={jsonMemo(state.toggl.login.projects)} {...state.toggl.form} />
+        </div>
+        <div className="optionsBlock">
+          <Options {...state.config} />
+        </div>
+        <div className="togglBlock">
+          <TogglProfile {...state.toggl.login} />
+        </div>
       </div>
     </ DispatchContext.Provider>
   )
 }
 
-render(<App />,document.getElementById('appContainer')!) //TODO
+ReactDOM.render(<App />,document.getElementById('appContainer')!) //TODO
 
 
 /* 
