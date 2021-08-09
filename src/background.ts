@@ -63,9 +63,7 @@ class App{
     }
     try {
       await storage.set(data)
-      console.log('storage saved!')
     } catch (e){
-      console.log('error saving!', e.message)
     } //TODO error
   }
 
@@ -73,7 +71,6 @@ class App{
     const storage = browser.storage.local
     try {
       const data :ExtStorage = await storage.get(['config', 'toggle']) as ExtStorage //TODO error
-      console.log('storage retrieved ', data)
       if(data.config){
         this.state.config = data.config
       }
@@ -82,7 +79,6 @@ class App{
         this.state.toggl.form = data.toggle.form
       }
     } catch (e){
-      console.log('error retrieving!', e.message)
     }
     this.out_Dispatch()
   }

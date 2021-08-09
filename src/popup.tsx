@@ -1,9 +1,7 @@
 import React, {useContext, useState, useRef, useEffect, memo, ChangeEvent, FormEvent} from 'react'
 import ReactDOM from 'react-dom'
-//import {h, render, createContext} from 'preact'
-//import {memo} from 'preact/compat'
-//import {useContext, useState, useRef, useEffect} from 'preact//hooks'
-import {Button} from '@material-ui/core'
+import {Button, TextField, FormControlLabel, Switch, Slider, Select, InputAdornment, ThemeProvider, useTheme, StylesProvider} from '@material-ui/core'
+import {Update, Save, Link, ExitToApp, CreateOutlined, LockOutlined} from '@material-ui/icons'
 
 import {State, Time, Config, TogglLogin, TogglForm, Toggl_Project, Mode} from './modules/types'
 import {Action, Actions} from './modules/actions'
@@ -13,19 +11,29 @@ import * as useStyles from './modules/styles'
 const DispatchContext = React.createContext((a: Action)=>{}) //TODO
 
 const Counter = ({hours, minutes, seconds} :Time) => {
+  const classes = useStyles.counter()
   return(
-    <div className="counterContainer">
-      <div className="timeCounter">
-        <span className="hCount">{padTwoZeros(hours)}</span> :
-        <span className="mCount">{padTwoZeros(minutes)}</span> :
+      <div className={classes.root}>
+        <span className="hCount">{padTwoZeros(hours)}</span>:
+        <span className="mCount">{padTwoZeros(minutes)}</span>:
         <span className="sCount">{padTwoZeros(seconds)}</span>
       </div>
-    </div>
   )
 }
 
+const Legend = memo(({working, resting} :{working :boolean, resting :boolean}) => {
+  const classes = useStyles.legend()
+  const message = working ? 'working..' : resting ? 'resting..' : ''
+  return (
+    <div className={classes.root}>
+      <span className="legendMessage">{message}</span>
+    </div>
+  )
+})
+
 const TimeForm = memo(({hours = 0, minutes = 0, seconds = 0}:{hours :number, minutes :number, seconds :number}) => {
   const dispatch = useContext(DispatchContext)
+  const classes = useStyles.timeForm()
   const hoursRef = useRef(null)
   const minutesRef = useRef(null) //TODO wtf????
   const secondsRef = useRef(null)
@@ -42,18 +50,16 @@ const TimeForm = memo(({hours = 0, minutes = 0, seconds = 0}:{hours :number, min
   }
 
   return(
-    <div className="timeFormContainer">
-      <div className="timeForm">
-        <input className="hCount" value={padTwoZeros(hours)} ref={hoursRef} onChange={onChange} />h : 
-        <input className="mCount" value={padTwoZeros(minutes)} ref={minutesRef} onChange={onChange}/>m :
-        <input className="sCount" value={padTwoZeros(seconds)} ref={secondsRef} onChange={onChange}/>s
-      </div>
+    <div className={classes.root}>
+      <TextField label='h' value={padTwoZeros(hours)} inputRef={hoursRef} onChange={onChange} />
+      <TextField label='m' value={padTwoZeros(minutes)} inputRef={minutesRef} onChange={onChange} />
     </div>
   )
 })
 
-const Rest = ({nextRest, mode} :{nextRest :Time, mode :Mode}) => {
+const RestAdjust = ({nextRest, mode} :{nextRest :Time, mode :Mode}) => {
   const dispatch = useContext(DispatchContext)
+  const classes = useStyles.restAdjust()
   const onRecalculate = ()=>{
     dispatch({
       type: Actions.ADJUST,
@@ -61,10 +67,19 @@ const Rest = ({nextRest, mode} :{nextRest :Time, mode :Mode}) => {
     })
   }
 
-  return (<div className="restContainer">
-    Next rest: <TimeForm hours={nextRest.hours} minutes={nextRest.minutes} seconds={nextRest.seconds}/>
-    <input type="button" value="recalcute rest" onClick={onRecalculate} disabled={mode == Mode.ON} />
-  </div>)
+  return (
+    <div className={classes.root}>
+      Next rest: <TimeForm hours={nextRest.hours} minutes={nextRest.minutes} seconds={nextRest.seconds}/>
+      <Button 
+        variant="text"
+        color="default" 
+        size="small" 
+        startIcon={<Update />}
+        onClick={onRecalculate} 
+        disabled={mode == Mode.ON}
+      >recalcute</Button>
+    </div>
+  )
 }
 
 const Controls = memo(() => {
@@ -76,8 +91,8 @@ const Controls = memo(() => {
 
   return (
     <div className={classes.root}>
-      <Button className={classes.controlButton} variant='outlined' color='secondary' onClick={work}>Work</Button>
-      <Button className={classes.controlButton} variant='outlined' color='primary' onClick={rest}>Rest</Button>
+      <Button className={classes.controlButton} variant='contained' color='secondary' size='large' onClick={work}>Work</Button>
+      <Button className={classes.controlButton} variant='contained' color='primary' size='large' onClick={rest}>Rest</Button>
     </div>
   )
 })
@@ -86,6 +101,7 @@ const TogglForm = memo((
     {logged, projects, projectId, shouldSave, desc, unsaved} : {logged :boolean, projects :Array<Toggl_Project>} & TogglForm
   ) => {
   const dispatch = useContext(DispatchContext)
+  const classes = useStyles.togglForm()
   
   const setActive = (e :ChangeEvent) => dispatch({
     type : Actions.TOGGL_FORM,
@@ -98,31 +114,54 @@ const TogglForm = memo((
   const retroSave = (e :FormEvent) => dispatch({
     type : Actions.TOGGL_SAVE_LAST
   })
-  const setProject = (e :FormEvent) => dispatch({
+  const setProject = (e :ChangeEvent<any>) => dispatch({
     type : Actions.TOGGL_FORM,
     form: {projectId: Number((e.target as HTMLInputElement).value)} // TODO
   })
 
   return logged ? (
-    <div className="togglFormContainer">
-      <label><input className="togglShouldSave" type="checkbox" checked={shouldSave} onChange={setActive} />save work entry in Toggl</label>
-      <input className="togglDesc" type="text" placeholder="description.." value={desc} onInput={setDesc} />
-      {!!unsaved && <input className="togglSave" type="button" value="save last work entry" onClick={retroSave} />}
-      <label>
-        <select className="togglProject" onInput={setProject} value={projectId||undefined}>
-          {projects.map(p => <option value={p.id}>{p.name}</option>)}
-        </select>
-      </label>
+    <div className={classes.root}>
+      <FormControlLabel label={'Save in toggl'} control={
+        <Switch
+          color='primary'
+          checked={shouldSave} 
+          onChange={setActive} 
+        />
+      }/>
+      <TextField
+        label='Description'
+        placeholder='..'
+        InputProps={{
+          startAdornment: (<InputAdornment position='start'><CreateOutlined/></InputAdornment>)
+        }}
+        value={desc} 
+        onInput={setDesc} 
+      />
+      <Select
+        label={'Project'}
+        value={projectId||undefined}
+        onChange={setProject}
+      >
+        {projects.map(p => <option value={p.id}>{p.name}</option>)}
+      </Select>
+      {!!unsaved && <Button 
+        variant="text" 
+        size="small" 
+        color="default" 
+        startIcon={<Save />}
+        onClick={retroSave}
+      >save prev work entry</Button>}
     </div>
    ) : null
 })
 
 const Options = memo(({ratio, mode} :Config) => {
   const dispatch = useContext(DispatchContext)
+  const classes = useStyles.options()
 
-  const setRatio = (e :ChangeEvent) => dispatch({
+  const setRatio = (e :ChangeEvent<{}>) => dispatch({
     type: Actions.CONFIG,
-    config: {ratio : Number((e.target as HTMLInputElement).value)} //TODO
+    config: {ratio : 60 / (Number((e.target as HTMLInputElement).value))} //TODO
   })
   const setMode = (e :ChangeEvent) => dispatch({
     type: Actions.CONFIG,
@@ -131,32 +170,26 @@ const Options = memo(({ratio, mode} :Config) => {
 
 
   return (
-    <div className="optionsContainer">
-      <label>
-        Rest ratio:
-        <input 
-          className="ratioInput" 
-          type="range"
-          value={ratio}  //any bugs?
-          min="1"
-          max="10"
-          step="1"
-          onChange={setRatio}
+    <div className={classes.root}>
+      Rest ratio:
+      <Slider
+        marks={[1,5,10,15,20,30,45,60].map((value)=>({value}))}
+        step={null}
+        valueLabelDisplay="auto"
+        valueLabelFormat={x=>x+'m'}
+        max={60}
+        scale={x=>x}//TODO scale it!
+        defaultValue={15}
+        value={ratio}
+        onChangeCommitted={setRatio}
+      />
+      <FormControlLabel label={'Estimate rest'} control={
+        <Switch  
+          color='primary'
+          checked={!!mode}
+          onChange={setMode} 
         />
-      </label>
-      <label>
-        <input type="checkbox" checked={!!mode} onChange={setMode}></input>
-        Estimate rest?
-      </label>
-    </div>
-  )
-})
-
-const Legend = memo(({working, resting} :{working :boolean, resting :boolean}) => {
-  const message = working ? 'working..' : resting ? 'resting..' : ''
-  return (
-    <div className="legendContainer">
-      <span className="legendMessage">{message}</span>
+      }/>
     </div>
   )
 })
@@ -164,6 +197,7 @@ const Legend = memo(({working, resting} :{working :boolean, resting :boolean}) =
 const TogglProfile = memo(({token : logged, error, loading} :TogglLogin) => {
   const dispatch = useContext(DispatchContext)
   const tokenRef = useRef(null)
+  const classes = useStyles.togglProfile()
 
   const logIn = () => {
     dispatch({
@@ -178,25 +212,44 @@ const TogglProfile = memo(({token : logged, error, loading} :TogglLogin) => {
   }
 
   const content = !logged ? ( 
-    <div className="togglPromt">
-      Enter your toggl token to connect:
-      <input className="tokenInput" type="text" maxLength={100} ref={tokenRef} />
-      <input className="connectInput" type="button" value="connect" onClick={logIn} />
+    <div className={classes.prompt}>
+      <TextField
+        label='Toggle Token'
+        placeholder='..'
+        InputProps={{
+          startAdornment: (<InputAdornment position='start'><LockOutlined/></InputAdornment>)
+        }}
+        helperText="timer won't transfer your token anywhere"
+        inputRef={tokenRef}
+      />
+      <Button 
+        variant="outlined" 
+        color="primary" 
+        size="small"
+        startIcon={<Link />}//TODO rotate4 5
+        onClick={logIn}
+      >connect</Button>
     </div>
    ) : (
-    <div className="togglLogged">
-      <input className="logoutInput" type="button" value="logout" onClick={logOut} disabled={loading} />
+    <div className={classes.status}>
+      <Button 
+        variant="outlined" 
+        color="primary" size="small" 
+        endIcon={<ExitToApp />}
+        onClick={logOut} 
+        disabled={loading}
+      >logout</Button>
     </div>
   )
 
   const ifError = error ? (
-    <div className="togglError">
+    <div className={classes.error}>
       {error}
     </div>
   ): null
 
   return  (
-    <div className="togglContainer">
+    <div className={classes.root}>
       {content}
       {ifError}
     </div>
@@ -211,7 +264,6 @@ const App = () => {
   useEffect(() => {
     const p = browser.runtime.connect()
     setDispatch([(action :Action) => {
-      console.dir('Action disptched: '+ JSON.stringify(action, undefined, '  '))
       p.postMessage(action) 
     }])
     p.onMessage.addListener(react as ({}) => void) //TODO
@@ -219,32 +271,29 @@ const App = () => {
 
   const react = (action :Action) => {
     action.type == Actions.STATE ? setAppState(action.state) : logUnexpected(new Error('Unexpected object at popup port: ' + JSON.stringify(action)))
-    console.log('New state: ' + JSON.stringify(action, undefined, '  '))
   }
   
   return state &&  (
     <DispatchContext.Provider value={dispatch}>
-      <div className={classes.root}>
-        <div className="counterBlock">
-          <Counter  {...state.timer}/>
+      <ThemeProvider theme={useStyles.theme}>
+        <div className={classes.root}>
+          <div className="timerBlock">
+            <Counter  {...state.timer}/>
+            <Legend working={!!state.working} resting={!!state.resting} />
+            <RestAdjust nextRest={state.nextRest} mode={state.config.mode} ></RestAdjust>
+            <Controls />
+          </div>
+          <div className="togglFormBlock">
+            <TogglForm logged={!!state.toggl.login.token} projects={jsonMemo(state.toggl.login.projects)} {...state.toggl.form} />
+          </div>
+          <div className="optionsBlock">
+            <Options {...state.config} />
+          </div>
+          <div className="togglBlock">
+            <TogglProfile {...state.toggl.login} />
+          </div>
         </div>
-        <div className="legendBlock">
-          <Legend working={!!state.working} resting={!!state.resting} />
-        </div>
-        <div className="restBlock">
-          <Rest nextRest={state.nextRest} mode={state.config.mode} ></Rest>
-        </div>
-        <div className="controlsBlock">
-          <Controls />
-          <TogglForm logged={!!state.toggl.login.token} projects={jsonMemo(state.toggl.login.projects)} {...state.toggl.form} />
-        </div>
-        <div className="optionsBlock">
-          <Options {...state.config} />
-        </div>
-        <div className="togglBlock">
-          <TogglProfile {...state.toggl.login} />
-        </div>
-      </div>
+      </ThemeProvider>
     </ DispatchContext.Provider>
   )
 }
