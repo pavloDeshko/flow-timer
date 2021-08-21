@@ -1,4 +1,5 @@
-import {MIN_REST, DEFAULT_RATIO, secondsToObject} from './utils'
+import {secondsToObject} from './utils'
+import { MIN_REST, MAX_REST, DEFAULT_RATIO} from './settings'
 
 export type Time = {
   days?: number,
@@ -20,7 +21,8 @@ export enum Mode {
 
 export type Config = {
   ratio: number,
-  mode: Mode
+  mode: Mode,
+  dark: boolean
 }
 
 export type TogglForm = {
@@ -46,7 +48,8 @@ export class State{
   resting :(null | number) = null
   config : Config = {
     ratio: DEFAULT_RATIO, 
-    mode: Mode.ON
+    mode: Mode.ON,
+    dark: false
   } //TODO
   toggl :{login :TogglLogin, form :TogglForm} = {
     login : {
@@ -91,7 +94,7 @@ export type Toggl_Me = {
   }
 }
 
-export type ExtStorage = {
+export type UserStorage = {
   config? : Config,
   toggle? : {
     auth : string,

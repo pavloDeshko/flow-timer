@@ -4,8 +4,53 @@ const COLORS = {
   background:'Cornsilk'
 }
 
-export const theme = createTheme({
+export const lightTheme = createTheme({
+  "palette": {
+    "background": {
+      "paper": "rgba(243, 251, 245, 1)",
+      "default": "rgba(191, 220, 207, 1)"
+    },
+    "primary": {
+      "main": "rgba(94, 168, 167, 1)",
+      "contrastText": "#fff"
+    },
+    "secondary": {
+      "main": "rgba(255, 68, 71, 1)",
+      "contrastText": "#fff"
+    },
+    "error": {
+      "main": "rgba(196, 0, 31, 1)",
+      "contrastText": "#fff"
+    },
+    "text": {
+      "primary": "rgba(0, 0, 0, 0.8)"
+    }
+  }
+})
 
+export const darkTheme = createTheme({
+  "palette": {
+    "type": "dark",
+    "background": {
+      "paper": "rgba(44, 44, 44, 1)",
+      "default": "rgba(30, 30, 30, 1)"
+    },
+    "primary": {
+      "main": "rgba(94, 168, 167, 1)",
+      "contrastText": "#fff"
+    },
+    "secondary": {
+      "main": "rgba(255, 68, 71, 1)",
+      "contrastText": "#fff"
+    },
+    "error": {
+      "main": "rgba(196, 0, 31, 1)",
+      "contrastText": "#fff"
+    },
+    "text": {
+      "primary": "rgba(255, 255, 255, 0.87)"
+    }
+  }
 })
 
 //APP and its BLOCKS
@@ -16,14 +61,14 @@ export const app = makeStyles({
     'max-width':'200px',
 
     "& *": {//all app elements
-      'boxSizing': 'border-box'
+      //'boxSizing': 'border-box'
     },
     '& >div': {//all blocks
       'margin': '8px 2px',
       'border-width': '0px',
       'border-radius': '2px',
       'box-shadow': '4px 4px 2px lightGrey',
-      'background': COLORS.background
+      //'background': COLORS.background
     },
     '& .timerBlock': {//specific block
     }
@@ -99,4 +144,9 @@ export const togglProfile = makeStyles({
   error:{
 
   }
+})
+
+export const appFallback = makeStyles({
+  root: {},
+  strong: {}
 })

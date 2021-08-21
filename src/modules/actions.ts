@@ -1,4 +1,4 @@
-import {Config, TogglLogin, TogglForm, State, Partial, Time} from './types'
+import {Config, TogglForm, State, Partial, Time} from './types'
 
 export enum Actions{
   'WORK' = 1,

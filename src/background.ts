@@ -1,9 +1,9 @@
 import easyTimer from 'easytimer.js'
 
 import {Actions, Action} from './modules/actions'
-import {Config, State, TogglForm, ExtStorage, Time, Mode} from './modules/types'
-import {MIN_REST, DEFAULT_RATIO, ZERO_TIMER, getRestTime, secondsToObject, logUnexpected} from './modules/utils'
-import { togglApiAdd, togglApiConnect, togglApiDisconnect} from './modules/service'
+import {Config, State, UserStorage, Time, Mode} from './modules/types'
+import {ZERO_TIMER, getRestTime, log} from './modules/utils'
+import { togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave} from './modules/service'
 
 //ICONS
 const DEFAULT_ICON = 'icons/timer_32.png'
@@ -51,26 +51,23 @@ class App{
     this.port && this.port.postMessage(action)
   }
 
-  out_Storage = async () => {
-    const storage = browser.storage.local
-
-    const data :ExtStorage = {
-      config : this.state.config,
-      toggle : this.state.toggl.login.token ? {
-        auth : this.state.toggl.login.token,
-        form : this.state.toggl.form
-      } : undefined
-    }
-    try {
-      await storage.set(data)
-    } catch (e){
-    } //TODO error
+  out_Storage = () => {
+    try{
+      storageSave({
+        config : this.state.config,
+        toggle : this.state.toggl.login.token ? {
+          auth : this.state.toggl.login.token,
+          form : this.state.toggl.form
+        } : undefined
+      })
+    }catch(e){
+       //TODO error display?
+    } 
   }
 
   in_Storage = async () => {
-    const storage = browser.storage.local
     try {
-      const data :ExtStorage = await storage.get(['config', 'toggle']) as ExtStorage //TODO error
+      const data = await storageGet()
       if(data.config){
         this.state.config = data.config
       }
@@ -78,7 +75,8 @@ class App{
         await this.toggl_Connect(data.toggle.auth)
         this.state.toggl.form = data.toggle.form
       }
-    } catch (e){
+    } catch (err){
+      // TODO error disploy?
     }
     this.out_Dispatch()
   }
@@ -122,7 +120,7 @@ class App{
         break
       default:
         let _check :never = action
-        logUnexpected(new Error('Unknown object at background port: ' + JSON.stringify(action)))
+        log.bug('Unknown object at background port', action)
     }
   }
 
@@ -214,7 +212,7 @@ class App{
       start = form.unsaved.start
       end = form.unsaved.end
     }else{
-      logUnexpected(new Error(`Wrong toogle save action. Retrosave: ${retroSave}.  Working: ${this.state.working}.  Unsaved: ${form.unsaved}.`))
+      log.bug('Wrong toogle save action.', {retroSave, working: this.state.working, unsaved: form.unsaved })
       return 
     }
     
@@ -272,7 +270,15 @@ class App{
   }
 }
 
-new App()
+  try {
+    new App()
+  }catch(e){
+    try {
+      browser.storage.local.set({lastError: JSON.stringify(e)}) //TODO await?
+    }catch (e){
+      //TODO
+    }
+  }
 /*
 class Timer{
   constructor(onChange = () => {}, onEnd = () => {} ) {

@@ -1,8 +1,7 @@
 import { Time } from './types'
+import { MIN_REST, MAX_REST, DEFAULT_RATIO} from './settings'
+import React, { ComponentType, FunctionComponent, ReactComponentElement } from 'react'
 
-export const MIN_REST = 4
-export const MAX_REST = 3600
-export const DEFAULT_RATIO = 2
 export const ZERO_TIMER :Time = {
   hours: 0,
   minutes: 0,
@@ -45,8 +44,24 @@ export const padTwoZeros = (number :number) => {
   return ('00' + number).slice(-2)
 }
 
-export const logUnexpected = (e :Error) => {
-  console.log(e)
+export const log = {
+  error: (message? :string, error? :Error, state? :{})=>{
+    console.log('Error logged: ', message)
+    error && console.log(' error: ', JSON.stringify(error))
+    state && console.log('  state: ', JSON.stringify(state, undefined, 2))
+  },
+  bug: (message? :string, state? :{})=>{
+    if(process.env.NODE_ENV != 'production' ){
+      console.log('Bug met: ', message)
+      state && console.dir('  state: ', state)
+    }
+  },
+  debug: (message? :string, state? :{})=>{
+    if(process.env.NODE_ENV != 'production' ){
+      console.log('Debug info: ', message)
+      state && console.dir('  state: ', state)
+    }
+  }
 }
 
 let last :any = null

@@ -1,11 +1,15 @@
 import React, {useContext, useState, useRef, useEffect, memo, ChangeEvent, FormEvent} from 'react'
 import ReactDOM from 'react-dom'
-import {Button, TextField, FormControlLabel, Switch, Slider, Select, InputAdornment, ThemeProvider, useTheme, StylesProvider} from '@material-ui/core'
-import {Update, Save, Link, ExitToApp, CreateOutlined, LockOutlined} from '@material-ui/icons'
+import {Button, IconButton, TextField, FormControlLabel, Switch, Slider, Select, InputAdornment, ThemeProvider, Tooltip, Typography } from '@material-ui/core'
+import {Update, Save, Link, ExitToApp, CreateOutlined, LockOutlined, BrightnessMedium, Refresh, FileCopyOutlined} from '@material-ui/icons'
+import { ErrorBoundary } from 'react-error-boundary'
+import clipboardCopy from 'clipboard-copy'
+import {useAsync} from 'react-async-hook'
 
 import {State, Time, Config, TogglLogin, TogglForm, Toggl_Project, Mode} from './modules/types'
 import {Action, Actions} from './modules/actions'
-import {padTwoZeros, logUnexpected, jsonMemo} from './modules/utils'
+import {padTwoZeros, log, jsonMemo} from './modules/utils'
+import {SUPPORT_EMAIL} from './modules/settings'
 import * as useStyles from './modules/styles'
 
 const DispatchContext = React.createContext((a: Action)=>{}) //TODO
@@ -41,7 +45,7 @@ const TimeForm = memo(({hours = 0, minutes = 0, seconds = 0}:{hours :number, min
   const onChange = () =>{
     dispatch({
       type: Actions.ADJUST,
-      time: {
+      time: {  
         hours: Number((hoursRef.current! as HTMLInputElement).value),
         minutes: Number((minutesRef.current! as HTMLInputElement).value),
         seconds: 0
@@ -155,20 +159,23 @@ const TogglForm = memo((
    ) : null
 })
 
-const Options = memo(({ratio, mode} :Config) => {
+const Options = memo(({ratio, mode, dark} :Config) => {
   const dispatch = useContext(DispatchContext)
   const classes = useStyles.options()
 
-  const setRatio = (e :ChangeEvent<{}>) => dispatch({
+  const setRatio = (_:any, value :number|number[]) => dispatch({
     type: Actions.CONFIG,
-    config: {ratio : 60 / (Number((e.target as HTMLInputElement).value))} //TODO
+    config: {ratio : 60 / (value as number)} //TODO
   })
-  const setMode = (e :ChangeEvent) => dispatch({
+  const setMode = (_:any, value :boolean) => dispatch({
     type: Actions.CONFIG,
-    config: {mode : (e.target as HTMLInputElement).checked ? Mode.ON : Mode.OFF}
+    config: {mode : value ? Mode.ON : Mode.OFF}
   })
-
-
+  const setDark = () => dispatch({
+    type: Actions.CONFIG,
+    config: {dark : !dark}
+  })
+  //blaaafoobar blafoo bar 
   return (
     <div className={classes.root}>
       Rest ratio:
@@ -177,10 +184,10 @@ const Options = memo(({ratio, mode} :Config) => {
         step={null}
         valueLabelDisplay="auto"
         valueLabelFormat={x=>x+'m'}
+        min={1}
         max={60}
         scale={x=>x}//TODO scale it!
-        defaultValue={15}
-        value={ratio}
+        value={Math.floor(60/ratio)}
         onChangeCommitted={setRatio}
       />
       <FormControlLabel label={'Estimate rest'} control={
@@ -190,6 +197,11 @@ const Options = memo(({ratio, mode} :Config) => {
           onChange={setMode} 
         />
       }/>
+      <Tooltip title='dark/light mode'>
+        <IconButton color="primary" onInput={setDark}>
+          <BrightnessMedium />
+        </IconButton>
+      </Tooltip>
     </div>
   )
 })
@@ -256,46 +268,83 @@ const TogglProfile = memo(({token : logged, error, loading} :TogglLogin) => {
   )
 })
 
+const AppFallback = ({error}:{error?:Error}) => {
+  const classes = useStyles.appFallback()
+  const lastError = useAsync(async()=> browser.storage.local.get('lastError'),[])
+
+  const errorValue = JSON.stringify(error ? error : lastError.result) //TODO when loading
+
+  return <div>
+    <Typography>
+      <p>Sorry, it seems like internals of our app crashed :/</p>
+      <p>Please, drop us a note at <CopyLink value={SUPPORT_EMAIL} /> about what happened. Click
+        <CopyLink value={errorValue} text="here" loading={lastError.loading || !!lastError.error} />
+        to copy geeky data and paste it into your email so we can understand what went wrong.
+      </p>
+      <p>We <span className={classes.strong}>will</span> try to solve the problem asap!</p>
+    </Typography>
+    <Button variant="outlined" startIcon={<Refresh/>}>Reload extension</Button>
+  </div>
+}
+
+const CopyLink = ({value, text, loading = false}:{value:string, text?:string, loading?:boolean})=>{
+  const copy = ()=>clipboardCopy(value)
+  
+  return <Tooltip title={'copy to clipboard'} arrow>
+    <Button
+      variant="text"
+      size="small"
+      startIcon={<FileCopyOutlined fontSize="small" />}
+      onInput={copy}
+      disabled={loading}
+    >{text || value}</Button>
+  </Tooltip>
+}
+
 const App = () => {
-  const [[dispatch], setDispatch] = useState([(a :Action)=>{logUnexpected(new Error('Dispatched on popup but no port: ' + JSON.stringify(a)))}])
-  const [state, setAppState] = useState(null as (null | State))
   const classes = useStyles.app()
+  const [[dispatch], setDispatch] = useState([(a :Action)=>{log.bug('Action dispatched on popup while no port is present: ', a)}])
+  const [state, setAppState] = useState(null as (null | State))
 
   useEffect(() => {
     const p = browser.runtime.connect()
     setDispatch([(action :Action) => {
+      log.debug('Action dispatched: ', action)
       p.postMessage(action) 
     }])
     p.onMessage.addListener(react as ({}) => void) //TODO
   }, [])
 
   const react = (action :Action) => {
-    action.type == Actions.STATE ? setAppState(action.state) : logUnexpected(new Error('Unexpected object at popup port: ' + JSON.stringify(action)))
+    log.debug('New state', action)
+    action.type == Actions.STATE ? setAppState(action.state) : log.bug('Unexpected object at popup port.', action)
   }
   
-  return state &&  (
-    <DispatchContext.Provider value={dispatch}>
-      <ThemeProvider theme={useStyles.theme}>
-        <div className={classes.root}>
-          <div className="timerBlock">
-            <Counter  {...state.timer}/>
-            <Legend working={!!state.working} resting={!!state.resting} />
-            <RestAdjust nextRest={state.nextRest} mode={state.config.mode} ></RestAdjust>
-            <Controls />
+  return state ? (
+    <ErrorBoundary FallbackComponent={AppFallback}>
+      <DispatchContext.Provider value={dispatch}>
+        <ThemeProvider theme={state.config.dark ? useStyles.darkTheme : useStyles.lightTheme}>
+          <div className={classes.root}>
+            <div className="timerBlock">
+              <Counter  {...state.timer}/>
+              <Legend working={!!state.working} resting={!!state.resting} />
+              <RestAdjust nextRest={state.nextRest} mode={state.config.mode} ></RestAdjust>
+              <Controls />
+            </div>
+            <div className="togglFormBlock">
+              <TogglForm logged={!!state.toggl.login.token} projects={jsonMemo(state.toggl.login.projects)} {...state.toggl.form} />
+            </div>
+            <div className="optionsBlock">
+              <Options {...state.config} />
+            </div>
+            <div className="togglBlock">
+              <TogglProfile {...state.toggl.login} />
+            </div>
           </div>
-          <div className="togglFormBlock">
-            <TogglForm logged={!!state.toggl.login.token} projects={jsonMemo(state.toggl.login.projects)} {...state.toggl.form} />
-          </div>
-          <div className="optionsBlock">
-            <Options {...state.config} />
-          </div>
-          <div className="togglBlock">
-            <TogglProfile {...state.toggl.login} />
-          </div>
-        </div>
-      </ThemeProvider>
-    </ DispatchContext.Provider>
-  )
+        </ThemeProvider>
+      </ DispatchContext.Provider>
+    </ErrorBoundary>
+  ) : <AppFallback error={new Error()} /> //TODO how to pass error string from storage?
 }
 
 ReactDOM.render(<App />,document.getElementById('appContainer')!) //TODO

@@ -1,32 +1,34 @@
 import wretch from 'wretch'
 
-import {Toggl_Entry_Params, Toggl_Auth, Toggl_Me, Toggl_Project} from './types'
-
-const TOGGL_URL = 'https://api.track.toggl.com/api/v8'
-const TOGGL_ADD_URL = '/time_entries'
-const TOGGL_USER_URL = '/me?with_related_data=true'
-const CLIENT_NAME = 'Ketchup Timer Web-extension'
+import {Toggl_Entry_Params, Toggl_Auth, Toggl_Me, Toggl_Project, UserStorage} from './types'
+import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME} from './settings'
+import {log} from './utils'
 
 const w = wretch()
   .url(TOGGL_URL)
 
 const getAuth = (auth :Toggl_Auth) => 'Basic ' + btoa(typeof auth == 'string' ? `${auth}:api_token` : `${auth.user}:${auth.pass}`)
 
-const handle403 = (err :Error) => {throw new Error('Looks like your credentials are wrong :(')}
-const handleOther = (err :Error) => {throw new Error(`Can't reach out to Toggl :(`)}
+const handleToggl403 = (err :Error) => {
+  log.error('403 on trying to connect to Toggl',err)
+  throw new Error('Looks like your toggl credentials are wrong :(')}
+const handleTogglOther = (err :Error) => {
+  log.error('Error on trying to reach to Toggl',err)
+  throw new Error(`Can't reach out to Toggl :(`)
+}
  
 export const togglApiConnect = async (credential :Toggl_Auth) => {
   return w.url(TOGGL_USER_URL)
     .auth(getAuth(credential))
     .get()
-    .unauthorized(handle403)
+    .unauthorized(handleToggl403)
     .json(
       d => ({
         projects: (d as Toggl_Me).data.projects.map(p => ({id: p.id, name: p.name})),
         last: (d as Toggl_Me).data.time_entries[0].pid
       }) //TODO
     )
-    .catch(handleOther)
+    .catch(handleTogglOther)
 }
 
 export const togglApiDisconnect = async (credential :Toggl_Auth) => {
@@ -46,6 +48,27 @@ export const togglApiAdd = async (credential :Toggl_Auth, start :number, stop :n
   w.url(TOGGL_ADD_URL)
     .auth(getAuth(credential))
     .post(data)
-    .unauthorized(handle403)
-    .res().catch(handleOther)
+    .unauthorized(handleToggl403)
+    .res().catch(handleTogglOther)
+}
+
+export const storageGet = async():Promise<UserStorage>=>{
+  try{
+    const data = await browser.storage.local.get(['config', 'toggle']) as UserStorage
+    log.debug('Retrieved from storage: ', data)
+    return data
+  }catch(err){
+    log.error('Error on trying to get data to storage', err)
+    throw new Error("Problems trying to read your data from browser's storage :/")
+  }
+}
+
+export const storageSave = async(data :UserStorage)=>{
+  try{
+    await browser.storage.local.set(data)
+    log.debug('Saved to storage.',data)
+  }catch(err){
+    log.error('Error on trying to save to storage', err)
+    throw new Error("Can't save your data in your browser's storage :(")
+  }
 }
