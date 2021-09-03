@@ -1,6 +1,7 @@
 import { Time } from './types'
 import { MIN_REST, MAX_REST, DEFAULT_RATIO} from './settings'
-import React, { ComponentType, FunctionComponent, ReactComponentElement } from 'react'
+import React, { ComponentType, FunctionComponent, ReactComponentElement, useEffect, useState } from 'react'
+import { time } from 'console'
 
 export const ZERO_TIMER :Time = {
   hours: 0,
@@ -61,9 +62,26 @@ export const log = {
       console.log('Debug info: ', message)
       state && console.dir('  state: ', state)
     }
+  },
+  throw: (message? :string, state? :{})=>{
+    if(process.env.NODE_ENV != 'production' ){
+      throw new Error(`Test error: ${message}\n  state: ${state}`)
+    }
   }
 }
 
+export class RetrievedError extends Error{
+  constructor(value :browser.storage.StorageValue | string){
+    super('Last error retrived from local storage')
+    this.name = 'RetrievedError'
+    this.lastError = value ? value.toString() : ''
+  }
+  lastError:string
+  toString(){
+    return `${this.name}: ${this.message}\n  ${this.lastError}`
+  }
+}
+ 
 let last :any = null
 export const jsonMemo = <T>(value :T):T => {
   if (JSON.stringify(value) == JSON.stringify(last)){
@@ -72,4 +90,19 @@ export const jsonMemo = <T>(value :T):T => {
     last = value
     return value
   }
+}
+
+export const useTimeoutUnless = (callback :()=>void, shouldCancel :boolean, timeout :number )=>{
+  const [timeoutId, setTimeoutId] = useState(null as NodeJS.Timeout | null)
+
+  useEffect(()=>{
+    setTimeoutId(setTimeout(callback, timeout))
+    return ()=>{
+      (timeoutId !== null) && clearTimeout(timeoutId) //wtf overloads
+    }
+  },[])
+  
+  useEffect(()=>{
+    (timeoutId !== null) && shouldCancel && clearTimeout(timeoutId)
+  })
 }

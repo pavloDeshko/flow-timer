@@ -9,7 +9,7 @@ export type Time = {
   secondTenths?: number
 }
 
-export type Partial<T> = {
+export type Partial<T> = {//TODO remove, exists in ts!
   [key in keyof T]?: T[key]
 }
 

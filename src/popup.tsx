@@ -2,15 +2,16 @@ import React, {useContext, useState, useRef, useEffect, memo, ChangeEvent, FormE
 import ReactDOM from 'react-dom'
 import {Button, IconButton, TextField, FormControlLabel, Switch, Slider, Select, InputAdornment, ThemeProvider, Tooltip, Typography } from '@material-ui/core'
 import {Update, Save, Link, ExitToApp, CreateOutlined, LockOutlined, BrightnessMedium, Refresh, FileCopyOutlined} from '@material-ui/icons'
-import { ErrorBoundary } from 'react-error-boundary'
+import { ErrorBoundary, useErrorHandler } from 'react-error-boundary'
 import clipboardCopy from 'clipboard-copy'
-import {useAsync} from 'react-async-hook'
+import useTimeout from '@rooks/use-timeout'
 
 import {State, Time, Config, TogglLogin, TogglForm, Toggl_Project, Mode} from './modules/types'
 import {Action, Actions} from './modules/actions'
-import {padTwoZeros, log, jsonMemo} from './modules/utils'
+import {padTwoZeros, log, jsonMemo, RetrievedError, useTimeoutUnless} from './modules/utils'
 import {SUPPORT_EMAIL} from './modules/settings'
 import * as useStyles from './modules/styles'
+import { start } from 'repl'
 
 const DispatchContext = React.createContext((a: Action)=>{}) //TODO
 
@@ -175,7 +176,7 @@ const Options = memo(({ratio, mode, dark} :Config) => {
     type: Actions.CONFIG,
     config: {dark : !dark}
   })
-  //blaaafoobar blafoo bar 
+
   return (
     <div className={classes.root}>
       Rest ratio:
@@ -268,22 +269,23 @@ const TogglProfile = memo(({token : logged, error, loading} :TogglLogin) => {
   )
 })
 
-const AppFallback = ({error}:{error?:Error}) => {
+const AppFallback = ({error}:{error:Error}) => {
   const classes = useStyles.appFallback()
-  const lastError = useAsync(async()=> browser.storage.local.get('lastError'),[])
-
-  const errorValue = JSON.stringify(error ? error : lastError.result) //TODO when loading
+  
+  const reload = ()=>{
+    browser.runtime.reload()
+  }
 
   return <div>
     <Typography>
       <p>Sorry, it seems like internals of our app crashed :/</p>
       <p>Please, drop us a note at <CopyLink value={SUPPORT_EMAIL} /> about what happened. Click
-        <CopyLink value={errorValue} text="here" loading={lastError.loading || !!lastError.error} />
+        <CopyLink value={`${error.toString()} Stack: \n  ${error.stack}`} text="here"/>
         to copy geeky data and paste it into your email so we can understand what went wrong.
       </p>
       <p>We <span className={classes.strong}>will</span> try to solve the problem asap!</p>
     </Typography>
-    <Button variant="outlined" startIcon={<Refresh/>}>Reload extension</Button>
+    <Button variant="outlined" startIcon={<Refresh/>} onClick={reload}>Reload extension</Button>
   </div>
 }
 
@@ -295,7 +297,7 @@ const CopyLink = ({value, text, loading = false}:{value:string, text?:string, lo
       variant="text"
       size="small"
       startIcon={<FileCopyOutlined fontSize="small" />}
-      onInput={copy}
+      onClick={copy}
       disabled={loading}
     >{text || value}</Button>
   </Tooltip>
@@ -305,6 +307,25 @@ const App = () => {
   const classes = useStyles.app()
   const [[dispatch], setDispatch] = useState([(a :Action)=>{log.bug('Action dispatched on popup while no port is present: ', a)}])
   const [state, setAppState] = useState(null as (null | State))
+  const handleFatal = useErrorHandler()
+  
+  const react = (action :Action) => {
+    log.debug('New action recieved', action)
+    action.type == Actions.STATE ? setAppState(action.state) :  log.bug('Unknown object at popup port', action)
+  }
+  
+  const crash = () => {
+    browser.storage.local.get('lastError').then(
+      storage=>{
+        const err = (new RetrievedError(storage['lastError']))
+        log.error('retrived object: ', err)
+        handleFatal(err)
+      },
+      handleFatal
+    )
+  }
+  
+  useTimeoutUnless(crash, !!state, 1000)
 
   useEffect(() => {
     const p = browser.runtime.connect()
@@ -313,15 +334,11 @@ const App = () => {
       p.postMessage(action) 
     }])
     p.onMessage.addListener(react as ({}) => void) //TODO
+    p.onDisconnect.addListener(()=>{crash})
   }, [])
 
-  const react = (action :Action) => {
-    log.debug('New state', action)
-    action.type == Actions.STATE ? setAppState(action.state) : log.bug('Unexpected object at popup port.', action)
-  }
-  
-  return state ? (
-    <ErrorBoundary FallbackComponent={AppFallback}>
+
+  return state && (
       <DispatchContext.Provider value={dispatch}>
         <ThemeProvider theme={state.config.dark ? useStyles.darkTheme : useStyles.lightTheme}>
           <div className={classes.root}>
@@ -343,11 +360,14 @@ const App = () => {
           </div>
         </ThemeProvider>
       </ DispatchContext.Provider>
-    </ErrorBoundary>
-  ) : <AppFallback error={new Error()} /> //TODO how to pass error string from storage?
+  )
 }
 
-ReactDOM.render(<App />,document.getElementById('appContainer')!) //TODO
+ReactDOM.render(
+  <ErrorBoundary FallbackComponent={AppFallback}>
+    <App/>
+  </ErrorBoundary>, 
+document.getElementById('appContainer')!) //TODO
 
 
 /* 

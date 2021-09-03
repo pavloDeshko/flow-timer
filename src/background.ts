@@ -18,9 +18,10 @@ class App{
   constructor(){
     this.eTimer.on('secondsUpdated', this.on_TimerUpdate)
     this.eTimer.on('targetAchieved', this.on_RestEnd)
+
     browser.runtime.onConnect.addListener(this.in_Connection)
+
     this.in_Storage()
-    //browser.windows.onRemoved.addListener(()=>this.out_Storage) //TODO whate about multiple windows
   }
 
   on_TimerUpdate = () => {
@@ -34,7 +35,7 @@ class App{
     this.stopRest()
     this.out_Notify()
   }
-  
+
   out_Notify = () => {
     browser.notifications.create({
       type: 'basic',
@@ -76,7 +77,7 @@ class App{
         this.state.toggl.form = data.toggle.form
       }
     } catch (err){
-      // TODO error disploy?
+      // TODO error display?
     }
     this.out_Dispatch()
   }
@@ -117,6 +118,7 @@ class App{
         this.toggl_Save(true)
         break
       case Actions.STATE:
+        log.bug('State action recieved in background', action)
         break
       default:
         let _check :never = action
@@ -125,6 +127,8 @@ class App{
   }
 
   startWork = () => {
+    //Promise.reject(new Promise(()=>{}))
+    //throw new Error('On work error')
     this.eTimer.stop(), this.eTimer.start()
 
     this.state.resting = null
@@ -270,15 +274,15 @@ class App{
   }
 }
 
-  try {
-    new App()
-  }catch(e){
-    try {
-      browser.storage.local.set({lastError: JSON.stringify(e)}) //TODO await?
-    }catch (e){
-      //TODO
-    }
-  }
+const handleError = (err :Error)=>{
+  log.error('Error caught in background script', err)
+  browser.storage.local.set({lastError: `${err.name}: ${err.message} ${err.stack ? `Stack: \n  ${err.stack}`:''}`})
+}
+addEventListener('error', (e:ErrorEvent)=>{handleError(e.error)})
+addEventListener('unhandledrejection', (e:PromiseRejectionEvent)=>{handleError(e.reason)})
+
+new App()
+
 /*
 class Timer{
   constructor(onChange = () => {}, onEnd = () => {} ) {
