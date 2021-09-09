@@ -1,7 +1,6 @@
 import { Time } from './types'
 import { MIN_REST, MAX_REST, DEFAULT_RATIO} from './settings'
-import React, { ComponentType, FunctionComponent, ReactComponentElement, useEffect, useState } from 'react'
-import { time } from 'console'
+import { useEffect, useState } from 'react'
 
 export const ZERO_TIMER :Time = {
   hours: 0,
@@ -19,7 +18,7 @@ export const getRestTime = (workTimeObj :Time, ratio = DEFAULT_RATIO) => {
 }
 
 export const secondsToObject = (totalSeconds :number) => {
-  const values :Time = {} as Time // TODO
+  const values :Time = {days:0, hours:0, minutes:0, seconds:0, secondTenths:0} 
 
   values.days = Math.floor(totalSeconds / 86400), totalSeconds %= 86400 //TODO bitwise?
   values.hours = Math.floor(totalSeconds / 3600), totalSeconds %= 3600
@@ -93,7 +92,7 @@ export const jsonMemo = <T>(value :T):T => {
 }
 
 export const useTimeoutUnless = (callback :()=>void, shouldCancel :boolean, timeout :number )=>{
-  const [timeoutId, setTimeoutId] = useState(null as NodeJS.Timeout | null)
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
 
   useEffect(()=>{
     setTimeoutId(setTimeout(callback, timeout))

@@ -1,3 +1,5 @@
+import {boolean, z} from 'zod'
+
 import {secondsToObject} from './utils'
 import { MIN_REST, MAX_REST, DEFAULT_RATIO} from './settings'
 
@@ -9,7 +11,7 @@ export type Time = {
   secondTenths?: number
 }
 
-export type Partial<T> = {//TODO remove, exists in ts!
+export type Partial<T> = {//TODO remove, exists in ts
   [key in keyof T]?: T[key]
 }
 
@@ -67,40 +69,49 @@ export class State{
   }
 }
 
-export type Toggl_Entry = {
-  start :string,
-  duration :number,
-  //stop :string,
-  description :string,
-  created_with :string,
-  pid? :number
-}
-
 export type Toggl_Entry_Params = {
   time_entry: Toggl_Entry
 }
 
 export type Toggl_Auth = string | {user :string, pass :string}
 
-export type Toggl_Project = {
-  id : number,
-  name : string
-}
+//to validate
+export const Toggl_Project_Schema = z.object({
+  id: z.number(),
+  name: z.string()
+})
+export type Toggl_Project = z.infer<typeof Toggl_Project_Schema>
 
-export type Toggl_Me = {
-  data : {
-    projects : Array<Toggl_Project>,
-    time_entries : Array<Toggl_Entry>
-  }
-}
+export const Toggl_Entry_Schema = z.object({
+  start : z.string(),
+  duration : z.number(),
+  description : z.string(),
+  created_with : z.string(),
+  pid : z.number().optional()
+})
+export type Toggl_Entry = z.infer<typeof Toggl_Entry_Schema>
 
-export type UserStorage = {
-  config? : Config,
-  toggle? : {
-    auth : string,
-    form : TogglForm
-  } 
-}
+export const Toggl_Me_Schema = z.object({
+  data: z.object({
+    projects : Toggl_Project_Schema.array(),
+    time_entries : Toggl_Entry_Schema.array()
+  })
+})
+export type Toggl_Me = z.infer<typeof Toggl_Me_Schema>
+
+export const UserStorageSchema = z.object({
+  config: z.object({
+    ratio: z.number(),
+    mode: z.nativeEnum(Mode),
+    dark: z.boolean()
+  }).optional(),
+  toggl: z.object({
+    auth: z.string(),
+    shouldSave: z.boolean()
+  }).optional()
+})
+export type UserStorage = z.infer<typeof UserStorageSchema>
+
 
 /* {
   timer: secondsToObject(0),

@@ -4,16 +4,12 @@ import {Button, IconButton, TextField, FormControlLabel, Switch, Slider, Select,
 import {Update, Save, Link, ExitToApp, CreateOutlined, LockOutlined, BrightnessMedium, Refresh, FileCopyOutlined} from '@material-ui/icons'
 import { ErrorBoundary, useErrorHandler } from 'react-error-boundary'
 import clipboardCopy from 'clipboard-copy'
-import useTimeout from '@rooks/use-timeout'
 
 import {State, Time, Config, TogglLogin, TogglForm, Toggl_Project, Mode} from './modules/types'
 import {Action, Actions} from './modules/actions'
 import {padTwoZeros, log, jsonMemo, RetrievedError, useTimeoutUnless} from './modules/utils'
 import {SUPPORT_EMAIL} from './modules/settings'
 import * as useStyles from './modules/styles'
-import { start } from 'repl'
-
-const DispatchContext = React.createContext((a: Action)=>{}) //TODO
 
 const Counter = ({hours, minutes, seconds} :Time) => {
   const classes = useStyles.counter()
@@ -39,16 +35,16 @@ const Legend = memo(({working, resting} :{working :boolean, resting :boolean}) =
 const TimeForm = memo(({hours = 0, minutes = 0, seconds = 0}:{hours :number, minutes :number, seconds :number}) => {
   const dispatch = useContext(DispatchContext)
   const classes = useStyles.timeForm()
-  const hoursRef = useRef(null)
-  const minutesRef = useRef(null) //TODO wtf????
-  const secondsRef = useRef(null)
+  const hoursRef = useRef<HTMLInputElement>()
+  const minutesRef = useRef<HTMLInputElement>()
+  const secondsRef = useRef<HTMLInputElement>()
   
   const onChange = () =>{
-    dispatch({
+    hoursRef.current && minutesRef.current && dispatch({
       type: Actions.ADJUST,
       time: {  
-        hours: Number((hoursRef.current! as HTMLInputElement).value),
-        minutes: Number((minutesRef.current! as HTMLInputElement).value),
+        hours: Number(hoursRef.current!.value), //TODO let it throw is ok?..
+        minutes: Number(minutesRef.current!.value),
         seconds: 0
       }
     })
@@ -108,20 +104,20 @@ const TogglForm = memo((
   const dispatch = useContext(DispatchContext)
   const classes = useStyles.togglForm()
   
-  const setActive = (e :ChangeEvent) => dispatch({
+  const setActive = (e :ChangeEvent<HTMLInputElement>) => dispatch({
     type : Actions.TOGGL_FORM,
-    form : {shouldSave: (e.target as HTMLInputElement).checked} // TODO - bug in Preact typings
+    form : {shouldSave: e.target.checked}
   })
-  const setDesc = (e :FormEvent) => dispatch({
+  const setDesc = (e :ChangeEvent<HTMLInputElement>) => dispatch({
     type : Actions.TOGGL_FORM,
-    form: {desc: (e.target as HTMLInputElement).value} // TODO
+    form: {desc: e.target.value}
   })
-  const retroSave = (e :FormEvent) => dispatch({
+  const retroSave = () => dispatch({
     type : Actions.TOGGL_SAVE_LAST
   })
-  const setProject = (e :ChangeEvent<any>) => dispatch({
+  const setProject = (e :ChangeEvent<HTMLSelectElement>) => dispatch({
     type : Actions.TOGGL_FORM,
-    form: {projectId: Number((e.target as HTMLInputElement).value)} // TODO
+    form: {projectId: Number(e.target.value)}
   })
 
   return logged ? (
@@ -145,7 +141,7 @@ const TogglForm = memo((
       <Select
         label={'Project'}
         value={projectId||undefined}
-        onChange={setProject}
+        onChange={setProject as ((e:ChangeEvent<{value:unknown}>)=>void)} //TODO bullshit material types
       >
         {projects.map(p => <option value={p.id}>{p.name}</option>)}
       </Select>
@@ -164,11 +160,11 @@ const Options = memo(({ratio, mode, dark} :Config) => {
   const dispatch = useContext(DispatchContext)
   const classes = useStyles.options()
 
-  const setRatio = (_:any, value :number|number[]) => dispatch({
+  const setRatio = (_:unknown, value :number|number[]) => dispatch({
     type: Actions.CONFIG,
-    config: {ratio : 60 / (value as number)} //TODO
+    config: {ratio : 60 / (value as number)} //TODO shitty material union type for range and value slider
   })
-  const setMode = (_:any, value :boolean) => dispatch({
+  const setMode = (_:unknown, value :boolean) => dispatch({
     type: Actions.CONFIG,
     config: {mode : value ? Mode.ON : Mode.OFF}
   })
@@ -209,13 +205,13 @@ const Options = memo(({ratio, mode, dark} :Config) => {
 
 const TogglProfile = memo(({token : logged, error, loading} :TogglLogin) => {
   const dispatch = useContext(DispatchContext)
-  const tokenRef = useRef(null)
+  const tokenRef = useRef<HTMLInputElement>()
   const classes = useStyles.togglProfile()
 
   const logIn = () => {
-    dispatch({
+    tokenRef.current && dispatch({
       type: Actions.TOGGL_IN, 
-      token: (tokenRef.current! as HTMLInputElement).value.replace(/(^\s+)|(\s+$)/g,'') // TODO
+      token: tokenRef.current.value.replace(/(^\s+)|(\s+$)/g,'') // TODO
     })
   }
   const logOut = () => {
@@ -303,15 +299,17 @@ const CopyLink = ({value, text, loading = false}:{value:string, text?:string, lo
   </Tooltip>
 }
 
+const DispatchContext = React.createContext((a:Action)=>{log.debug('Dispached action: ', a)})//for testing compts without provider
+
 const App = () => {
   const classes = useStyles.app()
   const [[dispatch], setDispatch] = useState([(a :Action)=>{log.bug('Action dispatched on popup while no port is present: ', a)}])
-  const [state, setAppState] = useState(null as (null | State))
+  const [state, setAppState] = useState<State | null>(null)
   const handleFatal = useErrorHandler()
   
-  const react = (action :Action) => {
+  const react = (action :{} | Action) => {
     log.debug('New action recieved', action)
-    action.type == Actions.STATE ? setAppState(action.state) :  log.bug('Unknown object at popup port', action)
+    'type' in action && action.type == Actions.STATE ? setAppState(action.state) :  log.bug('Unknown object at popup port', action)
   }
   
   const crash = () => {
@@ -333,7 +331,7 @@ const App = () => {
       log.debug('Action dispatched: ', action)
       p.postMessage(action) 
     }])
-    p.onMessage.addListener(react as ({}) => void) //TODO
+    p.onMessage.addListener(react)
     p.onDisconnect.addListener(()=>{crash})
   }, [])
 
@@ -367,7 +365,7 @@ ReactDOM.render(
   <ErrorBoundary FallbackComponent={AppFallback}>
     <App/>
   </ErrorBoundary>, 
-document.getElementById('appContainer')!) //TODO
+document.getElementById('appContainer'))
 
 
 /* 

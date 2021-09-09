@@ -56,13 +56,13 @@ class App{
     try{
       storageSave({
         config : this.state.config,
-        toggle : this.state.toggl.login.token ? {
-          auth : this.state.toggl.login.token,
-          form : this.state.toggl.form
+        toggl : this.state.toggl.login.token ? {
+          auth: this.state.toggl.login.token,
+          shouldSave: this.state.toggl.form.shouldSave
         } : undefined
       })
     }catch(e){
-       //TODO error display?
+      //TODO
     } 
   }
 
@@ -70,11 +70,11 @@ class App{
     try {
       const data = await storageGet()
       if(data.config){
-        this.state.config = data.config
-      }
-      if(data.toggle){
-        await this.toggl_Connect(data.toggle.auth)
-        this.state.toggl.form = data.toggle.form
+        this.state.config = {...this.state.config, ...data.config}
+      } 
+      if(data.toggl){
+        this.state.toggl.form.shouldSave = data.toggl.shouldSave
+        await this.toggl_Connect(data.toggl.auth)
       }
     } catch (err){
       // TODO error display?
@@ -83,7 +83,7 @@ class App{
   }
 
   in_Connection = (p :browser.runtime.Port) => {
-    p.onMessage.addListener(this.in_Action as ({})=>void) // logs error if not Action object
+    p.onMessage.addListener(this.in_Action) 
     p.onDisconnect.addListener(() => {
       this.port = null
     })
@@ -91,7 +91,9 @@ class App{
     this.out_Dispatch()
   }
 
-  in_Action = (action: Action) => {
+  in_Action = (action: Action | {}) => {
+    if(!('type' in action)) return
+
     switch (action.type){
       case Actions.WORK:
         this.state.working != null ? this.stopWork() : this.startWork()
