@@ -1,13 +1,12 @@
-import React, {useContext, useState, useRef, useEffect, memo, ChangeEvent, FormEvent} from 'react'
+import React, {useContext, useState, useRef, useEffect, memo, ChangeEvent, FormEvent, useMemo} from 'react'
 import ReactDOM from 'react-dom'
-import {Button, IconButton, TextField, FormControlLabel, Switch, Slider, Select, InputAdornment, ThemeProvider, Tooltip, Typography } from '@material-ui/core'
+import {Button, IconButton, TextField, FormControlLabel, Switch, Slider, Select, InputAdornment, ThemeProvider, Tooltip, Typography, MenuItem} from '@material-ui/core'
 import {Update, Save, Link, ExitToApp, CreateOutlined, LockOutlined, BrightnessMedium, Refresh, FileCopyOutlined} from '@material-ui/icons'
 import { ErrorBoundary, useErrorHandler } from 'react-error-boundary'
 import clipboardCopy from 'clipboard-copy'
 
-import {State, Time, Config, TogglLogin, TogglForm, Toggl_Project, Mode} from './modules/types'
-import {Action, Actions} from './modules/actions'
-import {padTwoZeros, log, jsonMemo, RetrievedError, useTimeoutUnless} from './modules/utils'
+import {Action, State, Time, Config, TogglLogin, TogglForm, Toggl_Project, Mode} from './modules/types'
+import {padTwoZeros, log, RetrievedError, useTimeoutUnless} from './modules/utils'
 import {SUPPORT_EMAIL} from './modules/settings'
 import * as useStyles from './modules/styles'
 
@@ -33,16 +32,17 @@ const Legend = memo(({working, resting} :{working :boolean, resting :boolean}) =
 })
 
 const TimeForm = memo(({hours = 0, minutes = 0, seconds = 0}:{hours :number, minutes :number, seconds :number}) => {
-  const dispatch = useContext(DispatchContext)
   const classes = useStyles.timeForm()
+  const dispatch = useContext(DispatchContext)
+
   const hoursRef = useRef<HTMLInputElement>()
   const minutesRef = useRef<HTMLInputElement>()
   const secondsRef = useRef<HTMLInputElement>()
   
-  const onChange = () =>{
+  const onChange = () => {
     hoursRef.current && minutesRef.current && dispatch({
-      type: Actions.ADJUST,
-      time: {  
+      type: 'ADJUST',
+      time: {
         hours: Number(hoursRef.current!.value), //TODO let it throw is ok?..
         minutes: Number(minutesRef.current!.value),
         seconds: 0
@@ -59,18 +59,19 @@ const TimeForm = memo(({hours = 0, minutes = 0, seconds = 0}:{hours :number, min
 })
 
 const RestAdjust = ({nextRest, mode} :{nextRest :Time, mode :Mode}) => {
-  const dispatch = useContext(DispatchContext)
   const classes = useStyles.restAdjust()
+  const dispatch = useContext(DispatchContext)
+
   const onRecalculate = ()=>{
     dispatch({
-      type: Actions.ADJUST,
+      type: 'ADJUST',
       time: null
     })
   }
 
   return (
     <div className={classes.root}>
-      Next rest: <TimeForm hours={nextRest.hours} minutes={nextRest.minutes} seconds={nextRest.seconds}/>
+      Next rest: <TimeForm {...nextRest}/>
       <Button 
         variant="text"
         color="default" 
@@ -87,8 +88,8 @@ const Controls = memo(() => {
   const dispatch = useContext(DispatchContext)
   const classes = useStyles.controls()
 
-  const work = () => dispatch({type: Actions.WORK})
-  const rest = () => dispatch({type: Actions.REST})
+  const work = () => dispatch({type: 'WORK'})
+  const rest = () => dispatch({type: 'REST'})
 
   return (
     <div className={classes.root}>
@@ -104,20 +105,20 @@ const TogglForm = memo((
   const dispatch = useContext(DispatchContext)
   const classes = useStyles.togglForm()
   
-  const setActive = (e :ChangeEvent<HTMLInputElement>) => dispatch({
-    type : Actions.TOGGL_FORM,
-    form : {shouldSave: e.target.checked}
+  const setActive = (_:unknown, value :boolean) => dispatch({
+    type : 'TOGGL_FORM',
+    form : {shouldSave: value}
   })
   const setDesc = (e :ChangeEvent<HTMLInputElement>) => dispatch({
-    type : Actions.TOGGL_FORM,
+    type : 'TOGGL_FORM',
     form: {desc: e.target.value}
   })
   const retroSave = () => dispatch({
-    type : Actions.TOGGL_SAVE_LAST
+    type : 'TOGGL_SAVE_LAST'
   })
   const setProject = (e :ChangeEvent<HTMLSelectElement>) => dispatch({
-    type : Actions.TOGGL_FORM,
-    form: {projectId: Number(e.target.value)}
+    type : 'TOGGL_FORM',
+    form: {projectId: Number(e.target.value) || null}
   })
 
   return logged ? (
@@ -125,7 +126,7 @@ const TogglForm = memo((
       <FormControlLabel label={'Save in toggl'} control={
         <Switch
           color='primary'
-          checked={shouldSave} 
+          defaultChecked={shouldSave} 
           onChange={setActive} 
         />
       }/>
@@ -135,15 +136,18 @@ const TogglForm = memo((
         InputProps={{
           startAdornment: (<InputAdornment position='start'><CreateOutlined/></InputAdornment>)
         }}
-        value={desc} 
+        defaultValue={desc}
         onInput={setDesc} 
       />
       <Select
         label={'Project'}
-        value={projectId||undefined}
+        defaultValue={projectId||''}
         onChange={setProject as ((e:ChangeEvent<{value:unknown}>)=>void)} //TODO bullshit material types
       >
-        {projects.map(p => <option value={p.id}>{p.name}</option>)}
+        {[
+          <MenuItem value={""} key={0}><em>none</em></MenuItem>, 
+          ...projects.map(p => <MenuItem value={p.id} key={p.id}>{p.name}</MenuItem>)
+        ]}
       </Select>
       {!!unsaved && <Button 
         variant="text" 
@@ -161,15 +165,15 @@ const Options = memo(({ratio, mode, dark} :Config) => {
   const classes = useStyles.options()
 
   const setRatio = (_:unknown, value :number|number[]) => dispatch({
-    type: Actions.CONFIG,
+    type: 'CONFIG',
     config: {ratio : 60 / (value as number)} //TODO shitty material union type for range and value slider
   })
   const setMode = (_:unknown, value :boolean) => dispatch({
-    type: Actions.CONFIG,
+    type: 'CONFIG',
     config: {mode : value ? Mode.ON : Mode.OFF}
   })
   const setDark = () => dispatch({
-    type: Actions.CONFIG,
+    type: 'CONFIG',
     config: {dark : !dark}
   })
 
@@ -195,7 +199,7 @@ const Options = memo(({ratio, mode, dark} :Config) => {
         />
       }/>
       <Tooltip title='dark/light mode'>
-        <IconButton color="primary" onInput={setDark}>
+        <IconButton color="primary" onClick={setDark}>
           <BrightnessMedium />
         </IconButton>
       </Tooltip>
@@ -210,13 +214,13 @@ const TogglProfile = memo(({token : logged, error, loading} :TogglLogin) => {
 
   const logIn = () => {
     tokenRef.current && dispatch({
-      type: Actions.TOGGL_IN, 
-      token: tokenRef.current.value.replace(/(^\s+)|(\s+$)/g,'') // TODO
+      type: 'TOGGL_IN', 
+      token: tokenRef.current.value.replace(/(^\s+)|(\s+$)/g,'') // validation?
     })
   }
   const logOut = () => {
     dispatch({
-      type : Actions.TOGGL_OUT
+      type : 'TOGGL_OUT'
     })
   }
 
@@ -235,7 +239,7 @@ const TogglProfile = memo(({token : logged, error, loading} :TogglLogin) => {
         variant="outlined" 
         color="primary" 
         size="small"
-        startIcon={<Link />}//TODO rotate4 5
+        startIcon={<Link />}//TODO rotate 45deg
         onClick={logIn}
       >connect</Button>
     </div>
@@ -305,11 +309,12 @@ const App = () => {
   const classes = useStyles.app()
   const [[dispatch], setDispatch] = useState([(a :Action)=>{log.bug('Action dispatched on popup while no port is present: ', a)}])
   const [state, setAppState] = useState<State | null>(null)
+  const memoProjects = useMemo(() => state ? state.toggl.login.projects : [], [state?.toggl.login.projects.length])
   const handleFatal = useErrorHandler()
   
   const react = (action :{} | Action) => {
     log.debug('New action recieved', action)
-    'type' in action && action.type == Actions.STATE ? setAppState(action.state) :  log.bug('Unknown object at popup port', action)
+    'type' in action && action.type == 'STATE' ? setAppState(action.state) :  log.bug('Unknown object at popup port', action)
   }
   
   const crash = () => {
@@ -341,13 +346,13 @@ const App = () => {
         <ThemeProvider theme={state.config.dark ? useStyles.darkTheme : useStyles.lightTheme}>
           <div className={classes.root}>
             <div className="timerBlock">
-              <Counter  {...state.timer}/>
+              <Counter  {...state.time}/>
               <Legend working={!!state.working} resting={!!state.resting} />
               <RestAdjust nextRest={state.nextRest} mode={state.config.mode} ></RestAdjust>
               <Controls />
             </div>
             <div className="togglFormBlock">
-              <TogglForm logged={!!state.toggl.login.token} projects={jsonMemo(state.toggl.login.projects)} {...state.toggl.form} />
+              <TogglForm logged={!!state.toggl.login.token} projects={memoProjects} {...state.toggl.form} />
             </div>
             <div className="optionsBlock">
               <Options {...state.config} />

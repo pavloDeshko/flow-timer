@@ -1,7 +1,7 @@
 import easyTimer from 'easytimer.js'
 
-import {Actions, Action} from './modules/actions'
-import {Config, State, UserStorage, Time, Mode} from './modules/types'
+import Timer from './modules/timer'
+import {Action, Config, State, Time, Mode} from './modules/types'
 import {ZERO_TIMER, getRestTime, log} from './modules/utils'
 import { togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave} from './modules/service'
 
@@ -11,22 +11,22 @@ const WORK_ICON = 'icons/timer_work_32.png'
 const REST_ICON = 'icons/timer_rest_32.png'
 
 class App{
-  eTimer = new easyTimer()
+  timer :Timer
   state = new State()
   port :(null | browser.runtime.Port) = null
-
-  constructor(){
-    this.eTimer.on('secondsUpdated', this.on_TimerUpdate)
-    this.eTimer.on('targetAchieved', this.on_RestEnd)
-
-    browser.runtime.onConnect.addListener(this.in_Connection)
-
-    this.in_Storage()
+  
+  //LISTENERS AND SETUP
+  on_Connection = (p :browser.runtime.Port) => {
+    p.onMessage.addListener(this.on_Action) 
+    p.onDisconnect.addListener(() => {
+      this.port = null
+    })
+    this.port = p
+    this.out_Dispatch()
   }
 
-  on_TimerUpdate = () => {
-    const timeObject = {...this.eTimer.getTimeValues()}
-    this.state.timer = timeObject
+  on_TimerUpdate = (t :Time) => {
+    this.state.time = t
     this._recalculateRest()
     this.out_Dispatch()
   }
@@ -35,91 +35,36 @@ class App{
     this.stopRest()
     this.out_Notify()
   }
-
-  out_Notify = () => {
-    browser.notifications.create({
-      type: 'basic',
-      title: 'Time to work!',
-      message: 'your rest time is up'
-    })
-  }
-
-  out_ChangeIcon = (path : string)=> {
-    browser.browserAction.setIcon({path})
-  }
-
-  out_Dispatch = (action :Action = {type: Actions.STATE, state: this.state}) => {
-    this.port && this.port.postMessage(action)
-  }
-
-  out_Storage = () => {
-    try{
-      storageSave({
-        config : this.state.config,
-        toggl : this.state.toggl.login.token ? {
-          auth: this.state.toggl.login.token,
-          shouldSave: this.state.toggl.form.shouldSave
-        } : undefined
-      })
-    }catch(e){
-      //TODO
-    } 
-  }
-
-  in_Storage = async () => {
-    try {
-      const data = await storageGet()
-      if(data.config){
-        this.state.config = {...this.state.config, ...data.config}
-      } 
-      if(data.toggl){
-        this.state.toggl.form.shouldSave = data.toggl.shouldSave
-        await this.toggl_Connect(data.toggl.auth)
-      }
-    } catch (err){
-      // TODO error display?
-    }
-    this.out_Dispatch()
-  }
-
-  in_Connection = (p :browser.runtime.Port) => {
-    p.onMessage.addListener(this.in_Action) 
-    p.onDisconnect.addListener(() => {
-      this.port = null
-    })
-    this.port = p
-    this.out_Dispatch()
-  }
-
-  in_Action = (action: Action | {}) => {
-    if(!('type' in action)) return
+  
+  on_Action = (action: Action | {}) => {
+    if(!('type' in action)) return //TODO log bug
 
     switch (action.type){
-      case Actions.WORK:
+      case 'WORK':
         this.state.working != null ? this.stopWork() : this.startWork()
         break
-      case Actions.REST:
+      case 'REST':
         this.state.resting != null ? this.stopRest() : this.startRest()
         break
-      case Actions.ADJUST:
+      case 'ADJUST':
         this.adjustRest(action.time)
         break
-      case Actions.CONFIG:
+      case 'CONFIG':
         this.reconfig(action.config)
         break
-      case Actions.TOGGL_IN:
+      case 'TOGGL_IN':
         this.toggl_Connect(action.token)
         break
-      case Actions.TOGGL_OUT:
+      case 'TOGGL_OUT':
         this.toggl_Disconnect()
         break
-      case Actions.TOGGL_FORM:
+      case 'TOGGL_FORM':
         this.state.toggl.form = {...this.state.toggl.form, ...action.form}
         break
-      case Actions.TOGGL_SAVE_LAST:
-        this.toggl_Save(true)
+      case 'TOGGL_SAVE_LAST':
+        this.toggl_RetroSave()
         break
-      case Actions.STATE:
+      case 'STATE':
         log.bug('State action recieved in background', action)
         break
       default:
@@ -128,54 +73,51 @@ class App{
     }
   }
 
+  constructor(){
+    this.timer = new Timer(this.on_TimerUpdate, this.on_RestEnd)
+    browser.runtime.onConnect.addListener(this.on_Connection)
+    this.restoreFromStorage()
+  }
+  
+  //APP ACTIONS
   startWork = () => {
-    //Promise.reject(new Promise(()=>{}))
-    //throw new Error('On work error')
-    this.eTimer.stop(), this.eTimer.start()
-
     this.state.resting = null
     this.state.working = Date.now()
-    this.state.timer = ZERO_TIMER
+    this.state.time = this.timer.up()
 
     this.out_ChangeIcon(WORK_ICON)
     this.out_Dispatch()
   }
   
   stopWork = () => {
-    this.eTimer.stop()
-
     this.toggl_Save()
 
     this.state.working = null
-    this.state.timer = ZERO_TIMER
+    this.state.time = this.timer.reset()
     
     this.out_ChangeIcon(DEFAULT_ICON)
     this.out_Dispatch()
   }
   
   startRest = () => {
-    this.eTimer.stop(), this.eTimer.start({countdown: true, startValues: this.state.nextRest})
-
     this.toggl_Save()
 
     this.state.working = null
     this.state.resting = Date.now()
-    this.state.timer = this.state.nextRest
+    this.state.time = this.timer.down(this.state.nextRest)
     if(this.state.config.mode){
       this.state.config.mode = Mode.ON
       this._recalculateRest()
     }
 
     this.out_ChangeIcon(REST_ICON)
+    this.out_SaveStorage() //to save ratio and mode
     this.out_Dispatch()
-    this.out_Storage() //to save ratio and mode
   }
   
   stopRest = () => {
-    this.eTimer.stop()
-
     this.state.resting = null
-    this.state.timer = ZERO_TIMER
+    this.state.time = this.timer.reset()
     
     this.out_ChangeIcon(DEFAULT_ICON)
     this.out_Dispatch()
@@ -190,7 +132,7 @@ class App{
 
   adjustRest = (value :Time | null) => {
     if(!value){
-      this.state.config.mode = Mode.ON
+      this.state.config.mode = Mode.ON //TODO recalculation is dependent on this change
       this._recalculateRest()
     }else{
       this.state.config.mode = this.state.config.mode && Mode.PAUSED
@@ -200,41 +142,76 @@ class App{
     this.out_Dispatch()
   }
 
+  restoreFromStorage = async () => {
+    try {
+      const data = await storageGet()
+      if(data.config){
+        this.state.config = {...this.state.config, ...data.config}
+      } 
+      if(data.toggl){
+        this.state.toggl.form.shouldSave = data.toggl.shouldSave
+        await this.toggl_Connect(data.toggl.auth)
+      }
+    } catch (err){
+      // TODO error display?
+    }
+    this.out_Dispatch()
+  }
+  
   _recalculateRest = () => {
     if(this.state.config.mode === Mode.ON){
-      this.state.nextRest = getRestTime(this.state.working ? this.state.timer : ZERO_TIMER, this.state.config.ratio)
-    }
-  }
-
-  toggl_Save = async (retroSave = false)=> {
-    const form = this.state.toggl.form, login = this.state.toggl.login // TODO move loading
-    if(!login.token || !form.shouldSave) return// TODO handle errors
-    
-    let start, end
-    if(this.state.working && !retroSave){
-      start = this.state.working
-      end = Date.now()
-    }else if(retroSave && form.unsaved){
-      start = form.unsaved.start
-      end = form.unsaved.end
-    }else{
-      log.bug('Wrong toogle save action.', {retroSave, working: this.state.working, unsaved: form.unsaved })
-      return 
-    }
-    
-    try{
-      login.loading = true
-      this.out_Dispatch()
-      await togglApiAdd( login.token, start, end, form.desc, form.projectId)
-    }catch(e){
-      login.error = e.message
-    }finally{
-      login.loading = false
-      this.out_Dispatch()
-      this.out_Storage()//to save form
+      this.state.nextRest = getRestTime(this.state.working ? this.state.time : ZERO_TIMER, this.state.config.ratio)
     }
   }
   
+  //TOGGL APP ACTIONS
+  toggl_Save = async ()=> {
+    const form = this.state.toggl.form, login = this.state.toggl.login
+    if(!this.state.working){
+      log.bug('invalid toggle save',this.state)
+      return
+    }
+
+    if(form.shouldSave && login.token){
+      try{
+        login.loading = true
+        this.out_Dispatch()
+        await togglApiAdd( login.token, this.state.working, Date.now(), form.desc, form.projectId)
+        login.error = null
+      }catch(e){
+        login.error = e.message
+      }finally{
+        login.loading = false
+        form.unsaved = null
+        this.out_SaveStorage()//to save form
+        this.out_Dispatch()
+      }
+    }else{
+      form.unsaved = {start: this.state.working, end: Date.now()}
+    }
+  }
+  
+  toggl_RetroSave = async ()=> {
+    const form = this.state.toggl.form, login = this.state.toggl.login 
+    if(login.token && form.unsaved){
+      try{
+        login.loading = true
+        this.out_Dispatch()
+        await togglApiAdd( login.token, form.unsaved.start, form.unsaved.end, form.desc, form.projectId)
+        login.error = null
+      }catch(e){
+        login.error = e.message
+      }finally{
+        login.loading = false
+        form.unsaved = null
+        this.out_SaveStorage()//to save form
+        this.out_Dispatch()
+      }
+    }else{
+      log.bug('Inavild retrosaved action recieved',{token:login.token, unsaved:form.unsaved})
+    }
+  }
+
   toggl_Connect = async (token :string) => {
     const t = this.state.toggl.login
     try{
@@ -251,38 +228,70 @@ class App{
       t.error = error.message
     }finally{
       t.loading = false
+      this.out_SaveStorage()
       this.out_Dispatch()
-      this.out_Storage()
     }
   }
   
   toggl_Disconnect = async () => {
     const t = this.state.toggl.login
-    const token = t.token
 
     t.token = null
     t.projects = []
-
     t.error = null
-    this.out_Dispatch()
+
     try{
-      if(token){
-        await togglApiDisconnect(`token`)
+      if(t.token){
+        await togglApiDisconnect(t.token)
       }
     }catch(e){
       t.error = e.message
+    }finally{
       this.out_Dispatch()
     }
   }
+  
+  //OUTPUT METHODS
+  out_Dispatch = (action :Action = {type: 'STATE', state: this.state}) => {
+    this.port && this.port.postMessage(action)
+  }
+
+  out_Notify = () => {
+    browser.notifications.create({
+      type: 'basic',
+      title: 'Time to work!',
+      message: 'your rest time is up'
+    })
+  }
+
+  out_ChangeIcon = (path : string)=> {
+    browser.browserAction.setIcon({path})
+  }
+
+  out_SaveStorage = async() => {
+    try{
+      await storageSave({
+        config : this.state.config,
+        toggl : this.state.toggl.login.token ? {
+          auth: this.state.toggl.login.token,
+          shouldSave: this.state.toggl.form.shouldSave
+        } : undefined
+      })
+    }catch(e){
+      //TODO error display?
+    } 
+  }
 }
 
+//GLOBAL ERROR CATCHERS
 const handleError = (err :Error)=>{
   log.error('Error caught in background script', err)
   browser.storage.local.set({lastError: `${err.name}: ${err.message} ${err.stack ? `Stack: \n  ${err.stack}`:''}`})
 }
-addEventListener('error', (e:ErrorEvent)=>{handleError(e.error)})
+addEventListener('error', (e:ErrorEvent)=>{handleError(e.error)})//TODO not working in firefox
 addEventListener('unhandledrejection', (e:PromiseRejectionEvent)=>{handleError(e.reason)})
 
+//LAUNCH
 new App()
 
 /*

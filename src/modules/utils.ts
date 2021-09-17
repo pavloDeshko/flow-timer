@@ -8,24 +8,24 @@ export const ZERO_TIMER :Time = {
   seconds: 0
 }
 
+export const ZERO_TIMER_FULL :Time = {days:0, ...ZERO_TIMER, secondTenths:0}
+
 export const getRestTime = (workTimeObj :Time, ratio = DEFAULT_RATIO) => {
-  const restSeconds = Math.floor(objectToSeconds(workTimeObj) / ratio)
-  return restSeconds < MIN_REST ? 
-    secondsToObject(MIN_REST) : 
-    restSeconds > MAX_REST ? 
-      secondsToObject(MAX_REST) : 
-      secondsToObject(restSeconds) 
+  const seconds = Math.floor(objectToSeconds(workTimeObj) / ratio)
+  return secondsToObject(
+    seconds < MIN_REST ? MIN_REST : seconds > MAX_REST ? MAX_REST : seconds
+  )
 }
 
 export const secondsToObject = (totalSeconds :number) => {
-  const values :Time = {days:0, hours:0, minutes:0, seconds:0, secondTenths:0} 
+  const values :Time = {...ZERO_TIMER_FULL}
 
   values.days = Math.floor(totalSeconds / 86400), totalSeconds %= 86400 //TODO bitwise?
   values.hours = Math.floor(totalSeconds / 3600), totalSeconds %= 3600
   values.minutes = Math.floor(totalSeconds / 60), totalSeconds %= 60
   values.seconds = Math.floor(totalSeconds / 1), totalSeconds %= 1
   values.secondTenths = Math.floor(totalSeconds / 0.1)
-  
+
   return values
 }
 
@@ -47,23 +47,23 @@ export const padTwoZeros = (number :number) => {
 export const log = {
   error: (message? :string, error? :Error, state? :{})=>{
     console.log('Error logged: ', message)
-    error && console.log(' error: ', JSON.stringify(error))
-    state && console.log('  state: ', JSON.stringify(state, undefined, 2))
+    error && console.log(' error: ', error.toString())
+    state && console.log('   ', JSON.stringify(state, undefined, 2))
   },
   bug: (message? :string, state? :{})=>{
-    if(process.env.NODE_ENV != 'production' ){
+    if(process.env['NODE_ENV'] != 'production' ){
       console.log('Bug met: ', message)
-      state && console.dir('  state: ', state)
+      state && console.dir('   ', state)
     }
   },
   debug: (message? :string, state? :{})=>{
-    if(process.env.NODE_ENV != 'production' ){
+    if(process.env['NODE_ENV'] != 'production' ){
       console.log('Debug info: ', message)
-      state && console.dir('  state: ', state)
+      state && console.dir('   ', state)
     }
   },
   throw: (message? :string, state? :{})=>{
-    if(process.env.NODE_ENV != 'production' ){
+    if(process.env['NODE_ENV'] != 'production' ){
       throw new Error(`Test error: ${message}\n  state: ${state}`)
     }
   }
@@ -78,16 +78,6 @@ export class RetrievedError extends Error{
   lastError:string
   toString(){
     return `${this.name}: ${this.message}\n  ${this.lastError}`
-  }
-}
- 
-let last :any = null
-export const jsonMemo = <T>(value :T):T => {
-  if (JSON.stringify(value) == JSON.stringify(last)){
-    return last
-  }else{
-    last = value
-    return value
   }
 }
 

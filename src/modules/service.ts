@@ -33,9 +33,9 @@ export const togglApiConnect = async (credential :Toggl_Auth) => {
         const valid = Toggl_Me_Schema.parse(d)
         return {
           projects: valid.data.projects.map(p => ({id: p.id, name: p.name})),
-          last: valid.data.time_entries[0].pid
+          last: valid.data.time_entries[0]?.pid
         }
-      } //TODO
+      }
     )
     .catch(handleInvalidData)
 }
@@ -68,7 +68,7 @@ export const storageGet = async():Promise<UserStorage>=>{
     return data
   }catch(err){
     log.error('Error on trying to get data to storage', err)
-    throw new Error("Problems trying to restore your options :/") //TODO message
+    throw new Error("Problems trying to restore your options :/") 
   }
 }
 
@@ -78,6 +78,6 @@ export const storageSave = async(data :UserStorage)=>{
     log.debug('Saved to storage.',data)
   }catch(err){
     log.error('Error on trying to save to storage', err)
-    throw new Error("Can't save your options for future use :(") //TODO message
+    throw new Error("Can't save your options for future use :(")
   }
 }

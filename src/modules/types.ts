@@ -3,6 +3,31 @@ import {boolean, z} from 'zod'
 import {secondsToObject} from './utils'
 import { MIN_REST, MAX_REST, DEFAULT_RATIO} from './settings'
 
+export type Action = {
+  type: 'WORK'
+}|{
+  type: 'REST'
+}|{
+  type: 'ADJUST',
+  time: Time | null
+}|{
+  type: 'CONFIG'
+  config: Partial<Config>
+}|{
+  type: 'TOGGL_IN',
+  token: string
+}|{
+  type: 'TOGGL_OUT'
+}|{
+  type: 'TOGGL_FORM',
+  form: Partial<TogglForm>
+}|{
+  type: 'TOGGL_SAVE_LAST'
+}|{
+  type: 'STATE'
+  state: State
+}
+
 export type Time = {
   days?: number,
   hours: number,
@@ -17,8 +42,8 @@ export type Partial<T> = {//TODO remove, exists in ts
 
 export enum Mode {
   OFF = 0,
-  PAUSED,
-  ON
+  PAUSED = 'PAUSED',
+  ON = 'ON'
 } 
 
 export type Config = {
@@ -42,9 +67,8 @@ export type TogglLogin = {
 }
 
 export class State{
-  constructor(){
-  }
-  timer :Time = secondsToObject(0)
+  //constructor(){}
+  time :Time = secondsToObject(0)
   nextRest :Time = secondsToObject(MIN_REST)
   working :(null | number) = null
   resting :(null | number) = null
@@ -93,8 +117,8 @@ export type Toggl_Entry = z.infer<typeof Toggl_Entry_Schema>
 
 export const Toggl_Me_Schema = z.object({
   data: z.object({
-    projects : Toggl_Project_Schema.array(),
-    time_entries : Toggl_Entry_Schema.array()
+    projects : Toggl_Project_Schema.array().default([]),
+    time_entries : Toggl_Entry_Schema.array().default([])
   })
 })
 export type Toggl_Me = z.infer<typeof Toggl_Me_Schema>
