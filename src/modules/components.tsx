@@ -3,7 +3,8 @@ import {
   Button, 
   IconButton, 
   TextField, 
-  FormControlLabel, 
+  FormControlLabel,
+  Checkbox,
   Switch, 
   Slider, 
   Select, SelectChangeEvent,
@@ -255,9 +256,17 @@ export const TogglFormBlock = memo((
    ) : null
 })
 
-export const OptionsBlock = memo(({ratio, mode, dark} :Config) => {
+export const OptionsBlock = memo(({pomTime, pomActive, ratio, mode, dark} :Config) => {
   const dispatch = useContext(DispatchContext)
 
+  const setPomTime = (e:ChangeEvent<HTMLInputElement>)=> dispatch({
+    type: 'CONFIG',
+    config: {pomTime : Number(e.target.value)}//TODO zero edgecase
+  })
+  const setPomActive = (e:ChangeEvent<HTMLInputElement>)=> dispatch({
+    type: 'CONFIG',
+    config: {pomActive : e.target.checked}//TODO zero edgecase
+  })
   const setRatio = (_:unknown, value :number|number[]) => dispatch({
     type: 'CONFIG',
     config: {ratio : 60 / (value as number)} //TODO shitty material union type for range and value slider
@@ -273,6 +282,32 @@ export const OptionsBlock = memo(({ratio, mode, dark} :Config) => {
 
   return (
     <BlockContainer>
+      <Box sx={{
+        "& .pomodoroTime":{
+          //marginX: 1/4,
+          width: '3rem',
+          '& .MuiOutlinedInput-input':{
+            textAlign: 'center',
+            padding: 0.5,
+          }
+        }
+      }}>
+        <FormControlLabel
+          control={<Checkbox
+            checked={pomActive}
+            onChange={setPomActive}
+          />}
+          label='Pomodoro reminder in '
+        />
+        <TextField
+          className='pomodoroTime'
+          size='small'
+          label='m'
+          value={pomTime}
+          disabled={!pomActive}
+          onChange={setPomTime}
+        />
+      </Box>
       <Typography>Rest ratio:</Typography>
       <Slider
         marks={[1,5,10,15,20,30,45,60].map((value)=>({value}))}

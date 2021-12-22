@@ -36,7 +36,7 @@ export type Time = {
   secondTenths?: number
 }
 
-export type Partial<T> = {//TODO remove, exists in ts
+export type Partial<T> = {//TODO remove, exists in TS
   [key in keyof T]?: T[key]
 }
 
@@ -53,6 +53,8 @@ export enum Mode {
 } */
 
 export type Config = {
+  pomTime: number,
+  pomActive: boolean,
   ratio: number,
   mode: Mode,
   dark: boolean
@@ -73,12 +75,13 @@ export type TogglLogin = {
 }
 
 export class State{
-  //constructor(){}
   time :Time = secondsToObject(0)
   nextRest :Time = secondsToObject(MIN_REST)
   working :(null | number) = null
   resting :(null | number) = null
   config : Config = {
+    pomTime: 50,
+    pomActive: false,
     ratio: DEFAULT_RATIO, 
     mode: Mode.ON,
     dark: false
@@ -131,6 +134,8 @@ export type Toggl_Me = z.infer<typeof Toggl_Me_Schema>
 
 export const UserStorageSchema = z.object({
   config: z.object({
+    pomTime: z.number(),
+    pomActive: z.boolean(), 
     ratio: z.number(),
     mode: z.nativeEnum(Mode),
     dark: z.boolean()

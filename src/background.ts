@@ -10,6 +10,7 @@ const REST_ICON = 'icons/timer_rest_32.png'
 
 class App{
   timer :Timer
+  pomTimer :Timer
   state = new State()
   port :(null | browser.runtime.Port) = null
   
@@ -32,6 +33,10 @@ class App{
   on_RestEnd = () => {
     this.stopRest()
     this.out_Notify()
+  }
+
+  on_PomodoroEnd = () => {
+    this.state.config.pomActive && this.out_Notify(true)
   }
   
   on_Action = (action: Action | {}) => {
@@ -73,6 +78,7 @@ class App{
 
   constructor(){
     this.timer = new Timer(this.on_TimerUpdate, this.on_RestEnd)
+    this.pomTimer = new Timer(()=>{},this.on_PomodoroEnd)
     browser.runtime.onConnect.addListener(this.on_Connection)
     this.restoreFromStorage()
   }
@@ -82,6 +88,7 @@ class App{
     this.state.resting = null
     this.state.working = Date.now()
     this.state.time = this.timer.up()
+    this.pomTimer.down({...ZERO_TIMER,...{minutes:this.state.config.pomTime}})
 
     this.out_ChangeIcon(WORK_ICON)
     this.out_Dispatch()
@@ -92,6 +99,7 @@ class App{
 
     this.state.working = null
     this.state.time = this.timer.reset()
+    this.pomTimer.reset()
     
     this.out_ChangeIcon(DEFAULT_ICON)
     this.out_Dispatch()
@@ -103,6 +111,7 @@ class App{
     this.state.working = null
     this.state.resting = Date.now()
     this.state.time = this.timer.down(this.state.nextRest)
+    this.pomTimer.reset()
     if(this.state.config.mode){
       this.state.config.mode = Mode.ON
       this._recalculateRest()
@@ -254,11 +263,11 @@ class App{
     this.port && this.port.postMessage(action)
   }
 
-  out_Notify = () => {
+  out_Notify = (pomodoro = false) => {
     browser.notifications.create({
       type: 'basic',
-      title: 'Time to work!',
-      message: 'your rest time is up'
+      title: pomodoro ? 'Pomodoro alert!' : 'Time to work!',
+      message: pomodoro ? 'you\'ve been working for a long time, take a rest' : 'your rest time is up'
     })
   }
 
