@@ -1,5 +1,3 @@
-import easyTimer from 'easytimer.js'
-
 import Timer from './modules/timer'
 import {Action, Config, State, Time, Mode} from './modules/types'
 import {ZERO_TIMER, getRestTime, log} from './modules/utils'

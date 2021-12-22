@@ -46,6 +46,12 @@ export enum Mode {
   ON = 'ON'
 } 
 
+/* export enum Status {//TODO add to state
+  WORKING = 'WORKING',
+  RESTING = 'RESTING',
+  IDLE ='IDLE'
+} */
+
 export type Config = {
   ratio: number,
   mode: Mode,

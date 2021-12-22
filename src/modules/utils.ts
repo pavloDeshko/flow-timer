@@ -2,6 +2,21 @@ import { Time } from './types'
 import { MIN_REST, MAX_REST, DEFAULT_RATIO} from './settings'
 import { useEffect, useState } from 'react'
 
+export const useTimeoutUnless = (callback :()=>void, shouldCancel :boolean, timeout :number )=>{
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
+
+  useEffect(()=>{
+    setTimeoutId(setTimeout(callback, timeout))
+    return ()=>{
+      (timeoutId !== null) && clearTimeout(timeoutId) //wtf overloads
+    }
+  },[])
+  
+  useEffect(()=>{
+    (timeoutId !== null) && shouldCancel && clearTimeout(timeoutId)
+  })
+}
+
 export const ZERO_TIMER :Time = {
   hours: 0,
   minutes: 0,
@@ -79,19 +94,4 @@ export class RetrievedError extends Error{
   toString(){
     return `${this.name}: ${this.message}\n  ${this.lastError}`
   }
-}
-
-export const useTimeoutUnless = (callback :()=>void, shouldCancel :boolean, timeout :number )=>{
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
-
-  useEffect(()=>{
-    setTimeoutId(setTimeout(callback, timeout))
-    return ()=>{
-      (timeoutId !== null) && clearTimeout(timeoutId) //wtf overloads
-    }
-  },[])
-  
-  useEffect(()=>{
-    (timeoutId !== null) && shouldCancel && clearTimeout(timeoutId)
-  })
 }
