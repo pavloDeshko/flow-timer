@@ -74,7 +74,7 @@ export const storageGet = async():Promise<UserStorage>=>{
 
 export const storageSave = async(data :UserStorage)=>{
   try{
-    await browser.storage.local.set(data)
+    await browser.storage.local.set(data)//TODO add validation here?
     log.debug('Saved to storage.',data)
   }catch(err){
     log.error('Error on trying to save to storage', err)

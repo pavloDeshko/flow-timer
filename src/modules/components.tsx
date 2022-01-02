@@ -1,4 +1,4 @@
-import React, {useContext, useRef, memo, ChangeEvent, ReactNode} from 'react'
+import React, {useContext, useRef, useState, memo, ChangeEvent, ReactNode} from 'react'
 import {
   Button, 
   IconButton, 
@@ -31,7 +31,7 @@ import clipboardCopy from 'clipboard-copy'
 
 
 import {Action, Time, Config, TogglLogin, TogglForm as TogglFormData, Toggl_Project, Mode} from './types'
-import {padTwoZeros, log, } from './utils'
+import {padTwoZeros, parse, log} from './utils'
 import {SUPPORT_EMAIL} from './settings'
 
 export const DispatchContext = React.createContext((a:Action)=>{log.debug('Dispached action: ', a)})//for testing compts without provider
@@ -96,8 +96,8 @@ export const TimeForm = memo(({hours = 0, minutes = 0, seconds = 0}:{hours :numb
     hoursRef.current && minutesRef.current && dispatch({
       type: 'ADJUST',
       time: {
-        hours: Number(hoursRef.current!.value), //TODO let it throw is ok?..
-        minutes: Number(minutesRef.current!.value),
+        hours: parse.h(hoursRef.current!.value, hours), //TODO let it throw is ok?..
+        minutes: parse.m(minutesRef.current!.value, minutes),
         seconds: 0
       }
     })
@@ -206,7 +206,7 @@ export const TogglFormBlock = memo((
   })
   const setDesc = (e :ChangeEvent<HTMLInputElement>) => dispatch({
     type : 'TOGGL_FORM',
-    form: {desc: e.target.value}
+    form: {desc: parse.togglDesc(e.target.value, desc)}
   })
   const retroSave = () => dispatch({
     type : 'TOGGL_SAVE_LAST'
@@ -261,11 +261,11 @@ export const OptionsBlock = memo(({pomTime, pomActive, ratio, mode, dark} :Confi
 
   const setPomTime = (e:ChangeEvent<HTMLInputElement>)=> dispatch({
     type: 'CONFIG',
-    config: {pomTime : Number(e.target.value)}//TODO zero edgecase
+    config: {pomTime : parse.m(e.target.value, pomTime)}
   })
   const setPomActive = (e:ChangeEvent<HTMLInputElement>)=> dispatch({
     type: 'CONFIG',
-    config: {pomActive : e.target.checked}//TODO zero edgecase
+    config: {pomActive : e.target.checked}
   })
   const setRatio = (_:unknown, value :number|number[]) => dispatch({
     type: 'CONFIG',
@@ -338,16 +338,18 @@ export const OptionsBlock = memo(({pomTime, pomActive, ratio, mode, dark} :Confi
 
 export const TogglProfileBlock = memo(({token : logged, error, loading} :TogglLogin) => {
   const dispatch = useContext(DispatchContext)
-  const tokenRef = useRef<HTMLInputElement>()
-
+  const [token,setToken] = useState('')
+  const valid = parse.togglToken(token).success
+ 
   const logIn = () => {
-    tokenRef.current && dispatch({
+    const parsed = parse.togglToken(token)
+    parsed.success && dispatch({
       type: 'TOGGL_IN', 
-      token: tokenRef.current.value.replace(/(^\s+)|(\s+$)/g,'') // validation?
+      token: parsed.data
     })
   }
-  const logOut = () => {
-    dispatch({
+  
+  const logOut = () => {dispatch({
       type : 'TOGGL_OUT'
     })
   }
@@ -361,7 +363,9 @@ export const TogglProfileBlock = memo(({token : logged, error, loading} :TogglLo
           startAdornment: (<InputAdornment position='start'><LockOutlined/></InputAdornment>)
         }}
         helperText="your token won't be sent anywhere"
-        inputRef={tokenRef}
+        value={token}
+        onChange={ e=>setToken(e.target.value) }
+        error={token!=='' && !valid}
       />
       <Button 
         variant="outlined" 
@@ -369,6 +373,7 @@ export const TogglProfileBlock = memo(({token : logged, error, loading} :TogglLo
         size="small"
         startIcon={<Link />}//TODO rotate 45deg
         onClick={logIn}
+        disabled={!valid}
       >connect</Button>
     </div>
    ) : (

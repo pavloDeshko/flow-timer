@@ -1,7 +1,8 @@
 import Timer from './modules/timer'
 import {Action, Config, State, Time, Mode} from './modules/types'
 import {ZERO_TIMER, getRestTime, log} from './modules/utils'
-import { togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave} from './modules/service'
+import {togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave} from './modules/service'
+import {onConnect, Connector} from './modules/connector'
 
 //ICONS
 const DEFAULT_ICON = 'icons/timer_32.png'
@@ -12,12 +13,12 @@ class App{
   timer :Timer
   pomTimer :Timer
   state = new State()
-  port :(null | browser.runtime.Port) = null
+  port :(null | Connector) = null
   
   //LISTENERS AND SETUP
-  on_Connection = (p :browser.runtime.Port) => {
-    p.onMessage.addListener(this.on_Action) 
-    p.onDisconnect.addListener(() => {
+  on_Connection = (p :Connector) => {
+    p.onMessage(this.on_Action) 
+    p.onDisconnect(() => {
       this.port = null
     })
     this.port = p
@@ -79,7 +80,7 @@ class App{
   constructor(){
     this.timer = new Timer(this.on_TimerUpdate, this.on_RestEnd)
     this.pomTimer = new Timer(()=>{},this.on_PomodoroEnd)
-    browser.runtime.onConnect.addListener(this.on_Connection)
+    onConnect(this.on_Connection)
     this.restoreFromStorage()
   }
   
@@ -300,63 +301,3 @@ addEventListener('unhandledrejection', (e:PromiseRejectionEvent)=>{handleError(e
 
 //LAUNCH
 new App()
-
-/*
-class Timer{
-  constructor(onChange = () => {}, onEnd = () => {} ) {
-    this.state = INITIAL_STATE()
-    this.onChange = (...args) => {
-      onChange(...args)
-    }
-    this.onEnd = onEnd
-
-    this.format = (ms) => {
-      if (ms <= 0){
-        return {h: 0, m: 0, s: 0}
-      }
-      return {
-        h: Math.floor(ms / 3600e3),
-        m: Math.floor(ms / 60e3) % 60,
-        s: Math.floor(ms / 1e3) % 60
-      }
-    }
-  }
-  
-  countDown(value){
-    this.reset(false)
-    this.state.goal = 0
-    this.state.current = value
-
-    this.state.interval = setInterval(this._handleTick.bind(this), TICK, false)
-    this.onChange(this.format(this.state.current))
-  }
-
-  countUp(value = Number.MAX_SAFE_INTEGER, offset = 0){
-    this.reset(false)
-    this.state.goal = value
-    this.state.current = offset
-    
-    this.state.interval = setInterval(this._handleTick.bind(this), TICK, true)
-    this.onChange(this.format(this.state.current))
-  }
-  
-  freeze(){
-    //TODO
-  }
-  
-  reset(call = true){
-    this.state.interval && clearInterval(this.state.interval)
-    this.state = INITIAL_STATE()
-    call ? this.onChange(this.format(this.state.current)) : null
-  }
-
-  _handleTick(up){
-    this.state.current = up ? this.state.current + TICK : this.state.current - TICK
-    this.onChange(this.format(this.state.current))
-
-    if (up && this.state.current >= this.state.goal || !up && this.state.current <= this.state.goal){
-      this.onEnd(this.format(this.state.current))
-      this.reset(false)
-    }
-  }
-} */

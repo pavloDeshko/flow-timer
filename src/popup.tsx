@@ -19,6 +19,7 @@ import {
 import {Action, State} from './modules/types'
 import {log, RetrievedError, useTimeoutUnless} from './modules/utils'
 import {lightTheme, darkTheme} from './modules/styles'
+import {connect, Connector} from './modules/connector'
 
 const App = () => {
   const [[dispatch], setDispatch] = useState([(a :Action)=>{log.bug('Action dispatched on popup while no port is present: ', a)}])
@@ -44,17 +45,15 @@ const App = () => {
   }
 
   useEffect(() => {
-    const p = browser.runtime.connect()
+    const p = connect()
     setDispatch([(action :Action) => {
       log.debug('Action dispatched: ', action)
       p.postMessage(action) 
     }])
-    p.onMessage.addListener(react)
-    p.onDisconnect.addListener(()=>{crash})
+    p.onMessage(react)
+    p.onDisconnect(()=>{crash})
   }, [])
 
-  log.debug('light', lightTheme)
-  log.debug('dark', darkTheme) 
   return state && (
       <DispatchContext.Provider value={dispatch}>
         <ThemeProvider theme={state.config.dark ? darkTheme : lightTheme}>

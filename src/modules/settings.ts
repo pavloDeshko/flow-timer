@@ -10,5 +10,7 @@ export const CLIENT_NAME = 'Ketchup Timer Web-extension'
 
 export const SUPPORT_EMAIL = 'pavlodeshko92@gmail.com'
 
+export const EXTENSION = true//TODO
+
 //private envs
 //export const env = process.env['env']

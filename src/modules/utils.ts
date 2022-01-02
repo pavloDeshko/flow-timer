@@ -1,6 +1,9 @@
 import { Time } from './types'
 import { MIN_REST, MAX_REST, DEFAULT_RATIO} from './settings'
 import { useEffect, useState } from 'react'
+import { z }from 'zod'
+
+const JWT = /^[A-Za-z0-9-_=]+$/
 
 export const useTimeoutUnless = (callback :()=>void, shouldCancel :boolean, timeout :number )=>{
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
@@ -57,6 +60,24 @@ export const objectToSeconds = (obj :Time) => {
 
 export const padTwoZeros = (number :number) => {
   return ('00' + number).slice(-2)
+}
+
+const makeParseNumber = (max:number) => (value :string, fallback = 0) => {
+  const result = z.number().nonnegative().max(max).int().safeParse(Number(value))
+  return result.success ? result.data : fallback
+}
+
+export const parse = {
+  h: makeParseNumber(24),
+  m: makeParseNumber(60),
+  s: makeParseNumber(60),
+  togglToken: (value:string)=>{
+    return z.string().regex(JWT).safeParse(value.replace(/(^\s+)|(\s+$)/g,''))
+  },
+  togglDesc:  (value:string, fallback = '')=>{  
+    const result = z.string().max(1000).safeParse(value)
+    return result.success ? result.data : fallback
+  }
 }
 
 export const log = {

@@ -1,4 +1,4 @@
-import {boolean, z} from 'zod'
+import {z} from 'zod'
 
 import {secondsToObject} from './utils'
 import { MIN_REST, MAX_REST, DEFAULT_RATIO} from './settings'
