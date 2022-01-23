@@ -5,9 +5,9 @@ import {togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSav
 import {onConnect, Connector} from './modules/connector'
 
 //ICONS
-const DEFAULT_ICON = 'icons/timer_32.png'
-const WORK_ICON = 'icons/timer_work_32.png'
-const REST_ICON = 'icons/timer_rest_32.png'
+const DEFAULT_ICON = 'icons/idle.svg'
+const WORK_ICON = 'icons/work.svg'
+const REST_ICON = 'icons/rest.svg'
 
 class App{
   timer :Timer

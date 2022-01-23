@@ -4,7 +4,8 @@
   "version":"0.1.0",
   "description":"Smart and flexible pommodoro timer for timing your rests.",
   "icons":{
-    "48":"icons/timer_48.png"
+    "48":"icons/main.svg",
+    "96":"icons/main.svg"
   },
   "permissions":[
     "notifications",
@@ -13,7 +14,7 @@
     "storage"
   ],
   "browser_action":{
-    "default_icon":"icons/timer_32.png",
+    "default_icon":"icons/idle.svg",
     "default_title":"Ketchup Timer",
     "default_popup":"popup/index.html"
   },
