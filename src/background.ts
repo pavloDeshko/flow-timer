@@ -3,6 +3,7 @@ import {Action, Config, State, Time, Mode} from './modules/types'
 import {ZERO_TIMER, getRestTime, log} from './modules/utils'
 import {togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave} from './modules/service'
 import {onConnect, Connector} from './modules/connector'
+import * as settings from './modules/settings'
 
 //ICONS
 const DEFAULT_ICON = 'icons/idle.svg'
@@ -64,6 +65,7 @@ class App{
         break
       case 'TOGGL_FORM':
         this.state.toggl.form = {...this.state.toggl.form, ...action.form}
+        this.out_Dispatch()
         break
       case 'TOGGL_SAVE_LAST':
         this.toggl_RetroSave()
@@ -86,6 +88,8 @@ class App{
   
   //APP ACTIONS
   startWork = () => {
+    this.state.toggl.form.unsaved = null
+
     this.state.resting = null
     this.state.working = Date.now()
     this.state.time = this.timer.up()
@@ -155,11 +159,17 @@ class App{
       const data = await storageGet()
       if(data.config){
         this.state.config = {...this.state.config, ...data.config}
-      } 
+      }
       if(data.toggl){
         this.state.toggl.form.shouldSave = data.toggl.shouldSave
         await this.toggl_Connect(data.toggl.auth)
       }
+      if(!data.config && window.matchMedia('(prefers-color-scheme: dark)').matches){
+        this.state.config.dark = true
+      }
+/*       if(!data.toggl && settings.TOGGL_DEBUG){
+        await this.toggl_Connect(settings.TOGGL_DEBUG)
+      } */
     } catch (err){
       // TODO error display?
     }
@@ -186,8 +196,8 @@ class App{
         this.out_Dispatch()
         await togglApiAdd( login.token, this.state.working, Date.now(), form.desc, form.projectId)
         login.error = null
-      }catch(e){
-        login.error = e.message
+      }catch(e:any){
+        login.error = e.message ? e.message : settings.ERROR_MESSAGE
       }finally{
         login.loading = false
         form.unsaved = null
@@ -207,8 +217,8 @@ class App{
         this.out_Dispatch()
         await togglApiAdd( login.token, form.unsaved.start, form.unsaved.end, form.desc, form.projectId)
         login.error = null
-      }catch(e){
-        login.error = e.message
+      }catch(e:any){
+        login.error = e.message ? e.message : settings.ERROR_MESSAGE
       }finally{
         login.loading = false
         form.unsaved = null
@@ -232,8 +242,8 @@ class App{
       this.state.toggl.form.projectId= data.last || null
 
       t.error = null
-    }catch (error){
-      t.error = error.message
+    }catch (e :any){
+      t.error = e.message ? e.message : settings.ERROR_MESSAGE
     }finally{
       t.loading = false
       this.out_SaveStorage()
@@ -252,8 +262,8 @@ class App{
       if(t.token){
         await togglApiDisconnect(t.token)
       }
-    }catch(e){
-      t.error = e.message
+    }catch(e :any){
+      t.error = e.message ? e.message : settings.ERROR_MESSAGE
     }finally{
       this.out_Dispatch()
     }
@@ -294,7 +304,7 @@ class App{
 //GLOBAL ERROR CATCHERS
 const handleError = (err :Error)=>{
   log.error('Error caught in background script', err)
-  browser.storage.local.set({lastError: `${err.name}: ${err.message} ${err.stack ? `Stack: \n  ${err.stack}`:''}`})
+  browser.storage.local.set({lastError: `${err.name}: ${err.message} ${err.stack ? `Stack: \n  ${err.stack}`:''}`})//TODO string wrongly saved
 }
 addEventListener('error', (e:ErrorEvent)=>{handleError(e.error)})//TODO not working in firefox
 addEventListener('unhandledrejection', (e:PromiseRejectionEvent)=>{handleError(e.reason)})

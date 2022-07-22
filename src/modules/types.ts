@@ -127,7 +127,7 @@ export type Toggl_Entry = z.infer<typeof Toggl_Entry_Schema>
 export const Toggl_Me_Schema = z.object({
   data: z.object({
     projects : Toggl_Project_Schema.array().default([]),
-    time_entries : Toggl_Entry_Schema.array().default([])
+    time_entries : Toggl_Entry_Schema.partial().array().default([])
   })
 })
 export type Toggl_Me = z.infer<typeof Toggl_Me_Schema>

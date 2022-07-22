@@ -6,15 +6,18 @@ import { ErrorBoundary, useErrorHandler } from 'react-error-boundary'
 import { 
   AppContainer,
   BlockContainer,
+  AccordionContainer,
   AppFallback, 
   Controls, 
   Counter, 
   DispatchContext, 
-  Legend,
-  OptionsBlock,
-  RestAdjust, 
-  TogglFormBlock, 
-  TogglProfileBlock
+  //Legend,
+  Options,
+  RestAdjust,
+  TogglError,
+  TogglLogin,
+  TogglForm,
+  TogglCollapsed
 } from './modules/components'
 import {Action, State} from './modules/types'
 import {log, RetrievedError, useTimeoutUnless} from './modules/utils'
@@ -58,15 +61,28 @@ const App = () => {
       <DispatchContext.Provider value={dispatch}>
         <ThemeProvider theme={state.config.dark ? darkTheme : lightTheme}>
           <AppContainer>
-            <BlockContainer>
-              <Counter {...state.time} status={{working : !!state.working, resting : !!state.resting}}/>
-              <Legend {...{working : !!state.working, resting : !!state.resting}}/>
+            <BlockContainer className="CounterBlock" stacked>
+              {/*<Legend {...{working : !!state.working, resting : !!state.resting}}/>*/}
+              <Counter {...state.time} />
+              <Controls working={!!state.working} resting={!!state.resting} />
               <RestAdjust nextRest={state.nextRest} mode={state.config.mode} ></RestAdjust>
-              <Controls />
             </BlockContainer>
-            <TogglFormBlock logged={!!state.toggl.login.token} projects={memoProjects} {...state.toggl.form} />
-            <OptionsBlock {...state.config} />
-            <TogglProfileBlock {...state.toggl.login} />
+            
+            <BlockContainer className="OptionsBlock">
+              <Options {...state.config} />
+            </BlockContainer>
+
+            <AccordionContainer className="TogglBlock" 
+              label={<TogglCollapsed logged={!!state.toggl.login.token}/>} 
+              //expanded={!!state.toggl.login.token}
+            >
+              {!state.toggl.login.token ? 
+                <TogglLogin {...state.toggl.login} /> : 
+                <TogglForm {...state.toggl.form} projects={memoProjects}/>
+              }
+              {state.toggl.login.error && <TogglError error={state.toggl.login.error.message} />}
+            </AccordionContainer>
+
           </AppContainer>
         </ThemeProvider>
       </ DispatchContext.Provider>
@@ -77,5 +93,5 @@ ReactDOM.render(//TODO what about ThemeProvider here?
   <ErrorBoundary FallbackComponent={AppFallback}>
     <App/>
   </ErrorBoundary>, 
-document.getElementById('appContainer'))
+document.getElementById('appRoot'))
 

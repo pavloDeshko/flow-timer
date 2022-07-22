@@ -1,9 +1,9 @@
 import easyTimer from 'easytimer.js'
-declare module 'easytimer.js'{//TODO update and remove as pr merged
+/* declare module 'easytimer.js'{//TODO update and remove as pr merged
   interface Timer {
     removeAllEventListeners(eventType?: TimerEventType): void;
   }
-}
+} */
 import {Time} from './types'
 import {ZERO_TIMER} from './utils'
 

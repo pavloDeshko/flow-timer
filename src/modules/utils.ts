@@ -20,6 +20,10 @@ export const useTimeoutUnless = (callback :()=>void, shouldCancel :boolean, time
   })
 }
 
+export const useFreeze = <T>(value:T)=>{
+  return useState(value)[0]
+}
+
 export const ZERO_TIMER :Time = {
   hours: 0,
   minutes: 0,
@@ -68,6 +72,7 @@ const makeParseNumber = (max:number) => (value :string, fallback = 0) => {
 }
 
 export const parse = {
+  twoDigit: makeParseNumber(99),
   h: makeParseNumber(24),
   m: makeParseNumber(60),
   s: makeParseNumber(60),
@@ -81,7 +86,7 @@ export const parse = {
 }
 
 export const log = {
-  error: (message? :string, error? :Error, state? :{})=>{
+  error: (message? :string, error? :any, state? :{})=>{
     console.log('Error logged: ', message)
     error && console.log(' error: ', error.toString())
     state && console.log('   ', JSON.stringify(state, undefined, 2))
