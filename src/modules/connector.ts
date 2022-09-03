@@ -1,4 +1,4 @@
-import { EXTENSION } from './settings'
+import { EXTENSION } from '../settings'
 
 export interface Connector{
   postMessage(m :any):void

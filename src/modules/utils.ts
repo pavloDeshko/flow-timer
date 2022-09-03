@@ -1,5 +1,5 @@
 import { Time } from './types'
-import { MIN_REST, MAX_REST, DEFAULT_RATIO} from './settings'
+import { MIN_REST, MAX_REST, DEFAULT_RATIO} from '../settings'
 import { useEffect, useState } from 'react'
 import { z }from 'zod'
 

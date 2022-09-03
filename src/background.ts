@@ -1,14 +1,14 @@
 import Timer from './modules/timer'
-import {Action, Config, State, Time, Mode} from './modules/types'
+import {Action, Config, State, Time, Mode, NotifyType, IconObject} from './modules/types'
 import {ZERO_TIMER, getRestTime, log} from './modules/utils'
-import {togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave} from './modules/service'
+import {togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave, notify} from './modules/service'
 import {onConnect, Connector} from './modules/connector'
-import * as settings from './modules/settings'
+import * as settings from './settings'
 
 //ICONS
-const DEFAULT_ICON = 'icons/idle.svg'
-const WORK_ICON = 'icons/work.svg'
-const REST_ICON = 'icons/rest.svg'
+const DEFAULT_ICON = {16:"icons/idle_16.png", 32:"icons/idle_32.png", 64:"icons/idle_64.png"} as const
+const WORK_ICON = {16:"icons/work_16.png", 32:"icons/work_32.png", 64:"work/idle_64.png"} as const
+const REST_ICON = {16:"icons/rest_16.png", 32:"icons/rest_32.png", 64:"icons/rest_64.png"} as const
 
 class App{
   timer :Timer
@@ -243,7 +243,8 @@ class App{
 
       t.error = null
     }catch (e :any){
-      t.error = e.message ? e.message : settings.ERROR_MESSAGE
+      const message :string = typeof e.message == 'string' ? e.message : settings.ERROR_MESSAGE
+      t.error = message
     }finally{
       t.loading = false
       this.out_SaveStorage()
@@ -275,14 +276,10 @@ class App{
   }
 
   out_Notify = (pomodoro = false) => {
-    browser.notifications.create({
-      type: 'basic',
-      title: pomodoro ? 'Pomodoro alert!' : 'Time to work!',
-      message: pomodoro ? 'you\'ve been working for a long time, take a rest' : 'your rest time is up'
-    })
+     notify(pomodoro?NotifyType.POM:NotifyType.WORK)
   }
 
-  out_ChangeIcon = (path : string)=> {
+  out_ChangeIcon = (path : string | IconObject)=> {
     browser.browserAction.setIcon({path})
   }
 

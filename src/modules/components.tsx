@@ -28,6 +28,8 @@ import Save from "@mui/icons-material/Save"
 import Link from "@mui/icons-material/Link"
 import ExitToApp from "@mui/icons-material/ExitToApp"
 import BrightnessMedium from "@mui/icons-material/BrightnessMedium"
+import Brightness4 from '@mui/icons-material/Brightness4'
+import Brightness7 from '@mui/icons-material/Brightness7'
 import Refresh from "@mui/icons-material/Refresh"
 import Key from "@mui/icons-material/Key"
 import FileCopyOutlined from "@mui/icons-material/FileCopyOutlined"
@@ -37,7 +39,7 @@ import clipboardCopy from 'clipboard-copy'
 
 import {Action, Time, Config, TogglLogin as TogglLoginData, TogglForm as TogglFormData, Toggl_Project, Mode} from './types'
 import {padTwoZeros, parse, log, useFreeze} from './utils'
-import {SUPPORT_EMAIL,POM_TIMES} from './settings'
+import {SUPPORT_EMAIL,POM_TIMES} from '../settings'
 
 export const DispatchContext = React.createContext((a:Action)=>{log.debug('Dispached action: ', a)})//for testing compts without provider
 
@@ -63,7 +65,7 @@ export const AppContainer = ({children}:{children:ReactNode})=>
  */
 
 const blockStyles= {
-  position:"relative",
+  //position:"relative",
   padding: "1rem",
   "& .MuiDivider-root":{marginY:"0.5rem"}
 } as const
@@ -84,8 +86,9 @@ export const BlockContainer = (
 export const AccordionContainer = (
   {className='', label, children, expanded=false}
   :{className?:string,label:ReactNode,children:ReactNode[],expanded?:boolean}) => {
+  expanded = useFreeze(expanded)
   return (
-      <Accordion className={className} elevation={3} sx={{
+      <Accordion className={className} elevation={3} defaultExpanded={expanded} sx={{
         ...blockStyles,
         boxShadow:0,
         ".MuiAccordionSummary-root, .MuiAccordionDetails-root":{paddingX:0},
@@ -159,10 +162,10 @@ export const Controls = memo(({working,resting}:{working:boolean,resting:boolean
 
   return(
     <ButtonGroup sx={{
-      '.MuiButton-outlined':{borderWidth:'2px'}
+      '.MuiButton-root, .MuiButton-root:hover':{borderWidth:'2px'}
     }} fullWidth>
-      <Button variant={working? 'contained' : 'outlined'} color="secondary" onClick={work}>{working?'working':'work'}</Button>
-      <Button variant={resting? 'contained' : 'outlined'} color="primary" onClick={rest}>{resting?'resting':'rest'}</Button>
+      <Button variant={working? 'contained' : 'outlined'} color="secondary" onClick={work}>{working?'stop working':'work'}</Button>
+      <Button variant={resting? 'contained' : 'outlined'} color="primary" onClick={rest}>{resting?'stop resting':'rest'}</Button>
     </ButtonGroup>
   )
 
@@ -436,7 +439,7 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
       <Button
         sx={{color:"text.primary", textTransform:"none", fontSize:"1rem", pl:"2px"}}
         size="large"
-        startIcon={<BrightnessMedium color="primary"/>}
+        startIcon={dark ? <Brightness7 color="primary"/>:<Brightness4 color="primary"/>}
         onClick={setDark}
       >Dark/light mode</Button>
     </Box>
@@ -499,7 +502,7 @@ export const TogglError = memo(({error}:{error :string})=>{
         sx={{ mb:"-0.5rem",mt:"0.25rem"}}
       >
         <Typography 
-          sx={{color:"error.main",fontSize:"0.75rem"}}
+          sx={{color:"error.light",fontSize:"0.75rem"}}
         >
           {error}
         </Typography>

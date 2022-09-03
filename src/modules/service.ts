@@ -1,8 +1,13 @@
 import wretch from 'wretch'
 
-import {Toggl_Entry_Params, Toggl_Auth, Toggl_Me, Toggl_Project, UserStorage, UserStorageSchema, Toggl_Me_Schema} from './types'
-import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME} from './settings'
+import {Toggl_Entry_Params, Toggl_Auth, Toggl_Me, Toggl_Project, UserStorage, UserStorageSchema, Toggl_Me_Schema, NotifyType} from './types'
+import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME} from '../settings'
 import {log} from './utils'
+
+const WORK_SOUND = 'sounds/work.ogg'
+const POM_SOUND = 'sounds/pom.ogg'
+const WORK_ALERT_ICON = 'icons/workAlert.svg'
+const POM_ALERT_ICON = 'icons/pomAlert.svg'
 
 const w = wretch()
   .url(TOGGL_URL)
@@ -80,4 +85,15 @@ export const storageSave = async(data :UserStorage)=>{
     log.error('Error on trying to save to storage', err)
     throw new Error("Can't save your options for future use :(")
   }
+}
+
+export const notify = (type:NotifyType)=>{
+  const pomodoro = type == NotifyType.POM
+  browser.notifications.create({
+    type: 'basic',
+    title: pomodoro ? 'Pomodoro alert!' : 'Time to work!',
+    message: pomodoro ? 'you\'ve been working for a long time, take a rest' : 'your rest time is up',
+    iconUrl: pomodoro ? POM_ALERT_ICON : WORK_ALERT_ICON
+  })
+  new Audio(pomodoro ? POM_SOUND : WORK_SOUND).play()
 }

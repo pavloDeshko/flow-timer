@@ -1,7 +1,7 @@
 import {z} from 'zod'
 
 import {secondsToObject} from './utils'
-import { MIN_REST, MAX_REST, DEFAULT_RATIO} from './settings'
+import { MIN_REST, MAX_REST, DEFAULT_RATIO} from '../settings'
 
 export type Action = {
   type: 'WORK'
@@ -69,7 +69,7 @@ export type TogglForm = {
 
 export type TogglLogin = {
   token : string | null,
-  error : Error | null,
+  error : string | null,
   loading : boolean,
   projects : Array<Toggl_Project>
 }
@@ -147,6 +147,12 @@ export const UserStorageSchema = z.object({
 })
 export type UserStorage = z.infer<typeof UserStorageSchema>
 
+export enum NotifyType {
+  WORK ="WORK",
+  POM = "POM"
+}
+
+export type IconObject = {16:string, 32:string, 64:string} 
 
 /* {
   timer: secondsToObject(0),

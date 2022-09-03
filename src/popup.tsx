@@ -74,13 +74,13 @@ const App = () => {
 
             <AccordionContainer className="TogglBlock" 
               label={<TogglCollapsed logged={!!state.toggl.login.token}/>} 
-              //expanded={!!state.toggl.login.token}
+              expanded={!!state.toggl.login.token}
             >
               {!state.toggl.login.token ? 
                 <TogglLogin {...state.toggl.login} /> : 
                 <TogglForm {...state.toggl.form} projects={memoProjects}/>
               }
-              {state.toggl.login.error && <TogglError error={state.toggl.login.error.message} />}
+              {state.toggl.login.error && <TogglError error={state.toggl.login.error} />}
             </AccordionContainer>
 
           </AppContainer>
