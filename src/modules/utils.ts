@@ -114,7 +114,7 @@ export class RetrievedError extends Error{
   constructor(value :browser.storage.StorageValue | string){
     super('Last error retrived from local storage')
     this.name = 'RetrievedError'
-    this.lastError = value ? value.toString() : ''
+    this.lastError = typeof value == 'string' ? value : String(value)  // value ? value.toString() : ''
   }
   lastError:string
   toString(){

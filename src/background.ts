@@ -1,14 +1,14 @@
 import Timer from './modules/timer'
 import {Action, Config, State, Time, Mode, NotifyType, IconObject} from './modules/types'
 import {ZERO_TIMER, getRestTime, log} from './modules/utils'
-import {togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave, notify} from './modules/service'
+import {togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave, storageErrorSave,notify} from './modules/service'
 import {onConnect, Connector} from './modules/connector'
 import * as settings from './settings'
 
 //ICONS
-const DEFAULT_ICON = {16:"icons/idle_16.png", 32:"icons/idle_32.png", 64:"icons/idle_64.png"} as const
-const WORK_ICON = {16:"icons/work_16.png", 32:"icons/work_32.png", 64:"work/idle_64.png"} as const
-const REST_ICON = {16:"icons/rest_16.png", 32:"icons/rest_32.png", 64:"icons/rest_64.png"} as const
+const DEFAULT_ICON = {16:"res/idle_16.png", 32:"res/idle_32.png", 64:"res/idle_64.png"} as const
+const WORK_ICON = {16:"res/work_16.png", 32:"res/work_32.png", 64:"work/idle_64.png"} as const
+const REST_ICON = {16:"res/rest_16.png", 32:"res/rest_32.png", 64:"res/rest_64.png"} as const
 
 class App{
   timer :Timer
@@ -96,6 +96,7 @@ class App{
     this.pomTimer.down({...ZERO_TIMER,...{minutes:this.state.config.pomTime}})
 
     this.out_ChangeIcon(WORK_ICON)
+    this.out_SaveStorage() 
     this.out_Dispatch()
   }
   
@@ -111,7 +112,7 @@ class App{
   }
   
   startRest = () => {
-    this.toggl_Save()
+    this.state.working && this.toggl_Save()
 
     this.state.working = null
     this.state.resting = Date.now()
@@ -197,7 +198,7 @@ class App{
         await togglApiAdd( login.token, this.state.working, Date.now(), form.desc, form.projectId)
         login.error = null
       }catch(e:any){
-        login.error = e.message ? e.message : settings.ERROR_MESSAGE
+        this.out_Toggl_Error(e)
       }finally{
         login.loading = false
         form.unsaved = null
@@ -218,7 +219,7 @@ class App{
         await togglApiAdd( login.token, form.unsaved.start, form.unsaved.end, form.desc, form.projectId)
         login.error = null
       }catch(e:any){
-        login.error = e.message ? e.message : settings.ERROR_MESSAGE
+        this.out_Toggl_Error(e)
       }finally{
         login.loading = false
         form.unsaved = null
@@ -243,8 +244,7 @@ class App{
 
       t.error = null
     }catch (e :any){
-      const message :string = typeof e.message == 'string' ? e.message : settings.ERROR_MESSAGE
-      t.error = message
+      this.out_Toggl_Error(e)
     }finally{
       t.loading = false
       this.out_SaveStorage()
@@ -264,7 +264,7 @@ class App{
         await togglApiDisconnect(t.token)
       }
     }catch(e :any){
-      t.error = e.message ? e.message : settings.ERROR_MESSAGE
+      this.out_Toggl_Error(e)
     }finally{
       this.out_Dispatch()
     }
@@ -282,7 +282,13 @@ class App{
   out_ChangeIcon = (path : string | IconObject)=> {
     browser.browserAction.setIcon({path})
   }
-
+  
+  out_Toggl_Error = (e:any) => {
+    const message :string = typeof e.message == 'string' ? e.message : settings.ERROR_MESSAGE
+    this.state.toggl.login.error = message
+    log.error("Toggl network error",e,this.state)
+  }
+  
   out_SaveStorage = async() => {
     try{
       await storageSave({
@@ -301,7 +307,7 @@ class App{
 //GLOBAL ERROR CATCHERS
 const handleError = (err :Error)=>{
   log.error('Error caught in background script', err)
-  browser.storage.local.set({lastError: `${err.name}: ${err.message} ${err.stack ? `Stack: \n  ${err.stack}`:''}`})//TODO string wrongly saved
+  storageErrorSave(err)
 }
 addEventListener('error', (e:ErrorEvent)=>{handleError(e.error)})//TODO not working in firefox
 addEventListener('unhandledrejection', (e:PromiseRejectionEvent)=>{handleError(e.reason)})

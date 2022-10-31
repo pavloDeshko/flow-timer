@@ -4,10 +4,12 @@ import {Toggl_Entry_Params, Toggl_Auth, Toggl_Me, Toggl_Project, UserStorage, Us
 import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME} from '../settings'
 import {log} from './utils'
 
-const WORK_SOUND = 'sounds/work.ogg'
-const POM_SOUND = 'sounds/pom.ogg'
-const WORK_ALERT_ICON = 'icons/workAlert.svg'
-const POM_ALERT_ICON = 'icons/pomAlert.svg'
+const WORK_SOUND = 'res/work.ogg'
+const POM_SOUND = 'res/pom.ogg'
+const WORK_ALERT_ICON = 'res/workAlert.svg'
+const POM_ALERT_ICON = 'res/pomAlert.svg'
+
+const STORAGE_ERROR_KEY = 'STORAGE_ERROR_KEY'
 
 const w = wretch()
   .url(TOGGL_URL)
@@ -85,6 +87,16 @@ export const storageSave = async(data :UserStorage)=>{
     log.error('Error on trying to save to storage', err)
     throw new Error("Can't save your options for future use :(")
   }
+}
+
+export const storageErrorSave = async(err: Error)=>{
+  return browser.storage.local.set({
+    [STORAGE_ERROR_KEY]: JSON.stringify(err, undefined, 2)//TODO string wrongly saved `${err.name}: ${err.message} ${err.stack ? `Stack: \n  ${err.stack}`:''}`
+  })
+}
+
+export const storageErrorGet = ()=>{
+  return browser.storage.local.get(STORAGE_ERROR_KEY).then(storage=>storage[STORAGE_ERROR_KEY])
 }
 
 export const notify = (type:NotifyType)=>{

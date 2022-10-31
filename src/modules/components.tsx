@@ -21,7 +21,9 @@ import {
   Theme,
   Checkbox,
   Accordion, AccordionSummary, AccordionDetails,
-  Autocomplete
+  Autocomplete,
+  Popover,
+  Card, CardContent, CardActions, CardMedia
  } from '@mui/material'
 import Update from "@mui/icons-material/Update"
 import Save from "@mui/icons-material/Save"
@@ -34,12 +36,16 @@ import Refresh from "@mui/icons-material/Refresh"
 import Key from "@mui/icons-material/Key"
 import FileCopyOutlined from "@mui/icons-material/FileCopyOutlined"
 import ExpandMore from  "@mui/icons-material/ExpandMore"
+import HelpOutlineOutlined from '@mui/icons-material/HelpOutlineOutlined';
+import Close from '@mui/icons-material/Close';
 
 import clipboardCopy from 'clipboard-copy'
 
 import {Action, Time, Config, TogglLogin as TogglLoginData, TogglForm as TogglFormData, Toggl_Project, Mode} from './types'
 import {padTwoZeros, parse, log, useFreeze} from './utils'
-import {SUPPORT_EMAIL,POM_TIMES} from '../settings'
+import {SUPPORT_EMAIL,POM_TIMES,TOGGL_TOKEN_URL} from '../settings'
+
+const TOGGL_HELP_IMAGE = "res/togglHelpImg.png"
 
 export const DispatchContext = React.createContext((a:Action)=>{log.debug('Dispached action: ', a)})//for testing compts without provider
 
@@ -69,6 +75,7 @@ const blockStyles= {
   padding: "1rem",
   "& .MuiDivider-root":{marginY:"0.5rem"}
 } as const
+
 export const BlockContainer = (
   {children, className='', stacked=false, sx = {}}:{children:ReactNode,className?:string, stacked?:boolean,sx?:{}}
 ) => {//TODO sx types
@@ -104,6 +111,34 @@ export const AccordionContainer = (
         </AccordionDetails>
       </Accordion>
   )
+}
+
+const HelpPopover = ({children}:{children:ReactNode})=>{
+  const triggerRef = React.createRef<SVGSVGElement>()
+
+  const [open, setOpen] = useState(false)
+
+  return(<span>
+    <HelpOutlineOutlined
+      sx={{fontSize:"inherit",cursor:"pointer"}}
+      ref={triggerRef}
+      onClick={e=>setOpen(true)}
+    />
+{  <Popover
+      sx={{ml:"10px"}}
+      anchorOrigin={{vertical:'top',horizontal:'center'}}
+      transformOrigin={{vertical:'bottom',horizontal:'center'}}
+      anchorEl={()=>(triggerRef.current as SVGSVGElement)}//TODO botched material function type
+      onClose={()=>setOpen(false)}
+      open={open}
+    >
+      {children}
+      <IconButton size="small" 
+        sx={{position:"absolute", top:'5px', right:'5px'}}
+        onClick={_=>setOpen(false)}
+      ><Close/></IconButton>
+    </Popover>}
+  </span>)
 }
 
 export const Counter = memo(({hours, minutes, seconds} :Time ) => {
@@ -366,10 +401,12 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
     type: 'CONFIG',
     config: {pomActive : e.target.checked}
   })
-  const setPomTime = (_:unknown, value:string)=> dispatch({
-    type: 'CONFIG',
-    config: {pomTime : parse.twoDigit(value,pomTime)}
-  })
+  const setPomTime = (_:unknown, value:string, reason :any)=> {
+    reason=="input" && dispatch({
+      type: 'CONFIG',
+      config: {pomTime : parse.twoDigit(value,pomTime)}
+    })
+  }
   const setDark = () => dispatch({
     type: 'CONFIG',
     config: {dark : !dark}
@@ -495,7 +532,7 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
   ) */
 })
 
-export const TogglError = memo(({error}:{error :string})=>{
+export const TogglError = memo( ({error}:{error :string | null})=>{
   return(
     <Collapse in={!!error}>
       <Box 
@@ -510,6 +547,20 @@ export const TogglError = memo(({error}:{error :string})=>{
     </Collapse>
   )
 })
+
+const TogglHelpCard = ()=>(
+  <Card sx={{maxWidth:"300px"}}>
+    <CardMedia component="img" width="300px" alt="Help Image" image={TOGGL_HELP_IMAGE}/>
+    <CardContent sx={{pb:"0"}}>
+      <Typography>Loren Ipsun blablabla Loren Ipsun blablablaLoren Ipsun blablablaLoren Ipsun blablablaLoren Ipsun blablablaLoren Ipsun blablabla </Typography> 
+    </CardContent>
+    <CardActions>
+      <Button size="small" href={TOGGL_TOKEN_URL} target="_blank">
+        Go to toggl profile
+      </Button>
+    </CardActions>
+  </Card>
+)
 
 export const TogglLogin = memo(({loading} :TogglLoginData) => {
 
@@ -527,7 +578,6 @@ export const TogglLogin = memo(({loading} :TogglLoginData) => {
   
   return( 
     <Box>
-      <Collapse in={true}>
         {/* <IconButton 
           sx={{position:"absolute", right:1, top:1}}
         >
@@ -539,13 +589,19 @@ export const TogglLogin = memo(({loading} :TogglLoginData) => {
         <TextField 
           size="small" 
           type="password" 
-          label="Your toggl token"
+          focused
+          InputLabelProps={{shrink:true,sx:{pointerEvents:'auto'}}}
           InputProps={{
             startAdornment:
               <InputAdornment position="start"><Key/></InputAdornment>,
             sx:{pl:"0.5rem"}
           }}
-          focused
+          label={
+            <Typography component="span" sx={{fontSize:"inherit"}}>
+              Your toggl token here
+              <HelpPopover><TogglHelpCard/></HelpPopover>
+            </Typography>
+          } 
           value={token}
           onChange={ e=>setToken(e.target.value) }
           error={token!=='' && !valid}
@@ -562,8 +618,6 @@ export const TogglLogin = memo(({loading} :TogglLoginData) => {
             /> 
           </IconButton></span>
         </Tooltip>
-
-      </Collapse>
     </Box>
   )
 
@@ -784,7 +838,7 @@ export const AppFallback = ({error}:{error:Error}) => {
       <Typography component="div" sx={{margin:"1rem"}}>
         <Typography variant="h6">Sorry, it seems like internals of our app crashed :-/</Typography>
         <p>Please, drop us a note at <CopyLink value={'SUPPORT_EMAIL'} /> about what happened. Click
-          <CopyLink value={`${error.toString()} Stack: \n  ${error.stack}`} text="here"/>
+          <CopyLink value={`${error.toString()} Stack: \n  ${error.stack}`} text="here"/>{/*TODO add state here*/}
           to copy geeky data and paste it into your email so we can understand what went wrong.
         </p>
         <p>We <span>will</span> try to solve the problem asap!</p>

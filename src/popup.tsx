@@ -20,6 +20,7 @@ import {
   TogglCollapsed
 } from './modules/components'
 import {Action, State} from './modules/types'
+import {storageErrorGet} from './modules/service'
 import {log, RetrievedError, useTimeoutUnless} from './modules/utils'
 import {lightTheme, darkTheme} from './modules/styles'
 import {connect, Connector} from './modules/connector'
@@ -31,11 +32,10 @@ const App = () => {
   const handleFatal = useErrorHandler()
   
   const crash = () => {
-    browser.storage.local.get('lastError').then(
-      storage=>{
-        const err = (new RetrievedError(storage['lastError']))
-        log.error('retrived object: ', err)
-        handleFatal(err)
+    storageErrorGet().then(
+      errorJSON=>{
+        log.error('retrived object: ', errorJSON)
+        handleFatal(new RetrievedError(errorJSON))
       },
       handleFatal
     )
@@ -74,13 +74,13 @@ const App = () => {
 
             <AccordionContainer className="TogglBlock" 
               label={<TogglCollapsed logged={!!state.toggl.login.token}/>} 
-              expanded={!!state.toggl.login.token}
+              expanded={!!state.toggl.login.token} 
             >
               {!state.toggl.login.token ? 
                 <TogglLogin {...state.toggl.login} /> : 
                 <TogglForm {...state.toggl.form} projects={memoProjects}/>
               }
-              {state.toggl.login.error && <TogglError error={state.toggl.login.error} />}
+              <TogglError error={state.toggl.login.error} />
             </AccordionContainer>
 
           </AppContainer>

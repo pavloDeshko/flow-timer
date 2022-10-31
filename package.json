@@ -22,14 +22,15 @@
     "zod": "^3.8.2"
   },
   "scripts": {
-    "ts": "rimraf app/scripts && tsc",
-    "predev": "rimraf app/scripts && tsc --watch &",
-    "dev": "sleep 10 && webextension-toolbox dev firefox",
-    "build": "yarn ts && webextension-toolbox build firefox"
+    "predev": "rimraf ./build && cpr ./public ./build && tsc --watch &",
+    "dev": "sleep 10 && webextension-toolbox dev --src ./build firefox",
+    "prebuild":"rimraf ./build && cpr ./public ./build && yarn tsc",
+    "build": "webextension-toolbox build --src ./build firefox"
   },
   "devDependencies": {
     "@types/node": "^16.6.1",
     "@types/react-dom": "^17.0.9",
+    "cpr": "^3.0.1",
     "rimraf": "^3.0.2",
     "web-ext-types": "^3.2.1"
   }
