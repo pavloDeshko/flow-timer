@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, memo} from 'react'
 import ReactDOM from 'react-dom'
 import {ThemeProvider} from '@mui/material/styles'
 import { ErrorBoundary, useErrorHandler } from 'react-error-boundary'
+import './background'//TODO DIFF WITH EXT
 
 import { 
   AppContainer,
@@ -17,9 +18,10 @@ import {
   TogglError,
   TogglLogin,
   TogglForm,
-  TogglCollapsed
+  TogglCollapsed,
+  TimeAlert
 } from './modules/components'
-import {Action, State} from './modules/types'
+import {Action, State, NotifyType} from './modules/types'
 import {storageErrorGet} from './modules/service'
 import {log, RetrievedError, useTimeoutUnless} from './modules/utils'
 import {lightTheme, darkTheme} from './modules/styles'
@@ -29,22 +31,39 @@ const App = () => {
   const [[dispatch], setDispatch] = useState([(a :Action)=>{log.bug('Action dispatched on popup while no port is present: ', a)}])
   const [state, setAppState] = useState<State | null>(null)
   const memoProjects = useMemo(() => state ? state.toggl.login.projects : [], [state?.toggl.login.projects.length])
-  const handleFatal = useErrorHandler()
   
-  const crash = () => {
+  const [alert, setAlert] = useState<NotifyType | null>(null)
+  const cancelAlerts = (work:boolean,rest:boolean)=>{
+    (
+      alert == NotifyType.POM && !work || 
+      alert == NotifyType.WORK && !rest
+    ) && setAlert(null)
+  }
+
+  const handleFatal = useErrorHandler()
+  const crash = (reason:string) => {
     storageErrorGet().then(
       errorJSON=>{
-        log.error('retrived object: ', errorJSON)
+        log.error(reason +' retrived object: ', errorJSON)
         handleFatal(new RetrievedError(errorJSON))
       },
       handleFatal
     )
   }
-  useTimeoutUnless(crash, !!state, 1000)
+  useTimeoutUnless(()=>crash('Crashed on timeout'), !!state, 1000)
   
   const react = (action :{} | Action) => {
     log.debug('New action recieved', action)
-    'type' in action && action.type == 'STATE' ? setAppState(action.state) :  log.bug('Unknown object at popup port', action)
+    if('type' in action){
+      if(action.type == 'STATE'){
+        setAppState({...action.state})//TODO clones state twice on extension
+        cancelAlerts(!!action.state.working, !!action.state.resting)
+      }else if(action.type == 'NOTIFY'){
+        setAlert(action.subType)
+      }
+    }else{
+      log.bug('Unknown object at popup port', action)
+    }
   }
 
   useEffect(() => {
@@ -54,7 +73,7 @@ const App = () => {
       p.postMessage(action) 
     }])
     p.onMessage(react)
-    p.onDisconnect(()=>{crash})
+    p.onDisconnect(()=>crash('Crashed on disconnect'))//check
   }, [])
 
   return state && (
@@ -66,6 +85,7 @@ const App = () => {
               <Counter {...state.time} />
               <Controls working={!!state.working} resting={!!state.resting} />
               <RestAdjust nextRest={state.nextRest} mode={state.config.mode} ></RestAdjust>
+              <TimeAlert type={alert}/>
             </BlockContainer>
             
             <BlockContainer className="OptionsBlock">

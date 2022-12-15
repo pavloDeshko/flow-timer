@@ -1,7 +1,9 @@
+import favicon from 'favicon.js' //write @types TODO
 import wretch from 'wretch'
+//import favicon from 'favicon.js'
 
-import {Toggl_Entry_Params, Toggl_Auth, Toggl_Me, Toggl_Project, UserStorage, UserStorageSchema, Toggl_Me_Schema, NotifyType} from './types'
-import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME} from '../settings'
+import {Toggl_Entry_Params, Toggl_Auth, Toggl_Me, Toggl_Project, UserStorage, UserStorageSchema, Toggl_Me_Schema, NotifyType, IconObject} from './types'
+import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME, EXTENSION} from '../settings'
 import {log} from './utils'
 
 const WORK_SOUND = 'res/work.ogg'
@@ -9,7 +11,19 @@ const POM_SOUND = 'res/pom.ogg'
 const WORK_ALERT_ICON = 'res/workAlert.svg'
 const POM_ALERT_ICON = 'res/pomAlert.svg'
 
+/* const storage = EXTENSION ? 
+  {get : browser.storage.local.get, set : browser.storage.local.set} : 
+  {
+    get: 
+     (keys :string[]) => keys.map(k=>localStorage.getItem(k)), 
+    set: 
+      () => localStorage.setItem
+  } 
+const ICON = ''
+const NOTIFICATION = ''*/
+
 const STORAGE_ERROR_KEY = 'STORAGE_ERROR_KEY'
+const STORAGE_USER_KEY = 'STORAGE_USER_KEY'
 
 const w = wretch()
   .url(TOGGL_URL)
@@ -68,9 +82,16 @@ export const togglApiAdd = async (credential :Toggl_Auth, start :number, stop :n
     .res().catch(handleTogglOther)
 }
 
+export const iconChange = (path : string | IconObject)=> {
+  EXTENSION ? browser.browserAction.setIcon({path}) : favicon.change(typeof path == 'string' ? path : path[16])
+}
+
 export const storageGet = async():Promise<UserStorage>=>{
   try{
-    const data = UserStorageSchema.parse(await browser.storage.local.get<UserStorage>(['config', 'toggle']))
+    const data =  UserStorageSchema.parse(EXTENSION ? 
+      await browser.storage.local.get<UserStorage>(['config', 'toggle']):
+      JSON.parse(localStorage.getItem(STORAGE_USER_KEY) || '{}')
+    )
     log.debug('Retrieved from storage: ', data)
     return data
   }catch(err){
@@ -81,7 +102,9 @@ export const storageGet = async():Promise<UserStorage>=>{
 
 export const storageSave = async(data :UserStorage)=>{
   try{
-    await browser.storage.local.set(data)//TODO add validation here?
+    EXTENSION ?
+      await browser.storage.local.set(data)://TODO add validation here?
+      localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(data))
     log.debug('Saved to storage.',data)
   }catch(err){
     log.error('Error on trying to save to storage', err)
@@ -90,22 +113,27 @@ export const storageSave = async(data :UserStorage)=>{
 }
 
 export const storageErrorSave = async(err: Error)=>{
-  return browser.storage.local.set({
-    [STORAGE_ERROR_KEY]: JSON.stringify(err, undefined, 2)//TODO string wrongly saved `${err.name}: ${err.message} ${err.stack ? `Stack: \n  ${err.stack}`:''}`
-  })
+  const data = JSON.stringify(err, undefined, 2)//TODO string wrongly saved `${err.name}: ${err.message} ${err.stack ? `Stack: \n  ${err.stack}`:''}`
+  return EXTENSION ? 
+    browser.storage.local.set({[STORAGE_ERROR_KEY]: data}):
+    localStorage.setItem(STORAGE_ERROR_KEY, data)
 }
 
-export const storageErrorGet = ()=>{
-  return browser.storage.local.get(STORAGE_ERROR_KEY).then(storage=>storage[STORAGE_ERROR_KEY])
+export const storageErrorGet = async()=>{
+  return EXTENSION ? 
+    browser.storage.local.get(STORAGE_ERROR_KEY).then(storage=>storage[STORAGE_ERROR_KEY]):
+    localStorage.getItem(STORAGE_ERROR_KEY)
 }
 
 export const notify = (type:NotifyType)=>{
   const pomodoro = type == NotifyType.POM
-  browser.notifications.create({
+  EXTENSION ? browser.notifications.create({
     type: 'basic',
     title: pomodoro ? 'Pomodoro alert!' : 'Time to work!',
     message: pomodoro ? 'you\'ve been working for a long time, take a rest' : 'your rest time is up',
     iconUrl: pomodoro ? POM_ALERT_ICON : WORK_ALERT_ICON
-  })
+  }) : ()=>{} //TODO implement web notification
   new Audio(pomodoro ? POM_SOUND : WORK_SOUND).play()
 }
+
+export const reload = ()=>{ EXTENSION ? browser.runtime.reload() : location.reload()}

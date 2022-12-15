@@ -23,7 +23,8 @@ import {
   Accordion, AccordionSummary, AccordionDetails,
   Autocomplete,
   Popover,
-  Card, CardContent, CardActions, CardMedia
+  Card, CardContent, CardActions, CardMedia,
+  Alert
  } from '@mui/material'
 import Update from "@mui/icons-material/Update"
 import Save from "@mui/icons-material/Save"
@@ -41,9 +42,10 @@ import Close from '@mui/icons-material/Close';
 
 import clipboardCopy from 'clipboard-copy'
 
-import {Action, Time, Config, TogglLogin as TogglLoginData, TogglForm as TogglFormData, Toggl_Project, Mode} from './types'
+import {Action, Time, Config, TogglLogin as TogglLoginData, TogglForm as TogglFormData, Toggl_Project, Mode, NotifyType} from './types'
 import {padTwoZeros, parse, log, useFreeze} from './utils'
 import {SUPPORT_EMAIL,POM_TIMES,TOGGL_TOKEN_URL} from '../settings'
+import {reload} from './service'
 
 const TOGGL_HELP_IMAGE = "res/togglHelpImg.png"
 
@@ -384,6 +386,24 @@ export const RestAdjust = memo(({nextRest:{hours,minutes,seconds}, mode} :{nextR
     </Box>
   ) */
 })
+
+export const TimeAlert = ({type} :{type :(NotifyType|null)})=>{
+  return (
+    <Collapse in={!!type}>
+      <Alert
+        variant="outlined"
+        severity="warning"//TODO color depends on type?
+        sx={{
+          pl: "0.5rem",
+          "& > *": { paddingY: "0px" }
+        }}
+        action={<IconButton sx={{ paddingY: "0px" }} size="small">
+          <Close fontSize="inherit" />
+        </IconButton>}
+      >{type == NotifyType.WORK ? 'Time to work!' : 'Time to rest!'}</Alert>
+    </Collapse>
+  )
+}
 
 export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) => {
   const dispatch = useContext(DispatchContext)
@@ -831,7 +851,6 @@ export const CopyLink = ({value, text, loading = false}:{value:string, text?:str
 }
 
 export const AppFallback = ({error}:{error:Error}) => {
-  const reload = () => {browser.runtime.reload()}
 
   return(
     <Paper elevation={3} sx={{padding:"0.5rem", width: "400px"}}>

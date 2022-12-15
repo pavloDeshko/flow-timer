@@ -15,23 +15,52 @@
     "@mui/material": "^5.0.1",
     "clipboard-copy": "^4.0.1",
     "easytimer.js": "^4.5.3",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
+    "favicon.js": "^1.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "react-error-boundary": "^3.1.3",
+    "web-vitals": "^2.1.4",
     "wretch": "^1.7.4",
     "zod": "^3.8.2"
   },
   "scripts": {
-    "predev": "rimraf ./build && cpr ./public ./build && tsc --watch &",
-    "dev": "sleep 10 && webextension-toolbox dev --src ./build firefox",
-    "prebuild":"rimraf ./build && cpr ./public ./build && yarn tsc",
-    "build": "webextension-toolbox build --src ./build firefox"
+    "prepack": "build:ext && build:web",
+    "predev:ext": "rimraf ./compiled && cpr ./public ./compiled && tsc --watch &",
+    "dev:ext": "sleep 10 && webextension-toolbox dev --src ./compiled --target ./dist/extension/[vendor] firefox",
+    "prebuild:ext": "rimraf ./compiled && cpr ./public ./compiled && tsc",
+    "build:ext": "webextension-toolbox build --src ./compiled firefox --target ./dist/extension/[vendor]",
+    "start:web": "react-app-rewired start",
+    "build:web": "react-app-rewired build",
+    "test:web": "react-app-rewired test",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
-    "@types/node": "^16.6.1",
-    "@types/react-dom": "^17.0.9",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@types/jest": "^29.2.0",
+    "@types/node": "^18.11.8",
+    "@types/react": "^18.0.24",
+    "@types/react-dom": "^18.0.8",
     "cpr": "^3.0.1",
+    "react-app-rewired": "^2.2.1",
+    "react-scripts": "5.0.1",
     "rimraf": "^3.0.2",
-    "web-ext-types": "^3.2.1"
+    "typescript": "^4.8.4",
+    "web-ext-types": "^3.2.1",
+    "patch-package": "^6.5.0",
+    "postinstall-postinstall": "^2.1.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

@@ -26,6 +26,9 @@ export type Action = {
 }|{
   type: 'STATE'
   state: State
+}|{
+  type: 'NOTIFY'
+  subType: NotifyType
 }
 
 export type Time = {

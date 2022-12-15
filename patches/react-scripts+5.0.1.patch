@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-scripts/config/paths.js b/node_modules/react-scripts/config/paths.js
+index f4470a0..57e445e 100644
+--- a/node_modules/react-scripts/config/paths.js
++++ b/node_modules/react-scripts/config/paths.js
+@@ -29,7 +29,7 @@ const publicUrlOrPath = getPublicUrlOrPath(
+   process.env.PUBLIC_URL
+ );
+ 
+-const buildPath = process.env.BUILD_PATH || 'build';
++const buildPath = process.env.BUILD_PATH || 'dist/web';
+ 
+ const moduleFileExtensions = [
+   'web.mjs',

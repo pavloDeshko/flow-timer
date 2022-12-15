@@ -1,7 +1,7 @@
 import Timer from './modules/timer'
 import {Action, Config, State, Time, Mode, NotifyType, IconObject} from './modules/types'
 import {ZERO_TIMER, getRestTime, log} from './modules/utils'
-import {togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave, storageErrorSave,notify} from './modules/service'
+import {togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave, storageErrorSave, notify, iconChange} from './modules/service'
 import {onConnect, Connector} from './modules/connector'
 import * as settings from './settings'
 
@@ -23,7 +23,9 @@ class App{
       this.port = null
     })
     this.port = p
+    console.debug('connection in background')
     this.out_Dispatch()
+    console.debug('dispatched state on connection')
   }
 
   on_TimerUpdate = (t :Time) => {
@@ -70,8 +72,9 @@ class App{
       case 'TOGGL_SAVE_LAST':
         this.toggl_RetroSave()
         break
+      case 'NOTIFY':
       case 'STATE':
-        log.bug('State action recieved in background', action)
+        log.bug('FrontEnd action recieved in background', action)
         break
       default:
         let _check :never = action
@@ -82,8 +85,9 @@ class App{
   constructor(){
     this.timer = new Timer(this.on_TimerUpdate, this.on_RestEnd)
     this.pomTimer = new Timer(()=>{},this.on_PomodoroEnd)
+    log.debug('onConnect added')
     onConnect(this.on_Connection)
-    this.restoreFromStorage()
+    this.restoreFromStorage() 
   }
   
   //APP ACTIONS
@@ -95,7 +99,7 @@ class App{
     this.state.time = this.timer.up()
     this.pomTimer.down({...ZERO_TIMER,...{minutes:this.state.config.pomTime}})
 
-    this.out_ChangeIcon(WORK_ICON)
+    iconChange(WORK_ICON)
     this.out_SaveStorage() 
     this.out_Dispatch()
   }
@@ -107,7 +111,7 @@ class App{
     this.state.time = this.timer.reset()
     this.pomTimer.reset()
     
-    this.out_ChangeIcon(DEFAULT_ICON)
+    iconChange(DEFAULT_ICON)
     this.out_Dispatch()
   }
   
@@ -123,7 +127,7 @@ class App{
       this._recalculateRest()
     }
 
-    this.out_ChangeIcon(REST_ICON)
+    iconChange(REST_ICON)
     this.out_SaveStorage() //to save ratio and mode
     this.out_Dispatch()
   }
@@ -132,7 +136,7 @@ class App{
     this.state.resting = null
     this.state.time = this.timer.reset()
     
-    this.out_ChangeIcon(DEFAULT_ICON)
+    iconChange(DEFAULT_ICON)
     this.out_Dispatch()
   }
   
@@ -276,12 +280,13 @@ class App{
   }
 
   out_Notify = (pomodoro = false) => {
-     notify(pomodoro?NotifyType.POM:NotifyType.WORK)
+    this.out_Dispatch({type:"NOTIFY", subType: pomodoro ? NotifyType.POM : NotifyType.WORK})
+    notify(pomodoro ? NotifyType.POM : NotifyType.WORK)
   }
 
-  out_ChangeIcon = (path : string | IconObject)=> {
+/*   out_ChangeIcon = (path : string | IconObject)=> {
     browser.browserAction.setIcon({path})
-  }
+  } */
   
   out_Toggl_Error = (e:any) => {
     const message :string = typeof e.message == 'string' ? e.message : settings.ERROR_MESSAGE
@@ -308,6 +313,7 @@ class App{
 const handleError = (err :Error)=>{
   log.error('Error caught in background script', err)
   storageErrorSave(err)
+  throw err
 }
 addEventListener('error', (e:ErrorEvent)=>{handleError(e.error)})//TODO not working in firefox
 addEventListener('unhandledrejection', (e:PromiseRejectionEvent)=>{handleError(e.reason)})

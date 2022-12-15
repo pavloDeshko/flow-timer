@@ -14,7 +14,7 @@ export const CLIENT_NAME = 'Flow Timer Web-Extension'
 
 export const SUPPORT_EMAIL = 'pavlodeshko92@gmail.com'
 
-export const EXTENSION = true//TODO
+export const EXTENSION = !process.env["REACT_APP_ENV"]
 
 //private envs
 //export const env = process.env['env']
