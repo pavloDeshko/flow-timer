@@ -4,11 +4,7 @@ import {ZERO_TIMER, getRestTime, log} from './modules/utils'
 import {togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave, storageErrorSave, notify, iconChange} from './modules/service'
 import {onConnect, Connector} from './modules/connector'
 import * as settings from './settings'
-
-//ICONS
-const DEFAULT_ICON = {16:"res/idle_16.png", 32:"res/idle_32.png", 64:"res/idle_64.png"} as const
-const WORK_ICON = {16:"res/work_16.png", 32:"res/work_32.png", 64:"work/idle_64.png"} as const
-const REST_ICON = {16:"res/rest_16.png", 32:"res/rest_32.png", 64:"res/rest_64.png"} as const
+import {ICONS} from './modules/assets'
 
 class App{
   timer :Timer
@@ -99,7 +95,7 @@ class App{
     this.state.time = this.timer.up()
     this.pomTimer.down({...ZERO_TIMER,...{minutes:this.state.config.pomTime}})
 
-    iconChange(WORK_ICON)
+    iconChange(ICONS.WORK)
     this.out_SaveStorage() 
     this.out_Dispatch()
   }
@@ -111,7 +107,7 @@ class App{
     this.state.time = this.timer.reset()
     this.pomTimer.reset()
     
-    iconChange(DEFAULT_ICON)
+    iconChange(ICONS.DEFAULT)
     this.out_Dispatch()
   }
   
@@ -127,7 +123,7 @@ class App{
       this._recalculateRest()
     }
 
-    iconChange(REST_ICON)
+    iconChange(ICONS.REST)
     this.out_SaveStorage() //to save ratio and mode
     this.out_Dispatch()
   }
@@ -136,7 +132,7 @@ class App{
     this.state.resting = null
     this.state.time = this.timer.reset()
     
-    iconChange(DEFAULT_ICON)
+    iconChange(ICONS.DEFAULT)
     this.out_Dispatch()
   }
   

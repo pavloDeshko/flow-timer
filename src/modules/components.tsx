@@ -46,8 +46,7 @@ import {Action, Time, Config, TogglLogin as TogglLoginData, TogglForm as TogglFo
 import {padTwoZeros, parse, log, useFreeze} from './utils'
 import {SUPPORT_EMAIL,POM_TIMES,TOGGL_TOKEN_URL} from '../settings'
 import {reload} from './service'
-
-const TOGGL_HELP_IMAGE = "res/togglHelpImg.png"
+import {IMGS} from './assets'
 
 export const DispatchContext = React.createContext((a:Action)=>{log.debug('Dispached action: ', a)})//for testing compts without provider
 
@@ -570,7 +569,7 @@ export const TogglError = memo( ({error}:{error :string | null})=>{
 
 const TogglHelpCard = ()=>(
   <Card sx={{maxWidth:"300px"}}>
-    <CardMedia component="img" width="300px" alt="Help Image" image={TOGGL_HELP_IMAGE}/>
+    <CardMedia component="img" width="300px" alt="Help Image" image={IMGS.TOGGL_HELP}/>
     <CardContent sx={{pb:"0"}}>
       <Typography>Loren Ipsun blablabla Loren Ipsun blablablaLoren Ipsun blablablaLoren Ipsun blablablaLoren Ipsun blablablaLoren Ipsun blablabla </Typography> 
     </CardContent>

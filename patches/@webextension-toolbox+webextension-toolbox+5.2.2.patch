@@ -1,0 +1,32 @@
+diff --git a/node_modules/@webextension-toolbox/webextension-toolbox/dist/common/compile.js b/node_modules/@webextension-toolbox/webextension-toolbox/dist/common/compile.js
+index 965b24b..f3932c2 100644
+--- a/node_modules/@webextension-toolbox/webextension-toolbox/dist/common/compile.js
++++ b/node_modules/@webextension-toolbox/webextension-toolbox/dist/common/compile.js
+@@ -35,9 +35,9 @@ async function getConfigFile(options) {
+     }
+     let path = await (0, find_up_1.default)(options.config);
+     if (path && path.length) {
+-        if (process.platform === "win32") {
++        /*if (process.platform === "win32") {
+             path = `file:///${path}`;
+-        }
++        }*/
+         const configModule = await Promise.resolve().then(() => __importStar(require(path)));
+         return configModule.default || configModule;
+     }
+diff --git a/node_modules/@webextension-toolbox/webextension-toolbox/src/common/compile.ts b/node_modules/@webextension-toolbox/webextension-toolbox/src/common/compile.ts
+index 23f9998..5f81848 100644
+--- a/node_modules/@webextension-toolbox/webextension-toolbox/src/common/compile.ts
++++ b/node_modules/@webextension-toolbox/webextension-toolbox/src/common/compile.ts
+@@ -30,9 +30,9 @@ async function getConfigFile(options: CompileOptions): Promise<UserWebpack> {
+   let path = await findUp(options.config);
+ 
+   if (path && path.length) {
+-    if (process.platform === "win32") {
++    /*if (process.platform === "win32") {
+       path = `file:///${path}`;
+-    }
++    }*/
+     const configModule = await import(path);
+     return configModule.default || configModule;
+   }

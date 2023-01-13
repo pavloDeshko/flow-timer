@@ -5,11 +5,7 @@ import wretch from 'wretch'
 import {Toggl_Entry_Params, Toggl_Auth, Toggl_Me, Toggl_Project, UserStorage, UserStorageSchema, Toggl_Me_Schema, NotifyType, IconObject} from './types'
 import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME, EXTENSION} from '../settings'
 import {log} from './utils'
-
-const WORK_SOUND = 'res/work.ogg'
-const POM_SOUND = 'res/pom.ogg'
-const WORK_ALERT_ICON = 'res/workAlert.svg'
-const POM_ALERT_ICON = 'res/pomAlert.svg'
+import {ICONS, SOUNDS} from './assets'
 
 /* const storage = EXTENSION ? 
   {get : browser.storage.local.get, set : browser.storage.local.set} : 
@@ -131,9 +127,9 @@ export const notify = (type:NotifyType)=>{
     type: 'basic',
     title: pomodoro ? 'Pomodoro alert!' : 'Time to work!',
     message: pomodoro ? 'you\'ve been working for a long time, take a rest' : 'your rest time is up',
-    iconUrl: pomodoro ? POM_ALERT_ICON : WORK_ALERT_ICON
+    iconUrl: pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT
   }) : ()=>{} //TODO implement web notification
-  new Audio(pomodoro ? POM_SOUND : WORK_SOUND).play()
+  new Audio(pomodoro ? SOUNDS.POM : SOUNDS.WORK ).play()
 }
 
 export const reload = ()=>{ EXTENSION ? browser.runtime.reload() : location.reload()}
