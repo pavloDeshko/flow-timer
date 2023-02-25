@@ -1,4 +1,4 @@
-import {createTheme} from '@mui/material/styles'
+import {createTheme, TypeBackground} from '@mui/material/styles'
 
 const colors = {
   primary: {
@@ -20,6 +20,7 @@ export const lightTheme = createTheme({
     mode:'light',
     ...colors,
     background: {
+      web: '#bfdccf',
       paper: '#f3fbf5',
       default: '#bfdccf'
     },
@@ -34,6 +35,7 @@ export const darkTheme = createTheme({
     mode: 'dark',
     ...colors,
     background: {
+      web: 'inherit',
       paper: '#2c2c2c',
       default: '#1e1e1e'
     },

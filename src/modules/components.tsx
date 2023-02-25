@@ -1,6 +1,6 @@
 import React, {useContext, useRef, useState, memo, ChangeEvent, ReactNode} from 'react'
 import {
-  Paper,
+  Paper, PaperProps,
   Box,
   Typography,
   Button,
@@ -44,17 +44,83 @@ import clipboardCopy from 'clipboard-copy'
 
 import {Action, Time, Config, TogglLogin as TogglLoginData, TogglForm as TogglFormData, Toggl_Project, Mode, NotifyType} from './types'
 import {padTwoZeros, parse, log, useFreeze} from './utils'
-import {SUPPORT_EMAIL,POM_TIMES,TOGGL_TOKEN_URL} from '../settings'
+import {SUPPORT_EMAIL,POM_TIMES,TOGGL_TOKEN_URL, DESC, DESC_LONG, EXTENSION} from '../settings'
 import {reload} from './service'
-import {IMGS} from './assets'
+import {IMGS,ICONS} from './assets'
 
 export const DispatchContext = React.createContext((a:Action)=>{log.debug('Dispached action: ', a)})//for testing compts without provider
+const APP_WIDTH = 500 //TODO move to settings?
+
+/*
+<Elevation className="Background" elevation={0} >
+      <Elevation className="Column"  
+        elevation={10}
+         sx={{
+          marginX:"auto",
+          maxWidth:APP_WIDTH+'px',
+          marginY:"0.5rem"
+         }}
+      >
+       <Elevation sx={{backgroundColor: 'background.web',}} elevation={1}>
+          <Stack spacing={1}>
+            {children}
+          </Stack>
+        </Elevation>
+      </Elevation>
+     </Elevation>
+*/
+
+export const PageContainer = ({children}:{children:ReactNode})=>{
+  return (
+   <Elevation className="Background" elevation={0} >
+      <Elevation className="Column"  
+        elevation={10}
+         sx={{
+          marginX:"auto",
+          maxWidth:APP_WIDTH+'px',
+          marginY:"0.5rem"
+         }}
+      >
+        <Elevation sx={{backgroundColor: 'background.web',}} elevation={1}>
+          <Stack spacing={1}>
+            {children}
+          </Stack>
+        </Elevation>
+      </Elevation>
+    </Elevation>
+  )
+}
+
+export const PageHeader = () => {
+  return (<BlockContainer>
+    <Stack direction="row" spacing={2}>
+      <Box sx={{float:"left"}}><img src={ICONS.MAIN} style={{width:"64px", height:"64px"}} alt="flow timer logo" /></Box>
+      <Box>
+        <Typography variant="h5" component='h1'>Flow Timer</Typography>
+        <Typography>{DESC}</Typography>
+      </Box>
+    </Stack>
+  </BlockContainer>)
+}
+
+export const PageDesc = ()=>{
+  return (
+    <BlockContainer>
+      <Typography variant="h5" component="h2">About Frow Timer</Typography>
+      <Divider sx={{marginY:"0.5rem"}}/>
+      <Typography align="justify">
+        {DESC_LONG.map(t=><p>{t}</p>)}
+      </Typography>
+  </BlockContainer>
+  )
+}
 
 export const AppContainer = ({children}:{children:ReactNode})=>
   <Box className="App" sx={{
-    width: "400px",
+    boxSizing: "border-box",
+    maxWidth: APP_WIDTH+"px",
     padding: ".5rem",
-    backgroundColor: "background.default",
+    backgroundColor: EXTENSION ? "background.default" : "inherit",
     fontFamily: "Roboto, sans-serif"
   }}>
     <Stack className="AppStack" spacing={1}>
@@ -62,41 +128,36 @@ export const AppContainer = ({children}:{children:ReactNode})=>
     </Stack>
   </Box>
 
-/* export const AppContainer = ({children}:{children: ReactNode}) => <Box sx={{
-  maxWidth: 320,
-  fontFamily:'default',
-  backgroundColor:'background.default',
-  overflow:'auto',
-  //overflowY:'scroll'
-}}>{children}</Box>//TODO see into why styled doesnt check option keys
- */
+export const Elevation = (props :PaperProps)=>{
+  const downProps = {
+    square:true,
+    ...props, 
+    sx:{...{width: "100%", margin:"0px",padding:"0px",overflow:"auto"}, ...props.sx}
+  }
+  return <Paper {...downProps} />
+}
 
 const blockStyles= {
-  //position:"relative",
+  position:"relative",
   padding: "1rem",
   "& .MuiDivider-root":{marginY:"0.5rem"}
 } as const
 
 export const BlockContainer = (
-  {children, className='', stacked=false, sx = {}}:{children:ReactNode,className?:string, stacked?:boolean,sx?:{}}
-) => {//TODO sx types
-  return <Paper className={className} elevation={3}
+  {children, className='', stacked=false, sx = {}}:{children:ReactNode, className?:string, stacked?:boolean, sx?:PaperProps}
+) => {
+  return <Paper className={className} elevation={4}
       sx={{...blockStyles,...sx}}
   >{stacked ? <Stack spacing={2}>{children}</Stack> : children}</Paper>
 }
-/* export const BlockContainer = ({children, className}:{children: ReactNode, className?: string}) => (
-  <Paper className={className} elevation={2} sx={{
-    margin: 1,
-    padding: 1 
-  }}>{children}</Paper>
-) */
 
 export const AccordionContainer = (
   {className='', label, children, expanded=false}
   :{className?:string,label:ReactNode,children:ReactNode[],expanded?:boolean}) => {
   expanded = useFreeze(expanded)
   return (
-      <Accordion className={className} elevation={3} defaultExpanded={expanded} sx={{
+    <Elevation square={false} elevation={4}>
+      <Accordion className={className} elevation={4} defaultExpanded={expanded} sx={{
         ...blockStyles,
         boxShadow:0,
         ".MuiAccordionSummary-root, .MuiAccordionDetails-root":{paddingX:0},
@@ -111,6 +172,7 @@ export const AccordionContainer = (
           {children}
         </AccordionDetails>
       </Accordion>
+    </Elevation>
   )
 }
 
@@ -160,7 +222,7 @@ export const Counter = memo(({hours, minutes, seconds} :Time ) => {
         position: 'relative',
         top: '0.20rem'
       }
-    }} variant="h3" textAlign="center">
+    }} variant="h3" component="p" textAlign="center">
       <span>{padTwoZeros(hours)}</span>
       <span className='delimiter'>:</span>
       <span>{padTwoZeros(minutes)}</span>
@@ -414,7 +476,7 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
   ratio = useFreeze(ratio)
   const setRatio = (_:unknown, value:number|number[]) => dispatch({
     type: 'CONFIG',
-    config: {ratio : 60 / Number(value)} //TODO shitty material union type for range and value slider
+    config: {ratio : 60 /  (Array.isArray(value) ? (value[0] || 0) : value) } //TODO shitty material union type for range and value slider
   })
   const setPomActive = (e:ChangeEvent<HTMLInputElement>)=> dispatch({
     type: 'CONFIG',
@@ -854,14 +916,14 @@ export const AppFallback = ({error}:{error:Error}) => {
   return(
     <Paper elevation={3} sx={{padding:"0.5rem", width: "400px"}}>
       <Typography component="div" sx={{margin:"1rem"}}>
-        <Typography variant="h6">Sorry, it seems like internals of our app crashed :-/</Typography>
+        <Typography variant="h6" component="h2">Sorry, it seems like internals of our app crashed :-/</Typography>
         <p>Please, drop us a note at <CopyLink value={'SUPPORT_EMAIL'} /> about what happened. Click
           <CopyLink value={`${error.toString()} Stack: \n  ${error.stack}`} text="here"/>{/*TODO add state here*/}
           to copy geeky data and paste it into your email so we can understand what went wrong.
         </p>
         <p>We <span>will</span> try to solve the problem asap!</p>
         <Box sx={{textAlign:'center'}}>
-          <Button variant="outlined" startIcon={<Refresh/>} onClick={reload}>Reload extension</Button>
+          <Button variant="outlined" startIcon={<Refresh/>} onClick={reload}>Reload {EXTENSION ? 'extension' : 'page'}</Button>
         </Box>
       </Typography>
     </Paper>

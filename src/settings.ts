@@ -16,6 +16,9 @@ export const SUPPORT_EMAIL = 'pavlodeshko92@gmail.com'
 
 export const EXTENSION = !process.env["REACT_APP_ENV"] //TODO move
 
+export const DESC_LONG = ['blaeue,ueo  eouoeuoeuoueu', 'oeuoeuoeuoeuoeuo oeuoeueu uoeuou eueuoeu ', 'oeuoeeeeeeeeu'] as const
+export const DESC = 'oeuoeuoeuoeuoeu'
+
 //private envs
 //export const env = process.env['env']
 //export const TOGGL_DEBUG = ''

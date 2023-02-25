@@ -5,6 +5,9 @@ import { ErrorBoundary, useErrorHandler } from 'react-error-boundary'
 import './background'//TODO DIFF WITH EXT
 
 import { 
+  PageContainer,
+  PageHeader,
+  PageDesc,
   AppContainer,
   BlockContainer,
   AccordionContainer,
@@ -26,6 +29,7 @@ import {storageErrorGet} from './modules/service'
 import {log, RetrievedError, useTimeoutUnless} from './modules/utils'
 import {lightTheme, darkTheme} from './modules/styles'
 import {connect, Connector} from './modules/connector'
+import {EXTENSION} from "./settings"
 
 const App = () => {
   const [[dispatch], setDispatch] = useState([(a :Action)=>{log.bug('Action dispatched on popup while no port is present: ', a)}])
@@ -56,7 +60,7 @@ const App = () => {
     log.debug('New action recieved', action)
     if('type' in action){
       if(action.type == 'STATE'){
-        setAppState({...action.state})//TODO clones state twice on extension
+        setAppState(EXTENSION ? action.state : {...action.state})
         cancelAlerts(!!action.state.working, !!action.state.resting)
       }else if(action.type == 'NOTIFY'){
         setAlert(action.subType)
@@ -76,34 +80,47 @@ const App = () => {
     p.onDisconnect(()=>crash('Crashed on disconnect'))//check
   }, [])
 
-  return state && (
+  const app = state && (
+    <AppContainer>
+      <BlockContainer className="CounterBlock" stacked>
+        {/*<Legend {...{working : !!state.working, resting : !!state.resting}}/>*/}
+        <Counter {...state.time} />
+        <Controls working={!!state.working} resting={!!state.resting} />
+        <RestAdjust nextRest={state.nextRest} mode={state.config.mode} ></RestAdjust>
+        <TimeAlert type={alert} />
+      </BlockContainer>
+
+      <BlockContainer className="OptionsBlock">
+        <Options {...state.config} />
+      </BlockContainer>
+
+      <AccordionContainer className="TogglBlock"
+        label={<TogglCollapsed logged={!!state.toggl.login.token} />}
+        expanded={!!state.toggl.login.token}
+      >
+        {!state.toggl.login.token ?
+          <TogglLogin {...state.toggl.login} /> :
+          <TogglForm {...state.toggl.form} projects={memoProjects} />
+        }
+        <TogglError error={state.toggl.login.error} />
+      </AccordionContainer>
+
+      {!EXTENSION && <PageDesc/>}
+    </AppContainer>
+  )
+  
+  return app && (
       <DispatchContext.Provider value={dispatch}>
         <ThemeProvider theme={state.config.dark ? darkTheme : lightTheme}>
-          <AppContainer>
-            <BlockContainer className="CounterBlock" stacked>
-              {/*<Legend {...{working : !!state.working, resting : !!state.resting}}/>*/}
-              <Counter {...state.time} />
-              <Controls working={!!state.working} resting={!!state.resting} />
-              <RestAdjust nextRest={state.nextRest} mode={state.config.mode} ></RestAdjust>
-              <TimeAlert type={alert}/>
-            </BlockContainer>
-            
-            <BlockContainer className="OptionsBlock">
-              <Options {...state.config} />
-            </BlockContainer>
-
-            <AccordionContainer className="TogglBlock" 
-              label={<TogglCollapsed logged={!!state.toggl.login.token}/>} 
-              expanded={!!state.toggl.login.token} 
-            >
-              {!state.toggl.login.token ? 
-                <TogglLogin {...state.toggl.login} /> : 
-                <TogglForm {...state.toggl.form} projects={memoProjects}/>
-              }
-              <TogglError error={state.toggl.login.error} />
-            </AccordionContainer>
-
-          </AppContainer>
+        {EXTENSION ? 
+          app :
+          <PageContainer>
+            <PageHeader/>
+            {app}
+            <PageDesc/>
+          </PageContainer>
+        }
+          
         </ThemeProvider>
       </ DispatchContext.Provider>
   )

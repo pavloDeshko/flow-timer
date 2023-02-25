@@ -1,6 +1,6 @@
-import favicon from 'favicon.js' //write @types TODO
 import wretch from 'wretch'
-//import favicon from 'favicon.js'
+import favicon from 'favicon.js' //write @types TODO
+declare module 'favicon.js' {export function change(url:string):void}
 
 import {Toggl_Entry_Params, Toggl_Auth, Toggl_Me, Toggl_Project, UserStorage, UserStorageSchema, Toggl_Me_Schema, NotifyType, IconObject} from './types'
 import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME, EXTENSION} from '../settings'
