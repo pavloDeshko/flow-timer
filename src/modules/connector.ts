@@ -1,11 +1,20 @@
 import { EXTENSION } from '../settings' 
+import {App} from './app'
 
 export interface Connector{
   postMessage(m :any):void
   onMessage(cb :(message: object)=>void):void
+  disconnect(cause?:any):void
   onDisconnect(cb :()=>void):void
 }
 
+interface ConnectorPair{
+  connectFront():Connector
+  onConnectBack(cb:(c:Connector)=>void):void
+  forceDisconnectBack(cause?:any):void
+}
+
+/***********/
 class ExtensionConnector implements Connector{
   constructor(
     private port :browser.runtime.Port
@@ -19,55 +28,81 @@ class ExtensionConnector implements Connector{
   onDisconnect(cb :()=>void){
     this.port.onDisconnect.addListener(cb)
   }
+  disconnect(cause?: any): void {
+    this.port.disconnect()
+  }
 }
 
-const onConnectExt = (cb :(c:Connector)=>void)=>{
-  browser.runtime.onConnect.addListener(p=>{
-    cb(new ExtensionConnector(p))
-  })
-}
-
-const connectExt :()=>Connector = ()=>{
-  return new ExtensionConnector(browser.runtime.connect())
+class ExtensionConnectorPair implements ConnectorPair{
+  private back:ExtensionConnector|null = null
+  connectFront():Connector {
+    return new ExtensionConnector(browser.runtime.connect())
+  }
+  onConnectBack(cb: (c: Connector) => void): void {
+    browser.runtime.onConnect.addListener(p=>{
+      cb(this.back = new ExtensionConnector(p))
+    })
+  }
+  forceDisconnectBack(cause?: any): void {
+    this.back?.disconnect()
+  }
 }
 
 /***********/
 
 class WebConnector implements Connector{
-  private onMessageCb :((message: object)=>void) | null = null
+  private onMessageCb  = (m:object)=>{}
+  private onDisconnectCb  = (cause?:any)=>{}
   public _sibling: WebConnector|null = null
-  postMessage(message: any){
-    setTimeout(
-      ()=>this._sibling?.onMessageCb && this._sibling.onMessageCb(message)
-    ,0)
-  }
   onMessage(cb:(message: object)=>void){
     this.onMessageCb = cb
   }
-  onDisconnect(cb: ()=>void){}
+  postMessage(message: any){
+    setTimeout(
+      ()=>this._sibling?.onMessageCb(message)
+    ,0)
+  }
+  onDisconnect(cb: ()=>void){
+    this.onDisconnectCb = cb
+  }
+  disconnect(cause?: any): void {
+    setTimeout(
+      ()=>{this._sibling?.onDisconnectCb(cause)}
+    ,0)
+  }
 }
 
-let onConnectCb :((c:Connector)=>void)|null= null
-
-const onConnectWeb = (cb :(c:Connector)=>void)=>{
-  onConnectCb = cb
+class WebConnectorPair implements ConnectorPair{
+  private front = new WebConnector()
+  private back = new WebConnector()
+  private onConnectCb = (c:Connector)=>{}
+  constructor(){
+    this.front._sibling = this.back
+    this.back._sibling = this.front
+  }
+  connectFront(){
+    setTimeout(
+      ()=>this.onConnectCb(this.back)
+    ,0)
+    return this.front
+  }
+  onConnectBack(cb :(c:Connector)=>void){
+    this.onConnectCb = cb
+  }
+  forceDisconnectBack(){
+    this.back.disconnect()
+  }
 }
 
-const connectWeb = ():Connector=>{
-  const pair = getWebConnectorPair()
-  setTimeout(
-    ()=>onConnectCb && onConnectCb(pair[0])
-  ,0)
-  return pair[1] 
-}
+/***********/
 
-const getWebConnectorPair = ():[WebConnector,WebConnector]=>{
-  const two = new WebConnector()
-  const one = new WebConnector()
-  one._sibling = two
-  two._sibling = one
-  return [one,two]
-}
+const pair = EXTENSION ? new ExtensionConnectorPair() : new WebConnectorPair()
+export const connectFront = pair.connectFront.bind(pair)
+export const onConnectBack = pair.onConnectBack.bind(pair)
+export const disconnectBack = pair.forceDisconnectBack.bind(pair)
 
-export const connect = EXTENSION ? connectExt : connectWeb
-export const onConnect = EXTENSION ? onConnectExt : onConnectWeb
+/**********/
+
+if(!EXTENSION){
+  new App()
+}

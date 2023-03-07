@@ -1,6 +1,6 @@
 import wretch from 'wretch'
 import favicon from 'favicon.js' //write @types TODO
-declare module 'favicon.js' {export function change(url:string):void}
+import {serializeError, deserializeError} from 'serialize-error'
 
 import {Toggl_Entry_Params, Toggl_Auth, Toggl_Me, Toggl_Project, UserStorage, UserStorageSchema, Toggl_Me_Schema, NotifyType, IconObject} from './types'
 import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME, EXTENSION} from '../settings'
@@ -109,16 +109,18 @@ export const storageSave = async(data :UserStorage)=>{
 }
 
 export const storageErrorSave = async(err: Error)=>{
-  const data = JSON.stringify(err, undefined, 2)//TODO string wrongly saved `${err.name}: ${err.message} ${err.stack ? `Stack: \n  ${err.stack}`:''}`
+  const data = JSON.stringify(serializeError(err))
+  //const data = JSON.stringify(err, undefined, 2)//TODO string wrongly saved `${err.name}: ${err.message} ${err.stack ? `Stack: \n  ${err.stack}`:''}`
   return EXTENSION ? 
     browser.storage.local.set({[STORAGE_ERROR_KEY]: data}):
     localStorage.setItem(STORAGE_ERROR_KEY, data)
 }
 
 export const storageErrorGet = async()=>{
-  return EXTENSION ? 
-    browser.storage.local.get(STORAGE_ERROR_KEY).then(storage=>storage[STORAGE_ERROR_KEY]):
+  const data =  EXTENSION ? 
+    await browser.storage.local.get(STORAGE_ERROR_KEY).then(storage=>storage[STORAGE_ERROR_KEY]):
     localStorage.getItem(STORAGE_ERROR_KEY)
+  return data && deserializeError(JSON.parse(data.toString()))
 }
 
 export const notify = (type:NotifyType)=>{
@@ -129,7 +131,7 @@ export const notify = (type:NotifyType)=>{
     message: pomodoro ? 'you\'ve been working for a long time, take a rest' : 'your rest time is up',
     iconUrl: pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT
   }) : ()=>{} //TODO implement web notification
-  new Audio(pomodoro ? SOUNDS.POM : SOUNDS.WORK ).play()
+  new Audio(pomodoro ? SOUNDS.POM : SOUNDS.WORK ).play()//.then(((_:unknown,err:Error)=>log.debug(String(err))) as ()=>{})
 }
 
 export const reload = ()=>{ EXTENSION ? browser.runtime.reload() : location.reload()}

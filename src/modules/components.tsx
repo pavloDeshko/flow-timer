@@ -51,25 +51,6 @@ import {IMGS,ICONS} from './assets'
 export const DispatchContext = React.createContext((a:Action)=>{log.debug('Dispached action: ', a)})//for testing compts without provider
 const APP_WIDTH = 500 //TODO move to settings?
 
-/*
-<Elevation className="Background" elevation={0} >
-      <Elevation className="Column"  
-        elevation={10}
-         sx={{
-          marginX:"auto",
-          maxWidth:APP_WIDTH+'px',
-          marginY:"0.5rem"
-         }}
-      >
-       <Elevation sx={{backgroundColor: 'background.web',}} elevation={1}>
-          <Stack spacing={1}>
-            {children}
-          </Stack>
-        </Elevation>
-      </Elevation>
-     </Elevation>
-*/
-
 export const PageContainer = ({children}:{children:ReactNode})=>{
   return (
    <Elevation className="Background" elevation={0} >
@@ -108,8 +89,8 @@ export const PageDesc = ()=>{
     <BlockContainer>
       <Typography variant="h5" component="h2">About Frow Timer</Typography>
       <Divider sx={{marginY:"0.5rem"}}/>
-      <Typography align="justify">
-        {DESC_LONG.map(t=><p>{t}</p>)}
+      <Typography component="div" align="justify" sx={{'& .MuiTypography-root':{mb:'0.5rem'}}}>
+        {DESC_LONG.map((t,n)=><Typography paragraph key={n}>{t}</Typography>)}
       </Typography>
   </BlockContainer>
   )
@@ -230,24 +211,6 @@ export const Counter = memo(({hours, minutes, seconds} :Time ) => {
       <span className='seconds'>{padTwoZeros(seconds)}</span>
     </Typography>
   )
-
- /*  return(
-    <Box sx={{
-      padding: 1,
-      textAlign:'center',
-      typography:'h3',
-      '.delimiter':{
-        color,
-        verticalAlign:'text-bottom'
-      }
-    }}>
-      <span>{padTwoZeros(hours)}</span>
-      <span className='delimiter'>:</span>
-      <span>{padTwoZeros(minutes)}</span>
-      <span className='delimiter'>:</span>
-      <span>{padTwoZeros(seconds)}</span>
-    </Box>
-  ) */
 })
 
 export const Controls = memo(({working,resting}:{working:boolean,resting:boolean}) => {
@@ -266,96 +229,7 @@ export const Controls = memo(({working,resting}:{working:boolean,resting:boolean
       <Button variant={resting? 'contained' : 'outlined'} color="primary" onClick={rest}>{resting?'stop resting':'rest'}</Button>
     </ButtonGroup>
   )
-
-/*   return (
-      <Stack direction={'row'} justifyContent={'space-between'} spacing={1} sx={{
-        marginY:1,
-        '& .MuiButton-root': {
-          padding: 0.5,
-          fontWeight: 'fontWeightMedium'
-        }
-      }}>
-        <Button {...buttonProps} color='secondary' onClick={work}>Work</Button>
-        <Button {...buttonProps} color='primary' onClick={rest}>Rest</Button>
-      </Stack>
-  ) */
-
 })
-
-/* export const Legend = memo(({working, resting} :{working :boolean, resting :boolean}) => {
-  return (
-    <Box sx={{
-      minHeight:'1.5rem',
-      textAlign:'center',
-      color: resting ? 'primary.main' : working ? 'secondary.main' : 'text.primary'
-    }}>
-      <span>{working ? 'working..' : resting ? 'resting..' : ' '}</span>
-    </Box>
-  )
-}) */
-
-/* export const TimeForm = memo(({hours = 0, minutes = 0, seconds = 0}:{hours :number, minutes :number, seconds :number}) => {
-  const dispatch = useContext(DispatchContext)
-
-  const hoursRef = useRef<HTMLInputElement>()
-  const minutesRef = useRef<HTMLInputElement>()
-  const secondsRef = useRef<HTMLInputElement>()
-  
-  const onChange = () => {
-    hoursRef.current && minutesRef.current && dispatch({
-      type: 'ADJUST',
-      time: {
-        hours: parse.h(hoursRef.current!.value, hours), //TODO let it throw is ok?..
-        minutes: parse.m(minutesRef.current!.value, minutes),
-        seconds: 0
-      }
-    })
-  }
-
-  return(
-    <Box component="span" sx={{
-      display:'inline-block',
-      marginY:1,
-      '& .MuiTextField-root': {
-        marginX: 1/4,
-        width: '3rem'
-      },
-      '& .MuiOutlinedInput-input': {
-        textAlign: 'center'
-      },
-      '& .seconds':{
-        width:'2rem',
-        '.MuiOutlinedInput-input':{
-          fontSize: '0.6rem',
-          padding: 0.5,
-        }
-      }
-    }}>
-      <TextField 
-        label='h' 
-        size='small' 
-        value={padTwoZeros(hours)} 
-        inputRef={hoursRef} 
-        onChange={onChange} 
-      />
-      <TextField 
-        label='m' 
-        size='small' 
-        value={padTwoZeros(minutes)} 
-        inputRef={minutesRef} 
-        onChange={onChange} 
-      /> 
-      <TextField 
-        className='seconds' 
-        label='s'
-        size='small' 
-        value={padTwoZeros(seconds)} 
-        inputRef={secondsRef} 
-        onChange={onChange} 
-    />
-    </Box>
-  )
-}) */
 
 export const RestAdjust = memo(({nextRest:{hours,minutes,seconds}, mode} :{nextRest :Time, mode :Mode}) => {
   const dispatch = useContext(DispatchContext)
@@ -427,46 +301,46 @@ export const RestAdjust = memo(({nextRest:{hours,minutes,seconds}, mode} :{nextR
       </Tooltip>
     </Box>
   )
-
-/*   return (
-    <Box sx={{
-      marginY:1,
-    }}>
-      <Typography component='div'>Next rest: <TimeForm {...nextRest}/> 
-        <Tooltip title="Reset rest time" arrow>
-          <span><IconButton 
-            //size="small"
-            onClick={onRecalculate} 
-            disabled={mode == Mode.ON}
-            //sx={{"&":{display:'inline-block'}}}
-          >
-            <Update />
-          </IconButton></span>
-        </Tooltip>
-      </Typography> 
-    </Box>
-  ) */
 })
-
-export const TimeAlert = ({type} :{type :(NotifyType|null)})=>{
+/* 
+<Collapse in={true}>
+               <Alert 
+                variant="outlined" 
+                severity="warning" 
+                sx={{
+                  //pl:"0.5rem",
+                  "& > *": {paddingY:"0px"}
+                }}
+                action={<IconButton 
+                sx={{paddingY:"0px"}}
+                >
+                  <Close />
+                </IconButton>}
+               ><Typography>Time to work!</Typography></Alert>
+              </Collapse>
+*/
+export const TimeAlert = ({type, onClose} :{type :(NotifyType|null), onClose :()=>void})=>{
   return (
     <Collapse in={!!type}>
       <Alert
         variant="outlined"
         severity="warning"//TODO color depends on type?
         sx={{
-          pl: "0.5rem",
-          "& > *": { paddingY: "0px" }
+          "& > *": { paddingY: "0px" },
+          maxHeight:"2rem"
         }}
-        action={<IconButton sx={{ paddingY: "0px" }} size="small">
-          <Close fontSize="inherit" />
+        action={<IconButton
+          sx={{ paddingY: "0px" }}
+          onClick={onClose}
+        ><Close/>
         </IconButton>}
-      >{type == NotifyType.WORK ? 'Time to work!' : 'Time to rest!'}</Alert>
+      ><Typography>{type == NotifyType.WORK ? 'Time to work!' : 'Time to rest!'}</Typography></Alert>
     </Collapse>
   )
 }
 
 export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) => {
+  log.debug('render options, pomtime: ' + pomTime)
   const dispatch = useContext(DispatchContext)
 
   const setMode = (_:unknown, value :boolean) => dispatch({
@@ -482,12 +356,10 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
     type: 'CONFIG',
     config: {pomActive : e.target.checked}
   })
-  const setPomTime = (_:unknown, value:string, reason :any)=> {
-    reason=="input" && dispatch({
+  const setPomTime = (_:unknown, value:string)=> parse.twoDigit(value,pomTime) !== pomTime && dispatch({//reason=="input" TODO why
       type: 'CONFIG',
       config: {pomTime : parse.twoDigit(value,pomTime)}
-    })
-  }
+  })
   const setDark = () => dispatch({
     type: 'CONFIG',
     config: {dark : !dark}
@@ -540,6 +412,7 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
           freeSolo disablePortal disableClearable
           options={POM_TIMES.map(v=>String(v))}
           value={String(pomTime)}
+          inputValue={String(pomTime)}
           disabled={!pomActive}
           onInputChange={setPomTime}
           renderInput={par => <TextField {...par} 
@@ -562,55 +435,6 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
       >Dark/light mode</Button>
     </Box>
   )
-
-
-  /* return (//TODO add divider
-    <BlockContainer>
-      <FormControlLabel label={'Adjust rest time'} control={
-        <Switch  
-          color='primary'
-          checked={!!mode}
-          onChange={setMode} 
-        />
-      }/>
-      <Select<number>
-          value={Math.floor(60/ratio)}
-          onChange={setRatio}
-        >{[
-          [1,5,10,15,20,30,45,60].map(n => <MenuItem value={n} key={n}>{n+'m'}</MenuItem>)
-        ]}</Select><Typography>minutes for every hour of work</Typography>
-      <Divider/>
-      <Box sx={{
-        "& .pomodoroTime":{
-          //marginX: 1/4,
-          width: '3rem',
-          '& .MuiOutlinedInput-input':{
-            textAlign: 'center',
-            padding: 0.5,
-          }
-        }
-      }}>
-        <FormControlLabel
-          control={<Checkbox
-            checked={pomActive}
-            onChange={setPomActive}
-          />}
-          label='Pomodoro reminder in '
-        />
-        <TextField
-          className='pomodoroTime'
-          size='small'
-          value={pomTime}
-          disabled={!pomActive}
-          onChange={setPomTime}
-        />m
-      </Box>
-      <Divider/>
-      <IconButton color="primary" onClick={setDark}>
-        <BrightnessMedium />
-      </IconButton>Dark or light mode
-      </BlockContainer>
-  ) */
 })
 
 export const TogglError = memo( ({error}:{error :string | null})=>{
@@ -826,45 +650,6 @@ export const TogglForm = memo((
       </Stack>
   </Box>   
   )
-
-/*   return logged ? (
-    <BlockContainer>
-      <Stack direction="column" spacing={1}>
-        <FormControlLabel label={'Save in toggl'} control={
-          <Switch
-            color='primary'
-            defaultChecked={shouldSave} 
-            onChange={setActive} 
-          />
-        }/>
-        <TextField
-          label='Description'
-          placeholder='..'
-          InputProps={{
-            startAdornment: (<InputAdornment position='start'><CreateOutlined/></InputAdornment>)
-          }}
-          defaultValue={desc}
-          onInput={setDesc} 
-        />
-        <Select<number>
-          label={'Project'}
-          defaultValue={projectId || undefined}
-          onChange={setProject}
-        >
-          {[
-            <MenuItem value={""} key={0}><em>none</em></MenuItem>, 
-            ...projects.map(p => <MenuItem value={p.id} key={p.id}>{p.name}</MenuItem>)
-          ]}
-        </Select>
-        {!!unsaved && <Button 
-          variant="text" 
-          size="small"
-          startIcon={<Save />}
-          onClick={retroSave}
-        >save prev work entry</Button>}
-      </Stack>
-    </BlockContainer>
-  ) : null */
 })
 
 export const TogglCollapsed = memo(({logged}:{logged:boolean}) => {

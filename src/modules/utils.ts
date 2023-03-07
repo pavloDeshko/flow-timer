@@ -88,8 +88,8 @@ export const parse = {
 export const log = {
   error: (message? :string, error? :any, state? :{})=>{
     console.log('Error logged: ', message)
-    error && console.log(' error: ', error.toString())
-    state && console.log('   ', JSON.stringify(state, undefined, 2))
+    error && console.log('  ',error.toString())
+    state && console.log('  ', JSON.stringify(state, undefined, 2))
   },
   bug: (message? :string, state? :{})=>{
     if(process.env['NODE_ENV'] != 'production' ){
@@ -110,7 +110,7 @@ export const log = {
   }
 }
 
-export class RetrievedError extends Error{
+/* export class RetrievedError extends Error{
   constructor(value :browser.storage.StorageValue | string){
     super('Last error retrived from local storage')
     this.name = 'RetrievedError'
@@ -121,3 +121,4 @@ export class RetrievedError extends Error{
     return `${this.name}: ${this.message}\n  ${this.lastError}`
   }
 }
+ */

@@ -1,3 +1,4 @@
+declare module "@mui/material/styles" {interface TypeBackground {web?:string}}
 import {createTheme, TypeBackground} from '@mui/material/styles'
 
 const colors = {
