@@ -86,10 +86,9 @@ export const parse = {
 }
 
 export const log = {
-  error: (message? :string, error? :any, state? :{})=>{
-    console.log('Error logged: ', message)
-    error && console.log('  ',error.toString())
-    state && console.log('  ', JSON.stringify(state, undefined, 2))
+  error: (error? :any, comment? :string, state? :{})=>{
+    console.error(`Logged${comment && ` ${comment}`} : `, error)
+    state && console.error('  State at error: ', JSON.stringify(state, undefined, 2))
   },
   bug: (message? :string, state? :{})=>{
     if(process.env['NODE_ENV'] != 'production' ){
@@ -106,6 +105,11 @@ export const log = {
   throw: (message? :string, state? :{})=>{
     if(process.env['NODE_ENV'] != 'production' ){
       throw new Error(`Test error: ${message}\n  state: ${state}`)
+    }
+  },
+  reject: (message? :string, state? :{})=>{
+    if(process.env['NODE_ENV'] != 'production' ){
+      Promise.reject(new Error(`Test Promise error: ${message}\n  state: ${state}`))
     }
   }
 }

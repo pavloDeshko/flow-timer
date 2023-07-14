@@ -13,7 +13,7 @@ export const ICONS = {
 } as const
 
 export const SOUNDS = {
-  WORK: publicPath + 'media/work.ogg',
+  WORK: publicPath + 'media/work.ogg',// TODO debug test remove
   POM: publicPath + 'media/pom.ogg'
 } as const
 

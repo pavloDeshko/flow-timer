@@ -1,5 +1,8 @@
 import { EXTENSION } from '../settings' 
-import {App} from './app'
+import {log} from './utils'
+import {BackgroundApp} from './backgroundApp'
+import {setupErrorCatchers} from '../background'
+import {storageErrorSave} from './service'
 
 export interface Connector{
   postMessage(m :any):void
@@ -35,16 +38,19 @@ class ExtensionConnector implements Connector{
 
 class ExtensionConnectorPair implements ConnectorPair{
   private back:ExtensionConnector|null = null
+  private onConnectBackCb :((p:browser.runtime.Port)=>void) | null = null
   connectFront():Connector {
     return new ExtensionConnector(browser.runtime.connect())
   }
   onConnectBack(cb: (c: Connector) => void): void {
-    browser.runtime.onConnect.addListener(p=>{
-      cb(this.back = new ExtensionConnector(p))
-    })
+    browser.runtime.onConnect.addListener(
+      this.onConnectBackCb = p=>{
+        cb(this.back = new ExtensionConnector(p))
+      })
   }
   forceDisconnectBack(cause?: any): void {
     this.back?.disconnect()
+    this.onConnectBackCb && browser.runtime.onConnect.removeListener(this.onConnectBackCb)
   }
 }
 
@@ -91,6 +97,7 @@ class WebConnectorPair implements ConnectorPair{
   }
   forceDisconnectBack(){
     this.back.disconnect()
+    
   }
 }
 
@@ -103,6 +110,7 @@ export const disconnectBack = pair.forceDisconnectBack.bind(pair)
 
 /**********/
 
-if(!EXTENSION){
-  new App()
+if(!EXTENSION){// on ext done in background.ts
+  setupErrorCatchers()
+  new BackgroundApp()
 }

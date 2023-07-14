@@ -60,7 +60,7 @@ export type Config = {
   pomActive: boolean,
   ratio: number,
   mode: Mode,
-  dark: boolean
+  dark: boolean | null
 }
 
 export type TogglForm = {
@@ -87,7 +87,7 @@ export class State{
     pomActive: false,
     ratio: DEFAULT_RATIO, 
     mode: Mode.ON,
-    dark: false
+    dark: null
   } //TODO
   toggl :{login :TogglLogin, form :TogglForm} = {
     login : {
@@ -141,7 +141,7 @@ export const UserStorageSchema = z.object({
     pomActive: z.boolean(), 
     ratio: z.number(),
     mode: z.nativeEnum(Mode),
-    dark: z.boolean()
+    dark: z.boolean().nullable()
   }).optional(),
   toggl: z.object({
     auth: z.string(),

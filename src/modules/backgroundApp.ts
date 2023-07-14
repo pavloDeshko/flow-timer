@@ -1,15 +1,17 @@
 import Timer from './timer'
 import {Action, Config, State, Time, Mode, NotifyType, IconObject} from './types'
-import {ZERO_TIMER, getRestTime, log} from './utils'
+import {ZERO_TIMER, getRestTime, log, objectToSeconds} from './utils'
 import {togglApiAdd, togglApiConnect, togglApiDisconnect, storageGet, storageSave, notify, iconChange} from './service'
 import {onConnectBack as onConnect, Connector} from './connector'
 import * as settings from '../settings'
 import {ICONS} from './assets'
+import {errors, test, delay} from './test'
 
-export class App{
+export class BackgroundApp{
   timer :Timer
   pomTimer :Timer
   state = new State()
+  prevState :State | null = null
   port :(null | Connector) = null
   
   //LISTENERS AND SETUP
@@ -79,8 +81,10 @@ export class App{
   }
 
   constructor(){
-    //throw new Error('sync test background error')
-    //Promise.reject('test async promise error in background')
+    setTimeout(()=>{
+      errors.backError && test(()=>{throw new Error(`Background test Error at ${new Date()}`)})//TODO remove test
+      errors.backRejection && test(()=>{Promise.reject(new Error(`Background test Rejection at ${new Date()}`))})//TODO remove test
+    },delay)
 
     this.timer = new Timer(this.on_TimerUpdate, this.on_RestEnd)
     this.pomTimer = new Timer(()=>{},this.on_PomodoroEnd)
@@ -118,7 +122,7 @@ export class App{
     this.state.working && this.toggl_Save()
 
     this.state.working = null
-    this.state.resting = Date.now()
+    this.state.resting = Date.now() + objectToSeconds(this.state.nextRest)*1000
     this.state.time = this.timer.down(this.state.nextRest)
     this.pomTimer.reset()
     if(this.state.config.mode){
@@ -168,13 +172,14 @@ export class App{
         this.state.toggl.form.shouldSave = data.toggl.shouldSave
         await this.toggl_Connect(data.toggl.auth)
       }
-      if(!data.config && window.matchMedia('(prefers-color-scheme: dark)').matches){
+      if(!data.config && window.matchMedia('(prefers-color-scheme: dark)').matches){//TODO remove from here?
         this.state.config.dark = true
       }
 /*       if(!data.toggl && settings.TOGGL_DEBUG){
         await this.toggl_Connect(settings.TOGGL_DEBUG)
       } */
     } catch (err){
+      log.error(err,'failed to get config from storage')
       // TODO error display?
     }
     this.out_Dispatch()
@@ -302,7 +307,8 @@ export class App{
           shouldSave: this.state.toggl.form.shouldSave
         } : undefined
       })
-    }catch(e){
+    }catch(err){
+      log.error(err,'failed to save config to storage')
       //TODO error display?
     } 
   }

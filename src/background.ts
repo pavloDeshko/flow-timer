@@ -2,19 +2,23 @@
 import {log} from './modules/utils'
 import {storageErrorSave} from './modules/service'
 import { disconnectBack } from './modules/connector'
-import {App} from './modules/app'
+import {BackgroundApp} from './modules/backgroundApp'
+import {EXTENSION} from './settings'
 
 //GLOBAL ERROR CATCHERS
-const handleError = (err :Error)=>{
-  log.error('Error caught in background script', err)
-  storageErrorSave(err)
-  disconnectBack(err)
-  throw err
+export const setupErrorCatchers = () => {
+  const handleError = (err :Error)=>{
+    log.error(err, 'in background app')
+    storageErrorSave(err)
+    disconnectBack(err)
+    if(EXTENSION){throw err}//TODO should throw?
+  }
+  addEventListener('error', (e:ErrorEvent)=>{handleError(e.error)})
+  addEventListener('unhandledrejection', (e:PromiseRejectionEvent)=>{handleError(e.reason)})
 }
-addEventListener('error', (e:ErrorEvent)=>{handleError(e.error)})
-addEventListener('unhandledrejection', (e:PromiseRejectionEvent)=>{handleError(e.reason)})
 
 //LAUNCH
-//Promise.reject('test async promise error in background')
-//throw new Error('test sync error in background!')//TODO debug
-new App()
+if(EXTENSION) {// on web done at connector
+  setupErrorCatchers()
+  new BackgroundApp()
+}

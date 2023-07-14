@@ -1,10 +1,11 @@
 import wretch from 'wretch'
 import favicon from 'favicon.js' //write @types TODO
 import {serializeError, deserializeError} from 'serialize-error'
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 import {Toggl_Entry_Params, Toggl_Auth, Toggl_Me, Toggl_Project, UserStorage, UserStorageSchema, Toggl_Me_Schema, NotifyType, IconObject} from './types'
 import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME, EXTENSION} from '../settings'
-import {log} from './utils'
+import {log, useFreeze} from './utils'
 import {ICONS, SOUNDS} from './assets'
 
 /* const storage = EXTENSION ? 
@@ -27,15 +28,15 @@ const w = wretch()
 const getAuth = (auth :Toggl_Auth) => 'Basic ' + btoa(typeof auth == 'string' ? `${auth}:api_token` : `${auth.user}:${auth.pass}`)
 
 const handleToggl403 = (err :Error) => {
-  log.error('403 on trying to connect to Toggl',err)
+  log.error(err,'403 on trying to connect to Toggl')
   throw new Error('Looks like your toggl credentials are wrong :(')
 }
 const handleTogglOther = (err :Error) => {
-  log.error('Error on trying to reach to Toggl',err)
+  log.error(err,'Error on trying to reach to Toggl')
   throw new Error(`Can't reach out to Toggl :(`)
 }
 const handleInvalidData = (err :Error) => {
-  log.error('Error on parsing data from Toggl', err)
+  log.error(err, 'Error on parsing data from Toggl')
   throw new Error(`Can't make sence of data from Toggl :( Updating extension might help..`)
 }
  
@@ -91,7 +92,7 @@ export const storageGet = async():Promise<UserStorage>=>{
     log.debug('Retrieved from storage: ', data)
     return data
   }catch(err){
-    log.error('Error on trying to get data to storage', err)
+    log.error(err, 'error on trying to get data to storage')
     throw new Error("Problems trying to restore your options :/") 
   }
 }
@@ -103,7 +104,7 @@ export const storageSave = async(data :UserStorage)=>{
       localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(data))
     log.debug('Saved to storage.',data)
   }catch(err){
-    log.error('Error on trying to save to storage', err)
+    log.error(err, 'Error on trying to save to storage')
     throw new Error("Can't save your options for future use :(")
   }
 }
@@ -120,8 +121,15 @@ export const storageErrorGet = async()=>{
   const data =  EXTENSION ? 
     await browser.storage.local.get(STORAGE_ERROR_KEY).then(storage=>storage[STORAGE_ERROR_KEY]):
     localStorage.getItem(STORAGE_ERROR_KEY)
-  return data && deserializeError(JSON.parse(data.toString()))
+  return data ? deserializeError(JSON.parse(data.toString())) : null
 }
+
+let workAudio :HTMLAudioElement, pomAudio :HTMLAudioElement, retries = 5
+const loadAudio = () => {
+  workAudio = new Audio(SOUNDS.WORK)
+  pomAudio = new Audio(SOUNDS.POM)
+}
+loadAudio()
 
 export const notify = (type:NotifyType)=>{
   const pomodoro = type == NotifyType.POM
@@ -131,7 +139,20 @@ export const notify = (type:NotifyType)=>{
     message: pomodoro ? 'you\'ve been working for a long time, take a rest' : 'your rest time is up',
     iconUrl: pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT
   }) : ()=>{} //TODO implement web notification
-  new Audio(pomodoro ? SOUNDS.POM : SOUNDS.WORK ).play()//.then(((_:unknown,err:Error)=>log.debug(String(err))) as ()=>{})
+
+  (pomodoro ? pomAudio : workAudio).play()
+    .catch(()=>{
+      log.debug('rejection played')
+      if(retries){
+        loadAudio()
+        setTimeout(()=>notify(type), 1000)
+        retries -= 1
+      }else{
+        throw new Error("Failed to play alert sounds.")
+      }
+    })
 }
 
 export const reload = ()=>{ EXTENSION ? browser.runtime.reload() : location.reload()}
+
+export const usePreffersDark = ()=> useFreeze(useMediaQuery('(prefers-color-scheme: dark)'))

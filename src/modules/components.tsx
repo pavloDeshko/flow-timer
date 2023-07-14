@@ -1,4 +1,4 @@
-import React, {useContext, useRef, useState, memo, ChangeEvent, ReactNode} from 'react'
+import React, {useContext, useRef, useState, memo, ChangeEvent, ReactNode, useEffect} from 'react'
 import {
   Paper, PaperProps,
   Box,
@@ -24,7 +24,8 @@ import {
   Autocomplete,
   Popover,
   Card, CardContent, CardActions, CardMedia,
-  Alert
+  Alert,
+  Skeleton
  } from '@mui/material'
 import Update from "@mui/icons-material/Update"
 import Save from "@mui/icons-material/Save"
@@ -43,7 +44,7 @@ import Close from '@mui/icons-material/Close';
 import clipboardCopy from 'clipboard-copy'
 
 import {Action, Time, Config, TogglLogin as TogglLoginData, TogglForm as TogglFormData, Toggl_Project, Mode, NotifyType} from './types'
-import {padTwoZeros, parse, log, useFreeze} from './utils'
+import {padTwoZeros, parse, log, useFreeze, secondsToObject} from './utils'
 import {SUPPORT_EMAIL,POM_TIMES,TOGGL_TOKEN_URL, DESC, DESC_LONG, EXTENSION} from '../settings'
 import {reload} from './service'
 import {IMGS,ICONS} from './assets'
@@ -53,7 +54,7 @@ const APP_WIDTH = 500 //TODO move to settings?
 
 export const PageContainer = ({children}:{children:ReactNode})=>{
   return (
-   <Elevation className="Background" elevation={0} >
+   <Elevation className="Background" elevation={0} sx={{height:'100vh'}}>
       <Elevation className="Column"  
         elevation={10}
          sx={{
@@ -185,8 +186,45 @@ const HelpPopover = ({children}:{children:ReactNode})=>{
   </span>)
 }
 
-export const Counter = memo(({hours, minutes, seconds} :Time ) => {
+export const Ticker = memo(({time, down = false}:{time:number|null,down?:boolean})=>{
+  const zero = time === null
+  const targetOrStart = time !== null ? time : 0
 
+  const getCurrent = ()=>{
+    console.log('current: ',Math.round((Date.now() - targetOrStart) / 1000))
+    return Math.round((Date.now() - targetOrStart) / 1000)
+  }
+
+  const [state, setState] = useState(useFreeze(getCurrent()))
+  const setCurrent = ()=>setState(getCurrent())
+
+  const timeouts = useFreeze([] as any[])
+  const clearTimeouts = ()=>{
+    timeouts.forEach(t=>clearTimeout(t))
+    timeouts.splice(0)
+  }
+
+  useEffect(()=>{
+    clearTimeouts()
+    if(!zero){
+      console.log('setting timers!')
+      setCurrent()
+      timeouts.push(setTimeout(()=>{
+        console.log('timeout!')
+        setCurrent()
+        timeouts.push(setInterval(()=>{
+          console.log('interval!')
+          setCurrent()
+        },1000))
+      },1000 - (Math.abs(Date.now() - targetOrStart)) % 1000) as any)
+    }
+    return ()=>{clearTimeouts();console.log('reseting timers!')}
+  },[targetOrStart,down])
+  
+  const values = zero || down && state >= 0 ? secondsToObject(0) : secondsToObject(Math.abs(state))
+  return <Counter {...values}/>
+})
+export const Counter = ({hours, minutes, seconds} :Time ) => {
 /*   const colors = {
     [Status.IDLE]:'text',
     [Status.WORKING]:'secondary',
@@ -194,7 +232,6 @@ export const Counter = memo(({hours, minutes, seconds} :Time ) => {
   } as const
   const color = status.resting ? 'primary.main' : status.working ? 'secondary.main' : 'text.primary'
  */
-
   return(
     <Typography sx={{
       '.seconds': {
@@ -211,7 +248,7 @@ export const Counter = memo(({hours, minutes, seconds} :Time ) => {
       <span className='seconds'>{padTwoZeros(seconds)}</span>
     </Typography>
   )
-})
+}
 
 export const Controls = memo(({working,resting}:{working:boolean,resting:boolean}) => {
   const dispatch = useContext(DispatchContext)
@@ -327,7 +364,8 @@ export const TimeAlert = ({type, onClose} :{type :(NotifyType|null), onClose :()
         severity="warning"//TODO color depends on type?
         sx={{
           "& > *": { paddingY: "0px" },
-          maxHeight:"2rem"
+          maxHeight:"2rem",
+          ".MuiAlert-message": {overflow:"visible"}//TODO whats wrong?..
         }}
         action={<IconButton
           sx={{ paddingY: "0px" }}
@@ -428,7 +466,7 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
       <Divider />
 
       <Button
-        sx={{color:"text.primary", textTransform:"none", fontSize:"1rem", pl:"2px"}}
+        sx={{color:"text.primary", textTransform:"none", fontSize:"1rem", pl:"6px"}}
         size="large"
         startIcon={dark ? <Brightness7 color="primary"/>:<Brightness4 color="primary"/>}
         onClick={setDark}
@@ -680,6 +718,10 @@ export const TogglCollapsed = memo(({logged}:{logged:boolean}) => {
   )
 })
 
+export const AppPlaceholder = ()=>(
+  <Skeleton variant="rectangular" width={APP_WIDTH} height={"25rem"}/>
+)
+
 export const CopyLink = ({value, text, loading = false}:{value:string, text?:string, loading?:boolean})=>{
   const copy = ()=>clipboardCopy(value)
   
@@ -699,7 +741,7 @@ export const CopyLink = ({value, text, loading = false}:{value:string, text?:str
 export const AppFallback = ({error}:{error:Error}) => {
 
   return(
-    <Paper elevation={3} sx={{padding:"0.5rem", width: "400px"}}>
+    <Paper elevation={3} sx={{padding:"0.5rem", width: APP_WIDTH+'px', boxSizing:"border-box"}}>
       <Typography component="div" sx={{margin:"1rem"}}>
         <Typography variant="h6" component="h2">Sorry, it seems like internals of our app crashed :-/</Typography>
         <p>Please, drop us a note at <CopyLink value={'SUPPORT_EMAIL'} /> about what happened. Click
