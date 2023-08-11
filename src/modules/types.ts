@@ -1,35 +1,9 @@
 import {z} from 'zod'
 
-import {secondsToObject} from './utils'
-import { MIN_REST, MAX_REST, DEFAULT_RATIO} from '../settings'
+export {Action, Trouble, Message, MessageSchema} from './events'
 
-export type Action = {
-  type: 'WORK'
-}|{
-  type: 'REST'
-}|{
-  type: 'ADJUST',
-  time: Time | null
-}|{
-  type: 'CONFIG'
-  config: Partial<Config>
-}|{
-  type: 'TOGGL_IN',
-  token: string
-}|{
-  type: 'TOGGL_OUT'
-}|{
-  type: 'TOGGL_FORM',
-  form: Partial<TogglForm>
-}|{
-  type: 'TOGGL_SAVE_LAST'
-}|{
-  type: 'STATE'
-  state: State
-}|{
-  type: 'NOTIFY'
-  subType: NotifyType
-}
+/// Misc ///
+export type IconObject = {16:string, 32:string, 64:string} 
 
 export type Time = {
   days?: number,
@@ -39,85 +13,65 @@ export type Time = {
   secondTenths?: number
 }
 
-export type Partial<T> = {//TODO remove, exists in TS
-  [key in keyof T]?: T[key]
-}
-
 export enum Mode {
   OFF = 0,
   PAUSED = 'PAUSED',
   ON = 'ON'
 } 
 
-/* export enum Status {//TODO add to state
-  WORKING = 'WORKING',
-  RESTING = 'RESTING',
-  IDLE ='IDLE'
-} */
-
-export type Config = {
-  pomTime: number,
-  pomActive: boolean,
-  ratio: number,
-  mode: Mode,
-  dark: boolean | null
+export enum AlarmType {
+  WORK ="WORK",
+  POM = "POM"
 }
 
-export type TogglForm = {
-  shouldSave: boolean,
-  desc: string,
-  unsaved: {start: number, end: number} | null,
-  projectId: number | null
-}
+/// State related ///
+export const Config_Schema = z.object({
+  pomTime: z.number(),
+  pomActive: z.boolean(),
+  ratio: z.number(),
+  mode: z.nativeEnum(Mode),
+  dark: z.boolean().nullable()
+})
+export type Config = z.infer<typeof Config_Schema>
 
-export type TogglLogin = {
-  token : string | null,
-  error : string | null,
-  loading : boolean,
-  projects : Array<Toggl_Project>
-}
+export const TogglForm_Schema = z.object({
+  shouldSave: z.boolean(),
+  unsaved: z.tuple([z.number(), z.number()]).nullable(),
+  desc: z.string(),
+  projectId: z.number().nullable()
+})
+export type TogglForm = z.infer<typeof TogglForm_Schema>
 
-export class State{
-  time :Time = secondsToObject(0)
-  nextRest :Time = secondsToObject(MIN_REST)
-  working :(null | number) = null
-  resting :(null | number) = null
-  config : Config = {
-    pomTime: 50,
-    pomActive: false,
-    ratio: DEFAULT_RATIO, 
-    mode: Mode.ON,
-    dark: null
-  } //TODO
-  toggl :{login :TogglLogin, form :TogglForm} = {
-    login : {
-      token : null,
-      error : null,
-      loading : false,
-      projects : []
-    },
-    form : {
-      shouldSave: false,
-      unsaved: null,
-      desc: '',
-      projectId: null
-    }
-  }
-}
-
-export type Toggl_Entry_Params = {
-  time_entry: Toggl_Entry
-}
-
-export type Toggl_Auth = string | {user :string, pass :string}
-
-//to validate
 export const Toggl_Project_Schema = z.object({
   id: z.number(),
   name: z.string()
 })
-export type Toggl_Project = z.infer<typeof Toggl_Project_Schema>
+export type TogglProject = z.infer<typeof Toggl_Project_Schema>
 
+export const Toggl_State_Schema = z.object({
+  token: z.string().nullable(),
+  projects: z.array(Toggl_Project_Schema),
+  form: TogglForm_Schema,
+  loaded: z.boolean().or(z.string())
+})
+export type TogglState = z.infer<typeof Toggl_State_Schema>
+
+export const State_Schema = z.object({
+  alarms: z.object({
+    work: z.number().nullable(),
+    pom: z.number().nullable()
+  }),
+  nextRestTime: z.number(),
+  workingStart: z.number().nullable(),
+  restingTarget: z.number().nullable(),
+  config: Config_Schema,
+  toggl: Toggl_State_Schema,
+  notification: z.nativeEnum(AlarmType).nullable(),
+  warning: z.string().nullable()
+})
+export type State = z.infer<typeof State_Schema>
+
+/// Toggl related ////
 export const Toggl_Entry_Schema = z.object({
   start : z.string(),
   duration : z.number(),
@@ -126,6 +80,11 @@ export const Toggl_Entry_Schema = z.object({
   pid : z.number().optional()
 })
 export type Toggl_Entry = z.infer<typeof Toggl_Entry_Schema>
+export type Toggl_Entry_Params = {
+  time_entry: Toggl_Entry
+}
+
+export type Toggl_Auth = string | {user :string, pass :string}
 
 export const Toggl_Me_Schema = z.object({
   data: z.object({
@@ -135,39 +94,15 @@ export const Toggl_Me_Schema = z.object({
 })
 export type Toggl_Me = z.infer<typeof Toggl_Me_Schema>
 
-export const UserStorageSchema = z.object({
-  config: z.object({
-    pomTime: z.number(),
-    pomActive: z.boolean(), 
-    ratio: z.number(),
-    mode: z.nativeEnum(Mode),
-    dark: z.boolean().nullable()
-  }).optional(),
-  toggl: z.object({
-    auth: z.string(),
-    shouldSave: z.boolean()
-  }).optional()
+/// Storage related ///
+export const Error_Info_Schema = z.object({
+  error: z.any(),
+  state: State_Schema.optional() 
 })
-export type UserStorage = z.infer<typeof UserStorageSchema>
 
-export enum NotifyType {
-  WORK ="WORK",
-  POM = "POM"
-}
+export const Notification_Schema = z.nativeEnum(AlarmType)
 
-export type IconObject = {16:string, 32:string, 64:string} 
+export const AlarmId_Schema = z.string()
+export type AlarmId = z.infer<typeof AlarmId_Schema>
 
-/* {
-  timer: secondsToObject(0),
-  nextRest:  secondsToObject(MIN_REST),
-  working: null, 
-  resting: null,
-  config: {ratio: DEFAULT_RATIO},
-  toggl: {
-    token: null,
-    error: null,
-    loading: false,
-    form: {active: false, desc: ''},
-    toggling: null
-  }
-} */
+

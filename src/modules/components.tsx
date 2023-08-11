@@ -1,4 +1,4 @@
-import React, {useContext, useRef, useState, memo, ChangeEvent, ReactNode, useEffect} from 'react'
+import React, {useContext, useRef, useState, memo, ChangeEvent, ReactNode, useEffect, ComponentType} from 'react'
 import {
   Paper, PaperProps,
   Box,
@@ -43,11 +43,12 @@ import Close from '@mui/icons-material/Close';
 
 import clipboardCopy from 'clipboard-copy'
 
-import {Action, Time, Config, TogglLogin as TogglLoginData, TogglForm as TogglFormData, Toggl_Project, Mode, NotifyType} from './types'
-import {padTwoZeros, parse, log, useFreeze, secondsToObject} from './utils'
+import {Action, Time, Config, TogglForm as TogglFormData, TogglProject, Mode, AlarmType} from './types'
+import {padTwoZeros, parse, log, useFreeze, msToTime} from './utils'
 import {SUPPORT_EMAIL,POM_TIMES,TOGGL_TOKEN_URL, DESC, DESC_LONG, EXTENSION} from '../settings'
 import {reload} from './service'
 import {IMGS,ICONS} from './assets'
+import { boolean } from 'zod'
 
 export const DispatchContext = React.createContext((a:Action)=>{log.debug('Dispached action: ', a)})//for testing compts without provider
 const APP_WIDTH = 500 //TODO move to settings?
@@ -186,45 +187,7 @@ const HelpPopover = ({children}:{children:ReactNode})=>{
   </span>)
 }
 
-export const Ticker = memo(({time, down = false}:{time:number|null,down?:boolean})=>{
-  const zero = time === null
-  const targetOrStart = time !== null ? time : 0
-
-  const getCurrent = ()=>{
-    console.log('current: ',Math.round((Date.now() - targetOrStart) / 1000))
-    return Math.round((Date.now() - targetOrStart) / 1000)
-  }
-
-  const [state, setState] = useState(useFreeze(getCurrent()))
-  const setCurrent = ()=>setState(getCurrent())
-
-  const timeouts = useFreeze([] as any[])
-  const clearTimeouts = ()=>{
-    timeouts.forEach(t=>clearTimeout(t))
-    timeouts.splice(0)
-  }
-
-  useEffect(()=>{
-    clearTimeouts()
-    if(!zero){
-      console.log('setting timers!')
-      setCurrent()
-      timeouts.push(setTimeout(()=>{
-        console.log('timeout!')
-        setCurrent()
-        timeouts.push(setInterval(()=>{
-          console.log('interval!')
-          setCurrent()
-        },1000))
-      },1000 - (Math.abs(Date.now() - targetOrStart)) % 1000) as any)
-    }
-    return ()=>{clearTimeouts();console.log('reseting timers!')}
-  },[targetOrStart,down])
-  
-  const values = zero || down && state >= 0 ? secondsToObject(0) : secondsToObject(Math.abs(state))
-  return <Counter {...values}/>
-})
-export const Counter = ({hours, minutes, seconds} :Time ) => {
+export const Counter = ({hours, minutes, seconds} :Time) => {
 /*   const colors = {
     [Status.IDLE]:'text',
     [Status.WORKING]:'secondary',
@@ -250,25 +213,7 @@ export const Counter = ({hours, minutes, seconds} :Time ) => {
   )
 }
 
-export const Controls = memo(({working,resting}:{working:boolean,resting:boolean}) => {
-  const dispatch = useContext(DispatchContext)
-
-  const work = () => dispatch({type: 'WORK'})
-  const rest = () => dispatch({type: 'REST'})
-  
-  //const buttonProps = {variant:'contained',  size:'large', fullWidth:true} as const
-
-  return(
-    <ButtonGroup sx={{
-      '.MuiButton-root, .MuiButton-root:hover':{borderWidth:'2px'}
-    }} fullWidth>
-      <Button variant={working? 'contained' : 'outlined'} color="secondary" onClick={work}>{working?'stop working':'work'}</Button>
-      <Button variant={resting? 'contained' : 'outlined'} color="primary" onClick={rest}>{resting?'stop resting':'rest'}</Button>
-    </ButtonGroup>
-  )
-})
-
-export const RestAdjust = memo(({nextRest:{hours,minutes,seconds}, mode} :{nextRest :Time, mode :Mode}) => {
+export const RestAdjust = memo(({hours, minutes, seconds, mode} :Time & {mode :Mode}) => {
   const dispatch = useContext(DispatchContext)
   
   const hoursRef = useRef<HTMLInputElement>()
@@ -277,8 +222,7 @@ export const RestAdjust = memo(({nextRest:{hours,minutes,seconds}, mode} :{nextR
 
   const onRecalculate = ()=>{
     dispatch({
-      type: 'ADJUST',
-      time: null
+      type: 'RECALC'
     })
   }
   const onChange = () => {
@@ -339,6 +283,8 @@ export const RestAdjust = memo(({nextRest:{hours,minutes,seconds}, mode} :{nextR
     </Box>
   )
 })
+
+//const bla = ()=>(<RestAdjustTicker time={44} mod={n=>n/2} mode={Mode.OFF}/>)
 /* 
 <Collapse in={true}>
                <Alert 
@@ -356,7 +302,27 @@ export const RestAdjust = memo(({nextRest:{hours,minutes,seconds}, mode} :{nextR
                ><Typography>Time to work!</Typography></Alert>
               </Collapse>
 */
-export const TimeAlert = ({type, onClose} :{type :(NotifyType|null), onClose :()=>void})=>{
+
+export const Controls = memo(({working,resting}:{working:boolean,resting:boolean}) => {
+  const dispatch = useContext(DispatchContext)
+
+  const work = () => dispatch({type: 'WORK'})
+  const rest = () => dispatch({type: 'REST'})
+  
+  //const buttonProps = {variant:'contained',  size:'large', fullWidth:true} as const
+
+  return(
+    <ButtonGroup sx={{
+      '.MuiButton-root, .MuiButton-root:hover':{borderWidth:'2px'}
+    }} fullWidth>
+      <Button variant={working? 'contained' : 'outlined'} color="secondary" onClick={work}>{working?'stop working':'work'}</Button>
+      <Button variant={resting? 'contained' : 'outlined'} color="primary" onClick={rest}>{resting?'stop resting':'rest'}</Button>
+    </ButtonGroup>
+  )
+})
+
+export const TimeAlert = ({type} :{type :(AlarmType|null)})=>{
+  const dispatch = useContext(DispatchContext)
   return (
     <Collapse in={!!type}>
       <Alert
@@ -369,10 +335,10 @@ export const TimeAlert = ({type, onClose} :{type :(NotifyType|null), onClose :()
         }}
         action={<IconButton
           sx={{ paddingY: "0px" }}
-          onClick={onClose}
+          onClick={()=>dispatch({type:'CLOSE_NOTIFY'})}
         ><Close/>
         </IconButton>}
-      ><Typography>{type == NotifyType.WORK ? 'Time to work!' : 'Time to rest!'}</Typography></Alert>
+      ><Typography>{type == AlarmType.WORK ? 'Time to work!' : 'Time to rest!'}</Typography></Alert>
     </Collapse>
   )
 }
@@ -505,7 +471,7 @@ const TogglHelpCard = ()=>(
   </Card>
 )
 
-export const TogglLogin = memo(({loading} :TogglLoginData) => {
+export const TogglLogin = memo(({loading} :{loading:boolean}) => {
 
   const dispatch = useContext(DispatchContext)
   const [token,setToken] = useState('')
@@ -614,7 +580,7 @@ export const TogglLogin = memo(({loading} :TogglLoginData) => {
 })
 
 export const TogglForm = memo((
-  {projects, projectId, shouldSave, desc, unsaved} : {projects :Array<Toggl_Project>} & TogglFormData
+  {projects, projectId, shouldSave, desc, unsaved} : {projects :Array<TogglProject>} & TogglFormData
 ) => {
   const dispatch = useContext(DispatchContext)
   
@@ -738,7 +704,7 @@ export const CopyLink = ({value, text, loading = false}:{value:string, text?:str
   </Tooltip>
 }
 
-export const AppFallback = ({error}:{error:Error}) => {
+export const Fallback = ({error}:{error:Error}) => {
 
   return(
     <Paper elevation={3} sx={{padding:"0.5rem", width: APP_WIDTH+'px', boxSizing:"border-box"}}>

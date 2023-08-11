@@ -1,7 +1,9 @@
 import { Time } from './types'
 import { MIN_REST, MAX_REST, DEFAULT_RATIO} from '../settings'
-import { useEffect, useState } from 'react'
+import { DependencyList, EffectCallback, useEffect, useState } from 'react'
 import { z }from 'zod'
+
+import eventManager  from './events'
 
 const JWT = /^[A-Za-z0-9-_=]+$/
 
@@ -22,6 +24,10 @@ export const useTimeoutUnless = (callback :()=>void, shouldCancel :boolean, time
 
 export const useFreeze = <T>(value:T)=>{
   return useState(value)[0]
+}// TODO just useMemo?
+
+export const useAsyncEffect = (cb:()=>Promise<void>,deps:DependencyList)=>{
+  return useEffect(()=>{cb()},deps)
 }
 
 export const ZERO_TIMER :Time = {
@@ -32,14 +38,13 @@ export const ZERO_TIMER :Time = {
 
 export const ZERO_TIMER_FULL :Time = {days:0, ...ZERO_TIMER, secondTenths:0}
 
-export const getRestTime = (workTimeObj :Time, ratio = DEFAULT_RATIO) => {
-  const seconds = Math.floor(objectToSeconds(workTimeObj) / ratio)
-  return secondsToObject(
-    seconds < MIN_REST ? MIN_REST : seconds > MAX_REST ? MAX_REST : seconds
-  )
-}
+/* export const calculateRestTime = (workTime :number, ratio = DEFAULT_RATIO) => {
+  const nextRestTime = Math.floor(workTime / ratio)
+  return nextRestTime < MIN_REST ? MIN_REST : nextRestTime > MAX_REST ? MAX_REST : nextRestTime
+} */
 
-export const secondsToObject = (totalSeconds :number) => {
+export const msToTime = (ms :number) => {
+  let totalSeconds = Math.round(ms/1000)
   const values :Time = {...ZERO_TIMER_FULL}
 
   values.days = Math.floor(totalSeconds / 86400), totalSeconds %= 86400 //TODO bitwise?
@@ -51,7 +56,7 @@ export const secondsToObject = (totalSeconds :number) => {
   return values
 }
 
-export const objectToSeconds = (obj :Time) => {
+export const timeToMs = (obj :Time) => {
   let seconds = 0
   seconds += (obj.days || 0) * 86400
   seconds += (obj.hours || 0) * 3600
@@ -59,7 +64,7 @@ export const objectToSeconds = (obj :Time) => {
   seconds += (obj.seconds || 0) * 1
   seconds += (obj.secondTenths || 0) * 0.1
 
-  return Math.floor(seconds)
+  return Math.floor(seconds)*1000
 }
 
 export const padTwoZeros = (number :number) => {
@@ -113,6 +118,8 @@ export const log = {
     }
   }
 }
+
+eventManager.on('trouble', t=>log.error(t.type!="TIP" ? t.error : undefined, t.message))
 
 /* export class RetrievedError extends Error{
   constructor(value :browser.storage.StorageValue | string){

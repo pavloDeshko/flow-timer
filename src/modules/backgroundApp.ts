@@ -15,7 +15,7 @@ export class BackgroundApp{
   port :(null | Connector) = null
   
   //LISTENERS AND SETUP
-  on_Connection = (p :Connector) => {
+  on_Connection = (p :Connector) => {      
     p.onMessage(this.on_Action) 
     p.onDisconnect(() => {
       this.port = null
@@ -46,7 +46,7 @@ export class BackgroundApp{
 
     switch (action.type){
       case 'WORK':
-        this.state.working != null ? this.stopWork() : this.startWork()
+        this.state.workingStart != null ? this.stopWork() : this.startWork()
         break
       case 'REST':
         this.state.resting != null ? this.stopRest() : this.startRest()
@@ -98,7 +98,7 @@ export class BackgroundApp{
     this.state.toggl.form.unsaved = null
 
     this.state.resting = null
-    this.state.working = Date.now()
+    this.state.workingStart = Date.now()
     this.state.time = this.timer.up()
     this.pomTimer.down({...ZERO_TIMER,...{minutes:this.state.config.pomTime}})
 
@@ -110,7 +110,7 @@ export class BackgroundApp{
   stopWork = () => {
     this.toggl_Save()
 
-    this.state.working = null
+    this.state.workingStart = null
     this.state.time = this.timer.reset()
     this.pomTimer.reset()
     
@@ -119,11 +119,11 @@ export class BackgroundApp{
   }
   
   startRest = () => {
-    this.state.working && this.toggl_Save()
+    this.state.workingStart && this.toggl_Save()
 
-    this.state.working = null
-    this.state.resting = Date.now() + objectToSeconds(this.state.nextRest)*1000
-    this.state.time = this.timer.down(this.state.nextRest)
+    this.state.workingStart = null
+    this.state.resting = Date.now() + objectToSeconds(this.state.userRest)*1000
+    this.state.time = this.timer.down(this.state.userRest)
     this.pomTimer.reset()
     if(this.state.config.mode){
       this.state.config.mode = Mode.ON
@@ -156,7 +156,7 @@ export class BackgroundApp{
       this._recalculateRest()
     }else{
       this.state.config.mode = this.state.config.mode && Mode.PAUSED
-      this.state.nextRest = value
+      this.state.userRest = value
     }
     
     this.out_Dispatch()
@@ -187,14 +187,14 @@ export class BackgroundApp{
   
   _recalculateRest = () => {
     if(this.state.config.mode === Mode.ON){
-      this.state.nextRest = getRestTime(this.state.working ? this.state.time : ZERO_TIMER, this.state.config.ratio)
+      this.state.userRest = getRestTime(this.state.workingStart ? this.state.time : ZERO_TIMER, this.state.config.ratio)
     }
   }
   
   //TOGGL APP ACTIONS
   toggl_Save = async ()=> {
     const form = this.state.toggl.form, login = this.state.toggl.login
-    if(!this.state.working){
+    if(!this.state.workingStart){
       log.bug('invalid toggle save',this.state)
       return
     }
@@ -203,7 +203,7 @@ export class BackgroundApp{
       try{
         login.loading = true
         this.out_Dispatch()
-        await togglApiAdd( login.token, this.state.working, Date.now(), form.desc, form.projectId)
+        await togglApiAdd( login.token, this.state.workingStart, Date.now(), form.desc, form.projectId)
         login.error = null
       }catch(e:any){
         this.out_Toggl_Error(e)
@@ -214,7 +214,7 @@ export class BackgroundApp{
         this.out_Dispatch()
       }
     }else{
-      form.unsaved = {start: this.state.working, end: Date.now()}
+      form.unsaved = {start: this.state.workingStart, end: Date.now()}
     }
   }
   

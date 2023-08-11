@@ -1,9 +1,37 @@
+import E from "Emittery"
+
 import { EXTENSION } from '../settings' 
 import {log} from './utils'
 import {BackgroundApp} from './backgroundApp'
 import {setupErrorCatchers} from '../background'
 import {storageErrorSave} from './service'
+import {Message, MessageSchema} from './types'
 
+
+const getConnector = (target: "FRONT"|"BACK")=>{
+  const emitter = new E<{'action':Message}>()
+
+  if(EXTENSION){// TODO change to Some env
+    emitter.on('action', action=>browser.runtime.sendMessage(action))
+    browser.runtime.onMessage.addListener((data:any)=>{
+      emitter.emit('action',MessageSchema.parse(data))
+    })
+  }else{
+   // TODO
+  }
+
+  return {
+    on : (cb:(a:Message)=>void)=>{emitter.on('action',cb)},
+    send : (a:Message)=>{emitter.emit('action',a)},
+    clear: ()=>{emitter.clearListeners()}
+  }
+}
+
+export const backConnector = getConnector('BACK')
+export const frontConector = getConnector('FRONT')
+
+/*
+*/
 export interface Connector{
   postMessage(m :any):void
   onMessage(cb :(message: object)=>void):void
