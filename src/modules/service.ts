@@ -1,37 +1,31 @@
 import wretch from 'wretch'
 import favicon from 'favicon.js' //write @types TODO
-import {serializeError, deserializeError} from 'serialize-error'
 import useMediaQuery from '@mui/material/useMediaQuery'
-import { debounce } from '@mui/material/'
+import debounce from '@mui/material/utils/debounce'
+import  { z, ZodSchema } from 'zod'
+import {useState} from 'react'
 
-import { 
-  Toggl_Entry_Params, 
-  Toggl_Auth, 
+import {
+  Toggl_Entry_Params,
+  Toggl_Auth,
   Toggl_Me,
-  Toggl_Me_Schema, 
+  Toggl_Me_Schema,
   AlarmType, Notification_Schema, AlarmId,
-  IconObject, 
+  IconObject,
   State,
   State_Schema,
   AlarmId_Schema,
-  Error_Info_Schema
+  Error_Info
 } from './types'
 import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME, EXTENSION} from '../settings'
-import {log, useFreeze} from './utils'
+import {stringifyError} from './utils'
 import {ICONS, SOUNDS} from './assets'
+import TEXT from './text'
 import eventManager from './events'
 
-/* const storage = EXTENSION ? 
-  {get : browser.storage.local.get, set : browser.storage.local.set} : 
-  {
-    get: 
-     (keys :string[]) => keys.map(k=>localStorage.getItem(k)), 
-    set: 
-      () => localStorage.setItem
-  } 
-const ICON = ''
-const NOTIFICATION = ''*/
-
+export const dispatchError = (info:Error_Info)=>{
+  eventManager.emit('message',{type:'ERROR', info})
+}
 
 /// Network relatede stuff ///
 const w = wretch()
@@ -39,39 +33,32 @@ const w = wretch()
 
 const getAuth = (auth :Toggl_Auth) => 'Basic ' + btoa(typeof auth == 'string' ? `${auth}:api_token` : `${auth.user}:${auth.pass}`)
 
-const handleToggl403 = (err :Error) => {
-  log.error(err,'403 on trying to connect to Toggl')
-  throw new Error('Looks like your toggl credentials are wrong :(')
+const reTogglError = (userMessage:string) => (err:Error):never => {
+  dispatchError({errorJson: stringifyError(err)})
+  throw new Error(userMessage)
 }
-const handleTogglOther = (err :Error) => {
-  log.error(err,'Error on trying to reach to Toggl')
-  throw new Error(`Can't reach out to Toggl :(`)
-}
-const handleInvalidData = (err :Error) => {
-  log.error(err, 'Error on parsing data from Toggl')
-  throw new Error(`Can't make sence of data from Toggl :( Updating extension might help..`)
-}
- 
+
 export const togglApiConnect = async (credential :Toggl_Auth) => {
-  return w.url(TOGGL_USER_URL)
-    .auth(getAuth(credential))
-    .get()
-    .unauthorized(handleToggl403)
-    .fetchError(handleTogglOther)
-    .json(
-      (d :unknown) => {
-        const valid = Toggl_Me_Schema.parse(d)
-        return {
-          projects: valid.data.projects.map(p => ({id: p.id, name: p.name})),
-          last: valid.data.time_entries[0]?.pid
-        }
-      }
-    )
-    .catch(handleInvalidData)
+  const data = await w.url(TOGGL_USER_URL)
+  .auth(getAuth(credential))
+  .get()
+  .forbidden(reTogglError(TEXT.TOGGL_ERROR_TOKEN))
+  .fetchError(reTogglError(TEXT.TOGGL_ERROR_NETWORK))
+  .json()
+
+  try {
+    const valid = Toggl_Me_Schema.parse(data)
+    return {
+      projects: valid.data.projects.map(p => ({ id: p.id, name: p.name })),
+      last: valid.data.time_entries[0]?.pid
+    }
+  }catch(err: any) {
+    throw reTogglError(TEXT.TOGGL_ERROR_COMPAT)(err)
+  }
 }
 
 export const togglApiDisconnect = async (credential :Toggl_Auth) => {
-  // api call to end sessino goes here
+  // api call to end sessino goes here (none needed)
 }
 
 export const togglApiAdd = async (credential :Toggl_Auth, start :number, stop :number, description :string, project :number | null) => {
@@ -87,190 +74,105 @@ export const togglApiAdd = async (credential :Toggl_Auth, start :number, stop :n
   w.url(TOGGL_ADD_URL)
     .auth(getAuth(credential))
     .post(data)
-    .unauthorized(handleToggl403)
-    .res().catch(handleTogglOther)
+    .unauthorized(reTogglError(TEXT.TOGGL_ERROR_AUTH))
+    .fetchError(reTogglError(TEXT.TOGGL_ERROR_NETWORK))
+    .res()
 }
 
-/// Browser related stuff ///
+/// chrome related stuff ///
 export const iconChange = (path : string | IconObject)=> {
-  EXTENSION ? browser.browserAction.setIcon({path}) : favicon.change(typeof path == 'string' ? path : path[16])
+  EXTENSION ? chrome.action.setIcon({path}) : favicon.change(typeof path == 'string' ? path : path[16]) 
 }
 
-export const reload = ()=>{ EXTENSION ? browser.runtime.reload() : location.reload()}
+export const reload = ()=>{ EXTENSION ? chrome.runtime.reload() : location.reload()}
 
-export const usePreffersDark = ()=> useFreeze(useMediaQuery('(prefers-color-scheme: dark)'))
-
+export const usePreffersDark:(()=>boolean) = ()=> useState(useMediaQuery('(prefers-color-scheme: dark)'))[0]
 
 /// Storage related funcs ///
-
-const setToStorage = async (key :string, value :string, session = false)=>{
-  try{
-    if(EXTENSION && session){
-      chrome.storage.session && await chrome.storage.session.set({key : value})
-    }else{
-      EXTENSION ?
-        await browser.storage.local.set({key : value})://TODO add validation here?
-        localStorage.setItem(key, value)
-    }
-    log.debug('Saved to storage.',value)
-  }catch(err:any){
-    eventManager.emit('trouble',{type:"ERROR",message: "Can't save critical data :( Your app may misbehave..", error: err})
-    //throw new Error(`Can't save date data storage on key ${key} :(`)
-  }finally{
-    return Promise.resolve()
-  }
-}
-const getFromStorage = async (key :string, session = false):Promise<string>=>{
-  try{
-    let data = null
-    if(EXTENSION && session){
-      chrome.storage.session && await chrome.storage.session.get([key])
-    }else{
-      data = EXTENSION ? 
-        await browser.storage.local.get([key]):
-        localStorage.getItem(key)
-    }
-    data && log.debug('Retrieved from storage: ', data)
-    return JSON.stringify(data)
-  }catch(err:any){
-    eventManager.emit('trouble',{type:"ERROR",message: "Can't retrive critical data :( Your app may misbehave..", error: err})
-    return JSON.stringify(null)
-    //throw new Error(`Problems trying to get data from storage on key ${key} :/`) 
-  }
-}
-
-
-const STORAGE_STATE_KEY = 'STORAGE_STATE_KEY'
-export const stateSave = debounce(async(state :State)=>{
-  return setToStorage(STORAGE_STATE_KEY, JSON.stringify(state))
-},100)
-export const stateGet = async():Promise<State|null>=>{
-  try{
-    const data = JSON.parse(await getFromStorage(STORAGE_STATE_KEY))
-    return data ? State_Schema.parse(data) : null
-  }catch(err:any){
-    eventManager.emit('trouble',{type:"ERROR",message: "Seems like saved data was corrupted :( Your app may misbehave..", error:err})
-    return null
-  }
-}
-
-const STORAGE_NOTIFICATION_KEY = 'STORAGE_NOTIFICATION_KEY'
-export const notificationSave = (type: AlarmType | null)=>{ // TODO or better delete key?
-  return setToStorage(STORAGE_NOTIFICATION_KEY, JSON.stringify(type))
-}
-export const notificationGet = async ():Promise<AlarmType | null>=>{
-  try{
-    const data = JSON.parse(await getFromStorage(STORAGE_NOTIFICATION_KEY))
-    return data ? Notification_Schema.parse(data) : null
-  }catch(err:any){
-    eventManager.emit('trouble',{type:"ERROR",message:"Seems like saved data was corrupted :( Your app may misbehave..", error:err})
-    return null
-  }
-}
-
-// Used by background script to save and get alarms id
-const STORAGE_ALARM_KEY = 'STORAGE_ALARM_KEY'
-export const alarmSave = (id: AlarmId | null)=>{ // TODO or better delete key?
-  return setToStorage(STORAGE_ALARM_KEY, JSON.stringify(id))
-}
-export const alarmGet = async ():Promise<AlarmId | null >=>{
-  try{
-    const data = JSON.parse(await getFromStorage(STORAGE_ALARM_KEY))
-    return data ? AlarmId_Schema.parse(data) : null
-  }catch(err:any){
-    eventManager.emit('trouble',{type:"ERROR",message: "Seems like saved data was corrupted :( Your app may misbehave..", error:err})
-    return null
-  }
-}
-
-const STORAGE_ERROR_KEY = 'STORAGE_ERROR_KEY'
-export const errorSave = async(err:Error)=>{
-  return setToStorage(STORAGE_ERROR_KEY, JSON.stringify(err), true)
-}
-export const errorGet = async()=>{
-  try{
-    const data = JSON.parse(await getFromStorage(STORAGE_ERROR_KEY, true))
-    return data ? Error_Info_Schema.parse(data) : null
-  }catch(err:any){
-    //eventManager.emit('trouble',{type:"ERROR",message: "Seems like saved data was corrupted :( Your app may misbehave..", error:err})TODO ?
-    return null
-  }
-}
-// do you need it at all?
-/* 
-export const storageErrorSave = async(err: Error)=>{
-  const data = JSON.stringify(serializeError(err))
-  //const data = JSON.stringify(err, undefined, 2)//TODO string wrongly saved `${err.name}: ${err.message} ${err.stack ? `Stack: \n  ${err.stack}`:''}`
-  return EXTENSION ? 
-    browser.storage.local.set({[STORAGE_ERROR_KEY]: data}):
-    localStorage.setItem(STORAGE_ERROR_KEY, data)
-}
-
-export const storageErrorGet = async()=>{
-  const data =  EXTENSION ? 
-    await browser.storage.local.get(STORAGE_ERROR_KEY).then(storage=>storage[STORAGE_ERROR_KEY]):
-    localStorage.getItem(STORAGE_ERROR_KEY)
-  return data ? deserializeError(JSON.parse(data.toString())) : null
-} */
-/* 
-const STORAGE_USER_KEY = 'STORAGE_USER_KEY'
-export const storageGet = async():Promise<UserStorage>=>{// doesn't make sence any more TODO
-  try{
-    const data =  UserStorageSchema.parse(EXTENSION ? 
-      await browser.storage.local.get<UserStorage>(['config', 'toggle']):
-      JSON.parse(localStorage.getItem(STORAGE_USER_KEY) || '{}')
-    )
-    log.debug('Retrieved from storage: ', data)
-    return data
-  }catch(err){
-    log.error(err, 'error on trying to get data to storage')
-    throw new Error("Problems trying to restore your options :/") 
-  }
-}
-export const storageSave = async(data :UserStorage)=>{
-  try{
+const setToStorage = async (key :string, value :unknown, forSessionOnly = false)=>{
+  if (!forSessionOnly) {
     EXTENSION ?
-      await browser.storage.local.set(data)://TODO add validation here?
-      localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(data))
-    log.debug('Saved to storage.',data)
-  }catch(err){
-    log.error(err, 'Error on trying to save to storage')
-    throw new Error("Can't save your options for future use :(")
+      await chrome.storage.local.set({ [key]: value as any}) :
+      localStorage.setItem(key, JSON.stringify(value))
+  } else {
+    EXTENSION && chrome.storage.session &&
+      await chrome.storage.session.set({ [key]: value })
   }
 }
- */
+const getFromStorage = async (key: string, forSessionOnly = false): Promise<unknown> => {
+  let data :unknown = null
+  if (!forSessionOnly) {
+    data = EXTENSION ?
+      (await chrome.storage.local.get(key))[key] :
+      JSON.parse(localStorage.getItem(key)||String(null))
+  } else {
+    EXTENSION && chrome.storage.session &&
+      (data = JSON.stringify((await chrome.storage.session.get(key))[key]))
+  }
+  return data
+}
 
+type SaveGet<T> = {save:(data:T|null)=>Promise<void>, get:()=>Promise<T|null>}
+const makeSaveGet = <T>(key:string, schema:ZodSchema<T>, session = false):SaveGet<T>=>{
+  return {
+    save : async(data)=>{
+      try{
+        await setToStorage(key, data, session)
+      }catch(err:any){
+        //err.message = `Erorr saving to storage on key ${key}: ` + (err.message||'')//TODO! ?
+        dispatchError({errorJson: stringifyError(err), userMessage: TEXT.STORAGE_ERROR_SAVE})
+      }
+    },
+
+    get : async()=>{
+      try{
+        const data = await getFromStorage(key, session)
+        return data ? schema.parse(data) : null
+      }catch(err:any){
+        //err.message = `Erorr getting from storage or parsing on key ${key}: ` + (err.message||'') //TODO ?
+        dispatchError({ errorJson: stringifyError(err), userMessage: TEXT.STORAGE_ERROR_GET})
+        return null
+      }
+    }
+  }
+}
+
+export const {save : _stateSave, get : stateGet} = makeSaveGet<State>('STORAGE_STATE_KEY',State_Schema)
+export const stateSave = debounce(_stateSave,100)
+export const {save : notificationSave, get : notificationGet} = makeSaveGet<AlarmType>('STORAGE_NOTIFICATION_KEY',Notification_Schema)
+export const {save : alarmSave, get : alarmGet} = makeSaveGet<AlarmId>('STORAGE_ALARM_KEY',AlarmId_Schema)
+export const {save : errorSave, get : errorGet} = makeSaveGet<Error_Info>('STORAGE_ERROR_KEY', z.any(), true)
 
 /// Alarms related functions ///
-export const notify = (type:AlarmType)=>{
-  const pomodoro = type == AlarmType.POM
-  EXTENSION ? browser.notifications.create({
-    type: 'basic',
-    title: pomodoro ? 'Pomodoro alert!' : 'Time to work!',
-    message: pomodoro ? 'you\'ve been working for a long time, take a rest' : 'your rest time is up',
-    iconUrl: pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT
-  }) : ()=>{} //TODO implement web notification
-
-  (pomodoro ? pomAudio : workAudio).play()
-    .catch(()=>{
-      log.debug('rejection played')
-      if(retries){
-        loadAudio()
-        setTimeout(()=>notify(type), 1000)
-        retries -= 1
-      }else{
-        throw new Error("Failed to play alert sounds.")
-      }
-    })
-}
-
 let workAudio :HTMLAudioElement, pomAudio :HTMLAudioElement, retries = 5
 const loadAudio = () => {
-  workAudio = new Audio(SOUNDS.WORK)
-  pomAudio = new Audio(SOUNDS.POM)
+  workAudio = new window.Audio(SOUNDS.WORK)
+  pomAudio = new window.Audio(SOUNDS.POM)
 }
-loadAudio()
+window.Audio && loadAudio()
 
+export const notify = async(type:AlarmType)=>{
+  const pomodoro = type == AlarmType.POM
 
+  ;(pomodoro ? pomAudio : workAudio)?.play().catch((err:Error)=>{
+    if(retries){
+      loadAudio()
+      setTimeout(()=>notify(type), 1000)
+      retries -= 1
+    }else{
+      dispatchError({ errorJson: stringifyError(err), userMessage:TEXT.NOTIFY_ERROR_SOUND})
+    }
+  })
 
-
+  try{
+    EXTENSION ? await chrome.notifications.create({
+      type: 'basic',
+      silent: false,
+      title: pomodoro ? TEXT.NOTIFY_POM_TITLE : TEXT.NOTIFY_WORK_TITLE,
+      message: pomodoro ? TEXT.NOTIFY_POM_MESSAGE : TEXT.NOTIFY_WORK_MESSAGE,
+      iconUrl: chrome.runtime.getURL(pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT)
+  }) : ()=>{} //TODO! implement web notification
+  }catch(err:any){
+    dispatchError({errorJson: stringifyError(err), userMessage:TEXT.NOTIFY_ERROR})
+  }
+}

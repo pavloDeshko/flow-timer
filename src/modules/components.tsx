@@ -24,7 +24,7 @@ import {
   Autocomplete,
   Popover,
   Card, CardContent, CardActions, CardMedia,
-  Alert,
+  Alert, AlertProps,
   Skeleton
  } from '@mui/material'
 import Update from "@mui/icons-material/Update"
@@ -38,20 +38,23 @@ import Refresh from "@mui/icons-material/Refresh"
 import Key from "@mui/icons-material/Key"
 import FileCopyOutlined from "@mui/icons-material/FileCopyOutlined"
 import ExpandMore from  "@mui/icons-material/ExpandMore"
-import HelpOutlineOutlined from '@mui/icons-material/HelpOutlineOutlined';
-import Close from '@mui/icons-material/Close';
-
+import HelpOutlineOutlined from '@mui/icons-material/HelpOutlineOutlined'
+import Close from '@mui/icons-material/Close'
+import DoneOutlineIcon from '@mui/icons-material/DoneOutline'
 import clipboardCopy from 'clipboard-copy'
 
-import {Action, Time, Config, TogglForm as TogglFormData, TogglProject, Mode, AlarmType} from './types'
-import {padTwoZeros, parse, log, useFreeze, msToTime} from './utils'
-import {SUPPORT_EMAIL,POM_TIMES,TOGGL_TOKEN_URL, DESC, DESC_LONG, EXTENSION} from '../settings'
+import {Time, Config, TogglForm as TogglFormData, TogglProject, Mode, AlarmType, AlertType} from './types'
+import {padTwoZeros, parse, useLinger} from './utils'
+import {SUPPORT_EMAIL,POM_TIMES,TOGGL_TOKEN_URL, EXTENSION} from '../settings'
 import {reload} from './service'
 import {IMGS,ICONS} from './assets'
-import { boolean } from 'zod'
+import TEXT from './text'
+import {Action} from './events'
 
-export const DispatchContext = React.createContext((a:Action)=>{log.debug('Dispached action: ', a)})//for testing compts without provider
-const APP_WIDTH = 500 //TODO move to settings?
+export const DispatchContext = React.createContext((a:Action)=>console.log('Dispached action: ', a))//for testing compts without provider
+const APP_WIDTH = 500 //TODO move to settings? 600px minus scrollbars is max for extension
+
+const tooltipMarginProp = {componentsProps:{tooltip:{sx:{m:'4px !important'}}}}
 
 export const PageContainer = ({children}:{children:ReactNode})=>{
   return (
@@ -60,7 +63,7 @@ export const PageContainer = ({children}:{children:ReactNode})=>{
         elevation={10}
          sx={{
           marginX:"auto",
-          maxWidth:APP_WIDTH+'px',
+          maxWidth:APP_WIDTH,
           marginY:"0.5rem"
          }}
       >
@@ -77,10 +80,10 @@ export const PageContainer = ({children}:{children:ReactNode})=>{
 export const PageHeader = () => {
   return (<BlockContainer>
     <Stack direction="row" spacing={2}>
-      <Box sx={{float:"left"}}><img src={ICONS.MAIN} style={{width:"64px", height:"64px"}} alt="flow timer logo" /></Box>
+      <Box sx={{float:"left"}}><img src={ICONS.MAIN} style={{width:"64px", height:"64px"}} alt={TEXT.APP_LOGO_ALT} /></Box>
       <Box>
-        <Typography variant="h5" component='h1'>Flow Timer</Typography>
-        <Typography>{DESC}</Typography>
+        <Typography variant="h5" component='h1'>{TEXT.APP_TITLE}</Typography>
+        <Typography>{TEXT.APP_DESC}</Typography>
       </Box>
     </Stack>
   </BlockContainer>)
@@ -89,10 +92,10 @@ export const PageHeader = () => {
 export const PageDesc = ()=>{
   return (
     <BlockContainer>
-      <Typography variant="h5" component="h2">About Frow Timer</Typography>
+      <Typography variant="h5" component="h2">{TEXT.APP_ABOUT_TITLE}</Typography>
       <Divider sx={{marginY:"0.5rem"}}/>
       <Typography component="div" align="justify" sx={{'& .MuiTypography-root':{mb:'0.5rem'}}}>
-        {DESC_LONG.map((t,n)=><Typography paragraph key={n}>{t}</Typography>)}
+        {TEXT.APP_ABOUT.map((t,n)=><Typography paragraph key={n}>{t}</Typography>)}
       </Typography>
   </BlockContainer>
   )
@@ -101,7 +104,7 @@ export const PageDesc = ()=>{
 export const AppContainer = ({children}:{children:ReactNode})=>
   <Box className="App" sx={{
     boxSizing: "border-box",
-    maxWidth: APP_WIDTH+"px",
+    [EXTENSION ? 'minWidth': 'maxWidth']: APP_WIDTH,
     padding: ".5rem",
     backgroundColor: EXTENSION ? "background.default" : "inherit",
     fontFamily: "Roboto, sans-serif"
@@ -137,10 +140,11 @@ export const BlockContainer = (
 export const AccordionContainer = (
   {className='', label, children, expanded=false}
   :{className?:string,label:ReactNode,children:ReactNode[],expanded?:boolean}) => {
-  expanded = useFreeze(expanded)
+  const [initialExpanded] = useState(expanded)
+
   return (
     <Elevation square={false} elevation={4}>
-      <Accordion className={className} elevation={4} defaultExpanded={expanded} sx={{
+      <Accordion className={className} elevation={4} defaultExpanded={initialExpanded} sx={{
         ...blockStyles,
         boxShadow:0,
         ".MuiAccordionSummary-root, .MuiAccordionDetails-root":{paddingX:0},
@@ -160,28 +164,26 @@ export const AccordionContainer = (
 }
 
 const HelpPopover = ({children}:{children:ReactNode})=>{
-  const triggerRef = React.createRef<SVGSVGElement>()
-
-  const [open, setOpen] = useState(false)
+  const [anchor, setAnchor] = useState<SVGSVGElement | null>(null)
 
   return(<span>
     <HelpOutlineOutlined
-      sx={{fontSize:"inherit",cursor:"pointer"}}
-      ref={triggerRef}
-      onClick={e=>setOpen(true)}
+      sx={{ml:'0.3rem',cursor:"pointer"}} //TODO too small
+      onClick={e=>setAnchor(e.currentTarget)}
     />
 {  <Popover
       sx={{ml:"10px"}}
       anchorOrigin={{vertical:'top',horizontal:'center'}}
       transformOrigin={{vertical:'bottom',horizontal:'center'}}
-      anchorEl={()=>(triggerRef.current as SVGSVGElement)}//TODO botched material function type
-      onClose={()=>setOpen(false)}
-      open={open}
+      anchorEl={anchor}//TODO botched material function type
+      disableScrollLock={true}
+      onClose={()=>setAnchor(null)}
+      open={!!anchor}
     >
       {children}
-      <IconButton size="small" 
+      <IconButton size="small" color="primary"
         sx={{position:"absolute", top:'5px', right:'5px'}}
-        onClick={_=>setOpen(false)}
+        onClick={()=>setAnchor(null)}
       ><Close/></IconButton>
     </Popover>}
   </span>)
@@ -198,10 +200,8 @@ export const Counter = ({hours, minutes, seconds} :Time) => {
   return(
     <Typography sx={{
       '.seconds': {
-        fontSize: '2rem',
-        verticalAlign: 'top',
-        position: 'relative',
-        top: '0.20rem'
+        fontSize: '1.5rem',
+        verticalAlign: '1rem'
       }
     }} variant="h3" component="p" textAlign="center">
       <span>{padTwoZeros(hours)}</span>
@@ -229,7 +229,7 @@ export const RestAdjust = memo(({hours, minutes, seconds, mode} :Time & {mode :M
     hoursRef.current && minutesRef.current && dispatch({
       type: 'ADJUST',
       time: {
-        hours: parse.h(hoursRef.current!.value, hours), //TODO let it throw is ok?..
+        hours: parse.h(hoursRef.current!.value, hours), 
         minutes: parse.m(minutesRef.current!.value, minutes),
         seconds: parse.s(secondsRef.current!.value, seconds)
       }
@@ -248,33 +248,34 @@ export const RestAdjust = memo(({hours, minutes, seconds, mode} :Time & {mode :M
           padding:0.5
       }}
     }}>
-      <div className="legend">Next rest will be</div>
+       <Box sx={{mr:'6px'}} className="legend">{TEXT.NEXT_REST_LEGEND}</Box>
 
       <TextField 
         size="small" 
-        label="h"
+        label={TEXT.TIME_LABELS.h}
         value={padTwoZeros(hours)} 
         inputRef={hoursRef} 
         onChange={onChange}
       />
       <TextField 
         size="small" 
-        label="m" 
+        label={TEXT.TIME_LABELS.m}
         value={padTwoZeros(minutes)} 
         inputRef={minutesRef} 
         onChange={onChange} 
       />
       <TextField 
         size="small" 
-        label="s" 
+        label={TEXT.TIME_LABELS.s}
         className="seconds" 
-        value={padTwoZeros(seconds)} 
+        value={padTwoZeros(seconds)}   
         inputRef={secondsRef} 
         onChange={onChange} 
       /> 
 
-      <Tooltip title="reset time" placement="right" arrow>
+      <Tooltip {...tooltipMarginProp} title={TEXT.RECALCULATE} placement="bottom-start" arrow >
         <span><IconButton 
+          sx={mode == Mode.ON ? {display:'none'}:{pb:0,verticalAlign:'top'}}
           color="primary" 
           onClick={onRecalculate} 
           disabled={mode == Mode.ON}
@@ -283,25 +284,6 @@ export const RestAdjust = memo(({hours, minutes, seconds, mode} :Time & {mode :M
     </Box>
   )
 })
-
-//const bla = ()=>(<RestAdjustTicker time={44} mod={n=>n/2} mode={Mode.OFF}/>)
-/* 
-<Collapse in={true}>
-               <Alert 
-                variant="outlined" 
-                severity="warning" 
-                sx={{
-                  //pl:"0.5rem",
-                  "& > *": {paddingY:"0px"}
-                }}
-                action={<IconButton 
-                sx={{paddingY:"0px"}}
-                >
-                  <Close />
-                </IconButton>}
-               ><Typography>Time to work!</Typography></Alert>
-              </Collapse>
-*/
 
 export const Controls = memo(({working,resting}:{working:boolean,resting:boolean}) => {
   const dispatch = useContext(DispatchContext)
@@ -315,43 +297,62 @@ export const Controls = memo(({working,resting}:{working:boolean,resting:boolean
     <ButtonGroup sx={{
       '.MuiButton-root, .MuiButton-root:hover':{borderWidth:'2px'}
     }} fullWidth>
-      <Button variant={working? 'contained' : 'outlined'} color="secondary" onClick={work}>{working?'stop working':'work'}</Button>
-      <Button variant={resting? 'contained' : 'outlined'} color="primary" onClick={rest}>{resting?'stop resting':'rest'}</Button>
+      <Button variant={working? 'contained' : 'outlined'} color="secondary" onClick={work}>
+        {working ? TEXT.STOP_WORK : TEXT.WORK}
+      </Button>
+      <Button variant={resting? 'contained' : 'outlined'} color="primary" onClick={rest}>
+        {resting ? TEXT.STOP_REST : TEXT.REST}
+      </Button>
     </ButtonGroup>
   )
 })
 
-export const TimeAlert = ({type} :{type :(AlarmType|null)})=>{
+export const UserAlert = ({value : opened, subType} :{value :(AlarmType | ReactNode | null), subType:AlertType})=>{
+  const value = useLinger(opened)
+
+  let alertProps :Partial<AlertProps> = {variant:"filled", severity:'warning'} 
+  let message :ReactNode = ''
+  if(value == AlarmType.WORK){
+    message = TEXT.ALERT_WORK
+    alertProps.color = 'secondary' as any // TODO mui type is botched?
+  }else if(value == AlarmType.POM){
+    message = TEXT.ALERT_REST
+    alertProps.color = 'primary' as any
+  }else if(value){
+    message = value
+    alertProps = {variant:"outlined", severity:'error'}
+  }
+
   const dispatch = useContext(DispatchContext)
   return (
-    <Collapse in={!!type}>
+    <Collapse sx={{
+      '&':{mt:'0px !important'},
+      '& .MuiAlert-root':{mt:"1rem", pb:0}
+    }}//moving stack margin inside collapse
+      in={!!opened}
+    >
       <Alert
-        variant="outlined"
-        severity="warning"//TODO color depends on type?
-        sx={{
-          "& > *": { paddingY: "0px" },
-          maxHeight:"2rem",
-          ".MuiAlert-message": {overflow:"visible"}//TODO whats wrong?..
-        }}
+        {...alertProps}
+        sx={{color:'inherit'}}
         action={<IconButton
-          sx={{ paddingY: "0px" }}
-          onClick={()=>dispatch({type:'CLOSE_NOTIFY'})}
+          sx={{ paddingY: "2px" }}
+          onClick={()=>dispatch({type:'CLOSE_ALERT', subType})}//TODO reused as warning
         ><Close/>
         </IconButton>}
-      ><Typography>{type == AlarmType.WORK ? 'Time to work!' : 'Time to rest!'}</Typography></Alert>
+      ><Typography>{message}</Typography></Alert>
     </Collapse>
   )
 }
 
-export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) => {
-  log.debug('render options, pomtime: ' + pomTime)
+export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config) => {
   const dispatch = useContext(DispatchContext)
+  const [initialRatio] = useState(ratio)
 
   const setMode = (_:unknown, value :boolean) => dispatch({
     type: 'CONFIG',
     config: {mode : value ? Mode.ON : Mode.OFF}
   })
-  ratio = useFreeze(ratio)
+  
   const setRatio = (_:unknown, value:number|number[]) => dispatch({
     type: 'CONFIG',
     config: {ratio : 60 /  (Array.isArray(value) ? (value[0] || 0) : value) } //TODO shitty material union type for range and value slider
@@ -360,10 +361,11 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
     type: 'CONFIG',
     config: {pomActive : e.target.checked}
   })
-  const setPomTime = (_:unknown, value:string)=> parse.twoDigit(value,pomTime) !== pomTime && dispatch({//reason=="input" TODO why
+  const setPomTime = (_:unknown, value:string) => 
+    parse.twoDigit(value,pomTimeMins) !== pomTimeMins && dispatch({//reason=="input" TODO! why. what?..
       type: 'CONFIG',
-      config: {pomTime : parse.twoDigit(value,pomTime)}
-  })
+      config: {pomTimeMins : parse.twoDigit(value,pomTimeMins)}
+    })
   const setDark = () => dispatch({
     type: 'CONFIG',
     config: {dark : !dark}
@@ -377,16 +379,16 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
           checked={!!mode}
           onChange={setMode}
         />}
-        label={"Flow - adjust your rest time"}
+        label={TEXT.OPTION_FLOW}
       />
-      <Typography>Minutes for every hour of work:</Typography>
+      <Typography sx={{mt:'0.25rem'}}>{TEXT.OPTION_FLOW_LEGEND}</Typography>
       <Slider
         min={1}
         max={60}
         step={1}
         valueLabelDisplay="auto"
         valueLabelFormat={l => l + ' m'}
-        defaultValue={Math.floor(60 / ratio)}
+        defaultValue={Math.floor(60 / initialRatio)}
         onChangeCommitted={setRatio}
       />
       <Divider />
@@ -397,7 +399,7 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
           checked={pomActive}
           onChange={setPomActive}
         />}
-        label={"Pomodoro reminder every"}
+        label={TEXT.OPTION_POMODORO}
       />
 
       <Box className="AutocompleteContainer"
@@ -415,8 +417,8 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
           //open={true}
           freeSolo disablePortal disableClearable
           options={POM_TIMES.map(v=>String(v))}
-          value={String(pomTime)}
-          inputValue={String(pomTime)}
+          value={String(pomTimeMins)}
+          inputValue={String(pomTimeMins)}
           disabled={!pomActive}
           onInputChange={setPomTime}
           renderInput={par => <TextField {...par} 
@@ -432,11 +434,11 @@ export const Options = memo(({pomTime, pomActive, ratio, mode, dark} :Config) =>
       <Divider />
 
       <Button
-        sx={{color:"text.primary", textTransform:"none", fontSize:"1rem", pl:"6px"}}
+        sx={{color:"text.primary", textTransform:"none", fontSize:"1rem", pl:"6px", pb:0}}
         size="large"
         startIcon={dark ? <Brightness7 color="primary"/>:<Brightness4 color="primary"/>}
         onClick={setDark}
-      >Dark/light mode</Button>
+      >{TEXT.OPTION_DARK_LIGHT}</Button>
     </Box>
   )
 })
@@ -448,7 +450,7 @@ export const TogglError = memo( ({error}:{error :string | null})=>{
         sx={{ mb:"-0.5rem",mt:"0.25rem"}}
       >
         <Typography 
-          sx={{color:"error.light",fontSize:"0.75rem"}}
+          sx={{color:"error.main",fontSize:"0.75rem"}}
         >
           {error}
         </Typography>
@@ -457,28 +459,30 @@ export const TogglError = memo( ({error}:{error :string | null})=>{
   )
 })
 
-const TogglHelpCard = ()=>(
-  <Card sx={{maxWidth:"300px"}}>
-    <CardMedia component="img" width="300px" alt="Help Image" image={IMGS.TOGGL_HELP}/>
+const TogglHelpCard = ()=>{
+  const HELP_WIDTH = APP_WIDTH * 0.9 //TODO! move out?
+  return(
+  <Card sx={{maxWidth:HELP_WIDTH}}>
+    <CardMedia component="img" height={HELP_WIDTH*(2/3)} width={HELP_WIDTH} alt={TEXT.TOGGL_HELP_IMAGE_ALT} image={IMGS.TOGGL_HELP}/> 
     <CardContent sx={{pb:"0"}}>
-      <Typography>Loren Ipsun blablabla Loren Ipsun blablablaLoren Ipsun blablablaLoren Ipsun blablablaLoren Ipsun blablablaLoren Ipsun blablabla </Typography> 
+      <Typography>{TEXT.TOGGL_HELP}</Typography> 
     </CardContent>
     <CardActions>
       <Button size="small" href={TOGGL_TOKEN_URL} target="_blank">
-        Go to toggl profile
+        {TEXT.TOGGL_GOTO_TOKEN}
       </Button>
     </CardActions>
   </Card>
-)
+)}
 
 export const TogglLogin = memo(({loading} :{loading:boolean}) => {
 
   const dispatch = useContext(DispatchContext)
   const [token,setToken] = useState('')
-  const valid = parse.togglToken(token).success
+  const valid = parse.togglTokenSafe(token).success
  
   const logIn = () => {
-    const parsed = parse.togglToken(token)
+    const parsed = parse.togglTokenSafe(token)
     parsed.success && dispatch({
       type: 'TOGGL_IN', 
       token: parsed.data
@@ -486,15 +490,7 @@ export const TogglLogin = memo(({loading} :{loading:boolean}) => {
   }
   
   return( 
-    <Box>
-        {/* <IconButton 
-          sx={{position:"absolute", right:1, top:1}}
-        >
-          <ExpandLess 
-            sx={{fontSize:16}}
-          />
-        </IconButton> */}
-
+    <Stack direction="row">
         <TextField 
           size="small" 
           type="password" 
@@ -507,7 +503,7 @@ export const TogglLogin = memo(({loading} :{loading:boolean}) => {
           }}
           label={
             <Typography component="span" sx={{fontSize:"inherit"}}>
-              Your toggl token here
+              <Box component="span" sx={{position:'relative', bottom:'0.3rem'}}>{TEXT.TOGGL_TOKEN}</Box>
               <HelpPopover><TogglHelpCard/></HelpPopover>
             </Typography>
           } 
@@ -516,75 +512,27 @@ export const TogglLogin = memo(({loading} :{loading:boolean}) => {
           error={token!=='' && !valid}
         />
         
-        <Tooltip title="Connect to save time entries in toggle" placement="left" arrow>
+        <Tooltip {...tooltipMarginProp} title={TEXT.TOGGL_CONNECT} placement="top-end" arrow>
           <span><IconButton color="primary"
             sx={{pb:"0px"}}
             onClick={logIn} 
             disabled={!valid || loading}
           >
             <Link fontSize="large" 
-              sx={{position:"relative",bottom:"4px"}}
+              sx={{position:"relative",bottom:"0.3rem"}}
             /> 
           </IconButton></span>
         </Tooltip>
-    </Box>
+    </Stack>
   )
-
-
-  /* const content = 
-    <div>
-      <TextField
-        label='Toggle Token'
-        placeholder='..'
-        size="small"
-        InputProps={{
-          startAdornment: (<InputAdornment position='start'><LockOutlined/></InputAdornment>)
-        }}
-        helperText="your token won't be sent anywhere"
-        value={token}
-        onChange={ e=>setToken(e.target.value) }
-        error={token!=='' && !valid}
-      />
-      <Tooltip title="Connect to save time entries in toggle" placement="left-start" arrow>
-        <span><IconButton  color="primary" onClick={logIn} disabled={!valid}>
-          <Link/>
-        </IconButton></span>
-      </Tooltip>
-    </div>
-    (
-    <div>
-      <Button 
-        variant="outlined" 
-        color="primary" size="small" 
-        endIcon={<ExitToApp />}
-        onClick={logOut} 
-        disabled={loading}
-      >logout from toggl</Button>
-    </div>
-  ) 
-
-  const ifError = error ? (
-    <Box sx={{
-        color:'error.main'
-    }}>
-      {error}
-    </Box>
-  ): null
-
-  return  (
-    <BlockContainer>
-      {content}
-      {ifError}
-    </BlockContainer>
-  )*/
 })
 
 export const TogglForm = memo((
-  {projects, projectId, shouldSave, desc, unsaved} : {projects :Array<TogglProject>} & TogglFormData
+  {projects, projectId, shouldSave, desc, saved} : {projects :Array<TogglProject>} & TogglFormData
 ) => {
   const dispatch = useContext(DispatchContext)
-  
-  shouldSave = useFreeze(shouldSave)
+  const [initialShouldSave] = useState(shouldSave)
+
   const setActive = (_:unknown, value :boolean) => dispatch({
     type : 'TOGGL_FORM',
     form : {shouldSave: value}
@@ -613,18 +561,18 @@ export const TogglForm = memo((
               textAlign:'center'
             }
           }}
-          label={'Save next work'} 
+          label={TEXT.TOGGL_SAVE_NEXT} 
           control={
             <Switch
               sx={{mr:-1}}
               color='primary'
-              defaultChecked={shouldSave} 
+              defaultChecked={initialShouldSave} 
               onChange={setActive} 
             />
         }/>
 
         <TextField size="small"
-          label="Descritpion"
+          label={TEXT.TOGGL_DESC}
           focused
           value={desc}
           onChange={setDesc} 
@@ -641,16 +589,33 @@ export const TogglForm = memo((
             ...projects.map(p => <MenuItem value={p.id} key={p.id}>{p.name}</MenuItem>)
           ]}
         </Select>
-
-        <Tooltip title="Save previous entry" placement="left-start" arrow>
-          <IconButton color="primary" 
-            sx={{pl:0, visibility: !!unsaved ? 'visible':'hidden'}}
-            disabled={!unsaved}
-            onClick={retroSave}
-          >
-            <Save fontSize="medium" />
-          </IconButton>
-        </Tooltip>
+        <Box sx={{m:'0px !important', minWidth:'2.5rem'}}>{
+          saved === true ? 
+            <Box sx={{
+              visibility: !!saved ? 'visible':'hidden',
+              fontSize: '0.7rem',
+              color: 'primary.light',
+              textAlign: 'center',
+              pt: "0.7rem",
+              lineHeight: '0.5rem'
+            }}>
+              <DoneOutlineIcon sx={{ fontSize: '1rem' }} />
+              {TEXT.TOGGL_SAVED}
+            </Box>
+          :
+            <Tooltip {...tooltipMarginProp} title={TEXT.TOGGL_SAVE_PREV} placement="top-end" arrow>
+              <IconButton color="primary" 
+                sx={{ 
+                  visibility: !!saved ? 'visible':'hidden',
+                  ml:'0 !important'
+                }}
+                disabled={!saved}
+                onClick={retroSave}
+              >
+                <Save fontSize="medium" />
+              </IconButton>
+            </Tooltip>
+        }</Box>
       </Stack>
   </Box>   
   )
@@ -665,21 +630,22 @@ export const TogglCollapsed = memo(({logged}:{logged:boolean}) => {
   return (
     <Box>
       <Typography
-        sx={{ color: "primary.main", fontSize: "0.75rem" }}
+        sx={{ color: "primary.main", fontSize: "0.75rem", mr:'0.3rem'}}
+        component="span"
       >
-        Toggl integration
-        {logged && <Tooltip title="Exit from Toggl" placement="left" arrow>
+        {TEXT.TOGGL_COLLAPSED}
+      </Typography>
+        {logged && <Tooltip title={TEXT.TOGGL_EXIT} placement="right" arrow>
           <IconButton 
-            sx={{p:0,pl:1}}
+            sx={{p:0}}
             onClick={logOut} 
             //disabled={loading}
           >
             <ExitToApp
-            sx={{fontSize:16}}
+            sx={{fontSize:'1rem'}}
             />
           </IconButton>
         </Tooltip>}
-      </Typography>
     </Box>
   )
 })
@@ -691,10 +657,10 @@ export const AppPlaceholder = ()=>(
 export const CopyLink = ({value, text, loading = false}:{value:string, text?:string, loading?:boolean})=>{
   const copy = ()=>clipboardCopy(value)
   
-  return <Tooltip title={'copy to clipboard'} arrow>
-    <Button sx={{
-        '.MuiButton-startIcon':{mr:"2px"}
-      }}
+  return <Tooltip {...tooltipMarginProp} title={TEXT.COPY} placement="right" followCursor>
+    <Button sx={{ 
+        p:0, pl:"0.5rem",
+      '.MuiButton-startIcon':{mr:"2px"}}}
       variant="text"
       size="small"
       startIcon={<FileCopyOutlined fontSize="small" />}
@@ -704,19 +670,25 @@ export const CopyLink = ({value, text, loading = false}:{value:string, text?:str
   </Tooltip>
 }
 
-export const Fallback = ({error}:{error:Error}) => {
+export const Fallback = ({errorString}:{errorString:string}) => {
+  const content = EXTENSION ? 
+    <p>{TEXT.FEEDBACK_PREPENDED(
+      <CopyLink value={TEXT.FEEDBACK_PREPENDED_DATA(errorString,SUPPORT_EMAIL)} text={TEXT.FEEDBACK_EMAIL_LINK}/>
+    )}</p> 
+  :
+    <p>{TEXT.FEEDBACK(
+      <CopyLink value={errorString} text="here"/>,
+      <CopyLink value={'SUPPORT_EMAIL'} />)}
+    </p>
 
   return(
-    <Paper elevation={3} sx={{padding:"0.5rem", width: APP_WIDTH+'px', boxSizing:"border-box"}}>
+    <Paper elevation={3} sx={{padding:"0.5rem", width: APP_WIDTH, boxSizing:"border-box"}}>
       <Typography component="div" sx={{margin:"1rem"}}>
-        <Typography variant="h6" component="h2">Sorry, it seems like internals of our app crashed :-/</Typography>
-        <p>Please, drop us a note at <CopyLink value={'SUPPORT_EMAIL'} /> about what happened. Click
-          <CopyLink value={`${error.toString()} Stack: \n  ${error.stack}`} text="here"/>{/*TODO add state here*/}
-          to copy geeky data and paste it into your email so we can understand what went wrong.
-        </p>
-        <p>We <span>will</span> try to solve the problem asap!</p>
+        <Typography variant="h6" component="h2" color="error">{TEXT.FEEDBACK_TITLE}</Typography>
+        {content}
+        <p>{TEXT.FEEDBACK_ENDING}</p>
         <Box sx={{textAlign:'center'}}>
-          <Button variant="outlined" startIcon={<Refresh/>} onClick={reload}>Reload {EXTENSION ? 'extension' : 'page'}</Button>
+          <Button variant="outlined" startIcon={<Refresh/>} onClick={reload}>{EXTENSION ? TEXT.RELOAD_EXT : TEXT.RELOAD_PAGE}</Button>
         </Box>
       </Typography>
     </Paper>

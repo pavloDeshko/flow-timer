@@ -9,31 +9,25 @@
   "dependencies": {
     "@emotion/react": "^11.4.1",
     "@emotion/styled": "^11.3.0",
-    "@material-ui/core": "^4.12.3",
-    "@material-ui/icons": "^4.11.2",
     "@mui/icons-material": "^5.0.1",
     "@mui/material": "^5.0.1",
     "clipboard-copy": "^4.0.1",
-    "easytimer.js": "^4.5.3",
+    "domino": "^2.1.6",
     "emittery": "^1.0.1",
     "favicon.js": "^1.0.0",
     "immer": "^10.0.2",
-    "lodash.merge": "^4.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-error-boundary": "^3.1.3",
     "serialize-error": "^11.0.0",
-    "tozod": "^3.0.0",
-    "ts-to-zod": "^3.1.3",
-    "web-vitals": "^2.1.4",
     "wretch": "^1.7.4",
     "zod": "^3.8.2"
   },
   "scripts": {
-    "dev:ext": "webextension-toolbox dev --src ./src --target ./dist/extension/[vendor] firefox",
+    "dev:ext": "webextension-toolbox dev --src ./src --target ./dist/extension/[vendor] chrome",
     "build:ext": "webextension-toolbox build --src ./src --target ./dist/extension/[vendor] firefox",
-    "dev:web": "react-app-rewired start",
-    "build:web": "react-app-rewired build",
+    "dev": "react-app-rewired start",
+    "build": "react-app-rewired build",
     "test:web": "react-app-rewired test",
     "prepack": "build:ext && build:web",
     "postinstall": "patch-package"
@@ -43,6 +37,7 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "@types/chrome": "0.0.243",
+    "@types/firefox-webext-browser": "^111.0.1",
     "@types/jest": "^29.2.0",
     "@types/node": "^18.11.8",
     "@types/react": "^18.0.24",
@@ -55,8 +50,7 @@
     "react-app-rewired": "^2.2.1",
     "react-scripts": "5.0.1",
     "rimraf": "^3.0.2",
-    "typescript": "^4.8.4",
-    "web-ext-types": "^3.2.1"
+    "typescript": "^4.8.4"
   },
   "browserslist": {
     "production": [

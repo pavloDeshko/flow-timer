@@ -17,16 +17,13 @@ export const SUPPORT_EMAIL = 'pavlodeshko92@gmail.com'
 
 export const EXTENSION = !process.env["REACT_APP_ENV"] //TODO move
 
-export const DESC_LONG = ['blaeue,ueo  eouoeuoeuoueu', 'oeuoeuoeuoeuoeuo oeuoeueu uoeuou eueuoeu ', 'oeuoeeeeeeeeu'] as const
-export const DESC = 'oeuoeuoeuoeuoeu'
-
 export const DEFAULT_STATE :State = {
   alarms: { work: null, pom: null },
   nextRestTime: MIN_REST, 
-  workingStart: null,
-  restingTarget: null,
+  workingSince: null,
+  restingUntil: null,
   config: {
-    pomTime: 50,
+    pomTimeMins: 50,
     pomActive: false,
     ratio: DEFAULT_RATIO, 
     mode: Mode.ON,
@@ -37,7 +34,7 @@ export const DEFAULT_STATE :State = {
     projects: [] as TogglProject[],
     form: {
       shouldSave: false,
-      unsaved: null,
+      saved: false,
       desc: '',
       projectId: null,
     },

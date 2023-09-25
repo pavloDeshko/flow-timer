@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react'
 
 import {Time} from './types'
-import {useFreeze, msToTime} from './utils'
+import { msToTime} from './utils'
 import {RestAdjust, Counter} from './components'
 
 const up = ((refTime :number)=>{
@@ -15,16 +15,21 @@ const down = (refTime :number)=>{
 
 type TickerProps <P extends Time> = {
   refTime :number|null, 
-  type: 'UP' | 'DOWN' | ((refTime:number)=>number)
+  typeOrMod: 'UP' | 'DOWN' | ((refTime:number)=>number)
 } & Omit<P, keyof Time> & Partial<Record<keyof Time,never>>
 
 export const withTicker = <P extends Time>(TimerComp: React.FC<P>) => {
-  return ({refTime, type = 'UP', ...rest} :TickerProps<P>)=>{
-    const getValue = () => refTime != null ? 
-      (type == 'UP' ? up : type == 'DOWN' ? down : type)(refTime) : 
-      0
-
-    const [value, setValue] = useState(useFreeze(getValue()))
+  return ({refTime, typeOrMod = 'UP', ...rest} :TickerProps<P>)=>{
+    const getValue = ()=>{
+      if (refTime === null){return 0}
+      switch (typeOrMod){
+        case 'UP': return up(refTime)
+        case 'DOWN': return down(refTime)
+        default: return typeOrMod(refTime)
+      }
+    }
+    
+    const [value, setValue] = useState(getValue())
 
     useEffect(() => {
       // Does reset of the whole thing
@@ -44,40 +49,9 @@ export const withTicker = <P extends Time>(TimerComp: React.FC<P>) => {
         res.timeout && clearTimeout(res.timeout)
         res.interval && clearInterval(res.interval)
       }
-    }, [refTime, type])
+    }, [refTime, typeOrMod])
 
     return <TimerComp {...msToTime(value) as P} {...rest}/>
-
-    /* const zero = refTime === null
-    const targetOrStart = refTime !== null ? refTime : 0
-  
-    const [state, setState] = useState(useFreeze(Date.now() - targetOrStart))
-    const setCurrent = ()=>setState(Date.now() - targetOrStart)
-
-    const timeouts = useFreeze([] as any[])
-    const clearTimeouts = ()=>{
-      timeouts.forEach(t=>clearTimeout(t))
-      timeouts.splice(0)
-    }
-
-    useEffect(()=>{
-      clearTimeouts()
-      if(!zero){
-        setCurrent()
-        timeouts.push(setTimeout(()=>{
-          setCurrent()
-          timeouts.push(setInterval(()=>{
-            setCurrent()
-          },1000))
-        },1000 - (Math.abs(Date.now() - targetOrStart)) % 1000) as any)
-      }
-      return ()=>clearTimeouts()
-    },[targetOrStart,down])
-    
-    const value = zero || down && Math.round(state/1000) >= 0 ? 0 : Math.abs(state)
-
-
-    return <TimerComp {...msToTime(result) as P} {...rest}/>// TODO fix type */
   }
 }
 

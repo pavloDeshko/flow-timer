@@ -1,7 +1,5 @@
 import {z} from 'zod'
 
-export {Action, Trouble, Message, MessageSchema} from './events'
-
 /// Misc ///
 export type IconObject = {16:string, 32:string, 64:string} 
 
@@ -24,9 +22,13 @@ export enum AlarmType {
   POM = "POM"
 }
 
+export enum AlertType {
+  NOTIFY = 'NOTIFY',
+  WARN = 'WARN'
+}
 /// State related ///
 export const Config_Schema = z.object({
-  pomTime: z.number(),
+  pomTimeMins: z.number(),
   pomActive: z.boolean(),
   ratio: z.number(),
   mode: z.nativeEnum(Mode),
@@ -34,9 +36,16 @@ export const Config_Schema = z.object({
 })
 export type Config = z.infer<typeof Config_Schema>
 
+/// Storage related ///
+export const Error_Info_Schema = z.object({ // unify it with action? notification too
+  errorJson : z.string(),
+  userMessage : z.string().optional()
+})
+export type Error_Info = z.infer<typeof Error_Info_Schema>
+
 export const TogglForm_Schema = z.object({
   shouldSave: z.boolean(),
-  unsaved: z.tuple([z.number(), z.number()]).nullable(),
+  saved: z.tuple([z.number(), z.number()]).or(z.boolean()),
   desc: z.string(),
   projectId: z.number().nullable()
 })
@@ -62,12 +71,12 @@ export const State_Schema = z.object({
     pom: z.number().nullable()
   }),
   nextRestTime: z.number(),
-  workingStart: z.number().nullable(),
-  restingTarget: z.number().nullable(),
+  workingSince: z.number().nullable(),
+  restingUntil: z.number().nullable(),
   config: Config_Schema,
   toggl: Toggl_State_Schema,
   notification: z.nativeEnum(AlarmType).nullable(),
-  warning: z.string().nullable()
+  warning: Error_Info_Schema.nullable()
 })
 export type State = z.infer<typeof State_Schema>
 
@@ -94,15 +103,7 @@ export const Toggl_Me_Schema = z.object({
 })
 export type Toggl_Me = z.infer<typeof Toggl_Me_Schema>
 
-/// Storage related ///
-export const Error_Info_Schema = z.object({
-  error: z.any(),
-  state: State_Schema.optional() 
-})
-
 export const Notification_Schema = z.nativeEnum(AlarmType)
 
 export const AlarmId_Schema = z.string()
 export type AlarmId = z.infer<typeof AlarmId_Schema>
-
-

@@ -1,13 +1,17 @@
 import Emittery from 'emittery'
 import z from 'zod'
 
-import {Time, Config, TogglForm, State, AlarmType} from './types'
+import {Time, Config, TogglForm, State, AlarmType, Error_Info_Schema} from './types'
 import {EXTENSION} from '../settings'
+import { errorSave } from './service'
 
+/// Types and schemas /// 
 export type Action = {
   type: 'WORK'
 }|{
   type: 'REST'
+}|{
+  type: 'REST_ENDED'
 }|{
   type: 'ADJUST',
   time: Time
@@ -27,46 +31,67 @@ export type Action = {
 }|{
   type: 'TOGGL_SAVE_LAST'
 }|{
-  type: 'CLEAR_ALARM'
-}|{
-  type: 'CLOSE_NOTIFY'
-}/* |{
-  type: 'STATE',
-  state: State
-} */
-
-export type Trouble = {
-  type:'TIP', message:string
-}|{
-  type:'WARNING',message:string, error ?:Error
-}|{
-  type:'ERROR',message:string, error :Error
+  type: 'CLOSE_ALERT',
+  subType: 'WARN'|'NOTIFY'
 }
 
 export const MessageSchema = z.object({
   type: z.literal('NOTIFY'),
   subType: z.nativeEnum(AlarmType)
 }).or(z.object({
+  type: z.literal('ERROR'),
+  info: Error_Info_Schema
+})).or(z.object({
   type: z.literal('SET_ALARM'),
   subType: z.nativeEnum(AlarmType),
   timeout : z.number()
 })).or(z.object({
   type: z.literal('CLEAR_ALARM')
+})).and(z.object({
+  external:z.boolean().optional()
 }))
-
 export type Message = z.infer<typeof MessageSchema>
 
+/// Event manager setup ///
 const eventManager = new Emittery<{
   'action':Action,
-  'message':Message,
-  'trouble':Trouble
+  'message':Message
 }>()
 
+eventManager.on('message', message=>{
+  if(message.type == "ERROR"){ 
+    console.error(message.info.userMessage || 'Error with no user message: ', message.info.errorJson)
+    message.info.userMessage && errorSave(message.info)
+  }
+})
+
 if(EXTENSION){
-  eventManager.on('message', action=>browser.runtime.sendMessage(action)) //TODO could be romoved by user? not good
-  browser.runtime.onMessage.addListener((data:any)=>{
-    eventManager.emit('message',MessageSchema.parse(data))
-  })
+  const handleIn = (data:any)=>{
+    const message = MessageSchema.parse(data)
+    eventManager.emit('message',{...message,external:true})
+  }
+  const handleOut =  (message:Message)=>{
+    !message.external && port && port.postMessage(message)
+  }
+  
+  let port :chrome.runtime.Port|null
+
+  if('ServiceWorkerGlobalScope' in self){/// For background ///
+    chrome.runtime.onConnect.addListener(p=>{
+      port = p
+      p.onMessage.addListener(handleIn)
+      p.onDisconnect.addListener(()=>{
+        port=null
+      })
+    })
+
+  }else{
+    port = chrome.runtime.connect()/// For front ///
+    port.onMessage.addListener(handleIn)
+
+  }
+  eventManager.on('message',handleOut) /// For both ///
+  //TODO could be romoved by user? not good
 }else{
   // Nothing needed if in web - they just use the same Emmittabele !
 

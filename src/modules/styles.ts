@@ -11,10 +11,10 @@ const colors = {
     'contrastText': '#fff'
   },
   error: {
-    'main': '#c4001f',
+    'main': '#e7472e',
     'contrastText': '#fff'
   }
-} as const
+}
 
 export const lightTheme = createTheme({
   palette: {
@@ -31,6 +31,7 @@ export const lightTheme = createTheme({
   }
 })
 
+//colors.error.main = "#ff0026"
 export const darkTheme = createTheme({
   palette: {
     mode: 'dark',
