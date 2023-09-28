@@ -1,13 +1,34 @@
 {
-  "name": "Flow timer",
+  "name": "Flow Timer",
+  "desc":"Intelligent Pomodoro with Adaptive Rests. Flow Timer will adjust rest durations according to your work intervals. Toggl Track integration included. Stay in the flow!",
   "icons": [
     {
       "src": "static/media/main.svg",
       "sizes": "any"
+    },
+    {
+      "src":"static/media/main_512.png",
+      "sizes": "512x512"
     }
   ],
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#5ea8a7",
-  "background_color": "#f3fbf5"
+  "background_color": "#f3fbf5",
+  "short_name": "FlowTimer",
+  "id": "flow_timer",
+  "description": "Smart and flexible pommodoro timer for timing your rests.",
+  "lang": "en",
+  "scope": ".",
+  "orientation": "portrait",
+  "display_override": [
+    "minimal-ui",
+    "window-controls-overlay"
+  ],
+  "dir": "ltr",
+  "categories": [
+    "lifestyle",
+    "productivity",
+    "utilities"
+  ]
 }

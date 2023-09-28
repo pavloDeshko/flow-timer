@@ -28,8 +28,7 @@
     "build:ext": "webextension-toolbox build --src ./src --target ./dist/extension/[vendor] firefox",
     "dev": "react-app-rewired start",
     "build": "react-app-rewired build",
-    "test:web": "react-app-rewired test",
-    "prepack": "build:ext && build:web",
+    "prepack": "build:ext && build",
     "postinstall": "patch-package"
   },
   "devDependencies": {

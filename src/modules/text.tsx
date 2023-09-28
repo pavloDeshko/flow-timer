@@ -13,8 +13,8 @@ const TEXT = {
   STORAGE_ERROR_SAVE : 'Troubles with saving data to storage, your app may misbehave :(',
   STORAGE_ERROR_GET : 'Troubles with getting data from storage, your app may misbehave :(',
   
-  NOTIFY_ERROR_SOUND : `Can't play sound to alert you :( Make sure you gave permissions`,
-  NOTIFY_ERROR : 'Trobles notifying you when timer is up :(',
+  NOTIFY_ERROR_SOUND : `Can't play sound to alert you :( Make sure you gave permission`,
+  NOTIFY_ERROR : 'Trobles notifying you when timer is up :( Make sure you gave permission',
 
   NOTIFY_WORK_TITLE : 'Time to work!',
   NOTIFY_WORK_MESSAGE : 'your rest time is up',
@@ -32,9 +32,9 @@ const TEXT = {
   
   APP_TITLE : 'Flow Timer',
   APP_LOGO_ALT : 'Flow Timer logo',
-  APP_DESC : '',
-  APP_ABOUT_TITLE :'', 
-  APP_ABOUT: ['',''] as const,
+  APP_DESC : 'Intelligent Pomodoro with Adaptive Rests. Flow Timer will adjust rest durations according to your work intervals. Toggl Track integration included. Stay in the flow!',
+  APP_ABOUT_TITLE :'Why? and How?', 
+  APP_ABOUT: ['why you need it','how to adjust','thank me'] as const,
 
   NEXT_REST_LEGEND: 'Next rest will be',
   TIME_LABELS: {h:'h',m:'m',s:'s'},
