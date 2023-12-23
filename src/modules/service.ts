@@ -15,26 +15,28 @@ import {
   State,
   State_Schema,
   AlarmId_Schema,
-  Error_Info
+  Error_Info,
+  Status
 } from './types'
 import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME, EXTENSION} from '../settings'
-import {stringifyError} from './utils'
+import {stringifyError, deObf} from './utils'
 import {ICONS, SOUNDS} from './assets'
 import TEXT from './text'
 import eventManager from './events'
+import retry from './retry'
 
-export const dispatchError = (info:Error_Info)=>{
-  eventManager.emit('message',{type:'ERROR', info})
+export const dispatchError = (errorInfo:Error_Info)=>{
+  eventManager.emit('message',{type:'ERROR', errorInfo})
 }
 
 /// Network relatede stuff ///
 const w = wretch()
   .url(TOGGL_URL)
 
-const getAuth = (auth :Toggl_Auth) => 'Basic ' + btoa(typeof auth == 'string' ? `${auth}:api_token` : `${auth.user}:${auth.pass}`)
+const getAuth = (auth :Toggl_Auth) => 'Basic ' + btoa(typeof auth == 'string' ? `${deObf(auth)}:api_token` : `${auth.user}:${deObf(auth.pass)}`)
 
 const reTogglError = (userMessage:string) => (err:Error):never => {
-  dispatchError({errorJson: stringifyError(err)})
+  dispatchError({errorJson: stringifyError(err), userMessage:''})
   throw new Error(userMessage)
 }
 
@@ -80,9 +82,33 @@ export const togglApiAdd = async (credential :Toggl_Auth, start :number, stop :n
 }
 
 /// chrome related stuff ///
-export const iconChange = (path : string | IconObject)=> {
+export const iconTitleChange = (status:Status)=>{
+  const title = 
+    status == Status.RESTING ? TEXT.RESTING_PRE:
+    status == Status.WORKING ? TEXT.WORKING_PRE :
+    TEXT.APP_TITLE
+  EXTENSION ? chrome.action.setTitle({title:title}) :(document.title = title)
+  
+  const icon = 
+    status == Status.RESTING ? ICONS.REST:
+    status == Status.WORKING ? ICONS.WORK :
+    ICONS.DEFAULT
+  EXTENSION ? 
+    chrome.action.setIcon({path:icon}) : 
+    favicon.change(typeof icon == 'string' ? icon : icon[16]) 
+}
+
+/* export const iconChange = (path : string | IconObject)=> {
   EXTENSION ? chrome.action.setIcon({path}) : favicon.change(typeof path == 'string' ? path : path[16]) 
 }
+
+export const titleChange = (status:Status)=>{
+  const value = 
+    status == Status.RESTING ? TEXT.RESTING_PRE:
+    status == Status.WORKING ? TEXT.WORKING_PRE :
+    TEXT.APP_TITLE
+  EXTENSION ? chrome.action.setTitle({title:value}) :(document.title = value)
+} */
 
 export const reload = ()=>{ EXTENSION ? chrome.runtime.reload() : location.reload()}
 
@@ -144,35 +170,61 @@ export const {save : alarmSave, get : alarmGet} = makeSaveGet<AlarmId>('STORAGE_
 export const {save : errorSave, get : errorGet} = makeSaveGet<Error_Info>('STORAGE_ERROR_KEY', z.any(), true)
 
 /// Alarms related functions ///
-let workAudio :HTMLAudioElement, pomAudio :HTMLAudioElement, retries = 5
+let workAudio :HTMLAudioElement, pomAudio :HTMLAudioElement
 const loadAudio = () => {
   workAudio = new window.Audio(SOUNDS.WORK)
   pomAudio = new window.Audio(SOUNDS.POM)
 }
 window.Audio && loadAudio()
 
-export const notify = async(type:AlarmType)=>{
-  const pomodoro = type == AlarmType.POM
+const playAudio = (pomodoro :boolean) => {
+  retry(
+    ()=>(pomodoro ? pomAudio : workAudio)!.play(),
+    loadAudio,
+    (err)=>dispatchError({ errorJson: stringifyError(err as Error), userMessage:TEXT.NOTIFY_ERROR_SOUND})
+  )
+}
 
-  ;(pomodoro ? pomAudio : workAudio)?.play().catch((err:Error)=>{
-    if(retries){
-      loadAudio()
-      setTimeout(()=>notify(type), 1000)
-      retries -= 1
-    }else{
-      dispatchError({ errorJson: stringifyError(err), userMessage:TEXT.NOTIFY_ERROR_SOUND})
-    }
+const playAudioWindow = (pomodoro :boolean) => {
+  chrome.windows.create({
+    type: "popup",
+    focused: false,
+    top: 1,left: 1,height: 1,width: 1,
+    url: 'sound.html?type=' + (pomodoro ? 'pom' : 'work')
   })
+}
+
+export const notify = async(type:AlarmType)=>{
+  const pomodoro = type == AlarmType.POM;
+  
+  if(window.Audio){
+    playAudio(pomodoro)
+  }else if(EXTENSION){
+    playAudioWindow(pomodoro)
+  }
 
   try{
-    EXTENSION ? await chrome.notifications.create({
+    if(EXTENSION){
+      await chrome.notifications.create({
       type: 'basic',
       silent: false,
       title: pomodoro ? TEXT.NOTIFY_POM_TITLE : TEXT.NOTIFY_WORK_TITLE,
       message: pomodoro ? TEXT.NOTIFY_POM_MESSAGE : TEXT.NOTIFY_WORK_MESSAGE,
       iconUrl: chrome.runtime.getURL(pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT)
-  }) : ()=>{} //TODO! implement web notification
+      })
+     }else if(window.Notification?.permission == 'granted' ){
+       new window.Notification(
+        pomodoro ? TEXT.NOTIFY_POM_TITLE : TEXT.NOTIFY_WORK_TITLE,{
+          body:pomodoro ? TEXT.NOTIFY_POM_MESSAGE : TEXT.NOTIFY_WORK_MESSAGE,
+          icon: pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT
+        })
+     }
   }catch(err:any){
     dispatchError({errorJson: stringifyError(err), userMessage:TEXT.NOTIFY_ERROR})
   }
+}
+
+export const checkPermission = ()=> window.Notification?.permission || null
+export const askPermission = async ()=>{
+  return window.Notification?.permission == 'default' ? Notification.requestPermission() : Promise.resolve(null)
 }

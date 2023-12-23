@@ -1,4 +1,4 @@
-import React, {useContext, useRef, useState, memo, ChangeEvent, ReactNode, useEffect, ComponentType} from 'react'
+import React, {useContext, useRef, useState, memo, ChangeEvent, ReactNode, useCallback, useMemo, useEffect} from 'react'
 import {
   Paper, PaperProps,
   Box,
@@ -25,7 +25,9 @@ import {
   Popover,
   Card, CardContent, CardActions, CardMedia,
   Alert, AlertProps,
-  Skeleton
+  Skeleton,
+  useTheme,
+  alpha
  } from '@mui/material'
 import Update from "@mui/icons-material/Update"
 import Save from "@mui/icons-material/Save"
@@ -42,32 +44,46 @@ import HelpOutlineOutlined from '@mui/icons-material/HelpOutlineOutlined'
 import Close from '@mui/icons-material/Close'
 import DoneOutlineIcon from '@mui/icons-material/DoneOutline'
 import clipboardCopy from 'clipboard-copy'
+import Particles from 'react-particles'
+import { Container, Engine, Vector, Particle } from "tsparticles-engine"
+import {loadLinksPreset} from 'tsparticles-preset-links'
 
-import {Time, Config, TogglForm as TogglFormData, TogglProject, Mode, AlarmType, AlertType} from './types'
+import {Time, Config, TogglForm as TogglFormData, TogglProject, Mode, AlarmType, AlertPos, Warning} from './types'
 import {padTwoZeros, parse, useLinger} from './utils'
 import {SUPPORT_EMAIL,POM_TIMES,TOGGL_TOKEN_URL, EXTENSION} from '../settings'
 import {reload} from './service'
 import {IMGS,ICONS} from './assets'
 import TEXT from './text'
 import {Action} from './events'
+//import Background from './Background'
 
 export const DispatchContext = React.createContext((a:Action)=>console.log('Dispached action: ', a))//for testing compts without provider
 const APP_WIDTH = 500 //TODO move to settings? 600px minus scrollbars is max for extension
 
 const tooltipMarginProp = {componentsProps:{tooltip:{sx:{m:'4px !important'}}}}
 
-export const PageContainer = ({children}:{children:ReactNode})=>{
+export const PageContainer = ({children, backgroundActive=false}:{children:ReactNode, backgroundActive?:boolean})=>{
+  const theme = useTheme()
   return (
-   <Elevation className="Background" elevation={0} sx={{height:'100vh'}}>
-      <Elevation className="Column"  
+    <Elevation className="fallbackBackground" elevation={0} sx={{
+      height:'100vh',
+      position:'relative',
+      backgroundColor:theme.palette.background.backdrop,
+      //backgroundImage: `url(${IMGS.BACKGROUND})`
+    }}>
+      <ParticlesBackground active={backgroundActive} />
+      <Elevation className="Column"
         elevation={10}
-         sx={{
-          marginX:"auto",
-          maxWidth:APP_WIDTH,
-          marginY:"0.5rem"
-         }}
+        sx={{
+          marginX: "auto",
+          maxWidth: APP_WIDTH,
+          marginY: "0.5rem",
+          position: "relative"
+        }}
       >
-        <Elevation sx={{backgroundColor: 'background.web',}} elevation={1}>
+        <Elevation className='ColumnBackground' sx={{
+          backgroundColor: 'background.web',
+        }} elevation={1}>
           <Stack spacing={1}>
             {children}
           </Stack>
@@ -77,13 +93,76 @@ export const PageContainer = ({children}:{children:ReactNode})=>{
   )
 }
 
+export const ParticlesBackground = ({active}:{active: boolean})=>{
+  const theme = useTheme()
+
+  const containerRef = useRef<Container>()
+  const activeRef = useRef(active)
+  useEffect(()=>{
+    //updated for loaded cb to use if particles are reloaded
+    activeRef.current = active
+    
+    //play/pause for active container
+    const container = containerRef.current
+    if(container){
+      active && container.play()
+      !active && container.pause()
+    }
+  },[active])
+
+  const init = useCallback(async (engine:any) => {
+    await loadLinksPreset(engine)
+  },[])
+  const loaded = useCallback(async(container?:Container)=>{
+    if(!container) return
+    //console.log('loaded called, current active is:', crunchRef.current )
+    containerRef.current = container
+    if(!activeRef.current){
+      setTimeout(()=>container.pause(),1000)
+      //console.log('filter: ', container.particles.filter(()=>true))
+      container.particles.filter(()=>true).forEach((p:Particle) => {
+        const oldVelocity = p.velocity 
+        p.velocity = Vector.create(0, 0)
+        setTimeout(() => p.velocity = oldVelocity, 1100)  
+      })
+    }
+  },[])
+
+  const options = useMemo(()=>({
+    preset: 'links',
+    background: {color: {value:
+      theme.palette.background.backdrop
+    }},
+    particles: {
+      number: {value: 60},
+      shape:{type:'none'},
+      links: {color: {value:
+        theme.palette.mode == 'dark' ? theme.palette.primary.light : theme.palette.secondary.main
+      }},
+      move: {speed: {min:0.25, max:2}}
+    }
+  }),[theme])
+  
+  return (
+    <Particles options={options} init={init} loaded={loaded} />
+  )
+}
+
 export const PageHeader = () => {
-  return (<BlockContainer>
+  const theme = useTheme()
+  const splitTitle = TEXT.APP_TITLE.split(' ')
+  return (<BlockContainer square={true} >
     <Stack direction="row" spacing={2}>
       <Box sx={{float:"left"}}><img src={ICONS.MAIN} style={{width:"64px", height:"64px"}} alt={TEXT.APP_LOGO_ALT} /></Box>
       <Box>
-        <Typography variant="h5" component='h1'>{TEXT.APP_TITLE}</Typography>
-        <Typography>{TEXT.APP_DESC}</Typography>
+        <Typography variant="h5" component='h1' sx={{
+          '& .title_0':{textShadow:`0px 0px 4px ${theme.palette.primary.main}`},
+          '& .title_1':{textShadow:`0px 0px 4px ${alpha(theme.palette.secondary.light, theme.palette.mode == 'light' ?  0.7 : 1)}`},
+          color:'text.secondary'
+        }}>{
+          <><span className="title_0">{splitTitle[0]}</span> <span className="title_1">{splitTitle[1]}</span></>
+        }</Typography>
+        <Typography>{TEXT.APP_DESC_SHORT}</Typography>
       </Box>
     </Stack>
   </BlockContainer>)
@@ -91,11 +170,11 @@ export const PageHeader = () => {
 
 export const PageDesc = ()=>{
   return (
-    <BlockContainer>
+    <BlockContainer square={true} sx={{textIndent:'0rem'}}>
       <Typography variant="h5" component="h2">{TEXT.APP_ABOUT_TITLE}</Typography>
       <Divider sx={{marginY:"0.5rem"}}/>
       <Typography component="div" align="justify" sx={{'& .MuiTypography-root':{mb:'0.5rem'}}}>
-        {TEXT.APP_ABOUT.map((t,n)=><Typography paragraph key={n}>{t}</Typography>)}
+        {TEXT.APP_ABOUT.map((t,n)=><Typography paragraph key={n}>{'- '+t}</Typography>)}
       </Typography>
   </BlockContainer>
   )
@@ -130,38 +209,39 @@ const blockStyles= {
 } as const
 
 export const BlockContainer = (
-  {children, className='', stacked=false, sx = {}}:{children:ReactNode, className?:string, stacked?:boolean, sx?:PaperProps}
+  {children, className='', stacked=false, sx = {}, ...rest}:{children:ReactNode, className?:string, stacked?:boolean} & PaperProps
 ) => {
   return <Paper className={className} elevation={4}
       sx={{...blockStyles,...sx}}
+      {...rest}
   >{stacked ? <Stack spacing={2}>{children}</Stack> : children}</Paper>
 }
 
 export const AccordionContainer = (
   {className='', label, children, expanded=false}
   :{className?:string,label:ReactNode,children:ReactNode[],expanded?:boolean}) => {
-  const [initialExpanded] = useState(expanded)
+    const [initialExpanded] = useState(expanded)
 
-  return (
-    <Elevation square={false} elevation={4}>
-      <Accordion className={className} elevation={4} defaultExpanded={initialExpanded} sx={{
-        ...blockStyles,
-        boxShadow:0,
-        ".MuiAccordionSummary-root, .MuiAccordionDetails-root":{paddingX:0},
-        ".MuiAccordionSummary-root":{minHeight:0},
-        ".MuiAccordionSummary-content":{marginY:0},
-        ".MuiAccordionDetails-root":{padding: "1rem 0 0 0"}
-      }} disableGutters={true}>
-        <AccordionSummary expandIcon={<ExpandMore fontSize="small" />}>
-          {label}
-        </AccordionSummary>
-        <AccordionDetails>
-          {children}
-        </AccordionDetails>
-      </Accordion>
-    </Elevation>
-  )
-}
+    return (
+      <Elevation square={false} elevation={4}>
+        <Accordion className={className} elevation={4} defaultExpanded={initialExpanded} sx={{
+          ...blockStyles,
+          boxShadow:0,
+          ".MuiAccordionSummary-root, .MuiAccordionDetails-root":{paddingX:0},
+          ".MuiAccordionSummary-root":{minHeight:0},
+          ".MuiAccordionSummary-content":{marginY:0},
+          ".MuiAccordionDetails-root":{padding: "1rem 0 0 0"}
+        }} disableGutters={true}>
+          <AccordionSummary expandIcon={<ExpandMore fontSize="small" />}>
+            {label}
+          </AccordionSummary>
+          <AccordionDetails>
+            {children}
+          </AccordionDetails>
+        </Accordion>
+      </Elevation>
+    )
+ }
 
 const HelpPopover = ({children}:{children:ReactNode})=>{
   const [anchor, setAnchor] = useState<SVGSVGElement | null>(null)
@@ -189,7 +269,7 @@ const HelpPopover = ({children}:{children:ReactNode})=>{
   </span>)
 }
 
-export const Counter = ({hours, minutes, seconds} :Time) => {
+export const Counter = memo(({hours, minutes, seconds} :Time) => {
 /*   const colors = {
     [Status.IDLE]:'text',
     [Status.WORKING]:'secondary',
@@ -211,7 +291,7 @@ export const Counter = ({hours, minutes, seconds} :Time) => {
       <span className='seconds'>{padTwoZeros(seconds)}</span>
     </Typography>
   )
-}
+})
 
 export const RestAdjust = memo(({hours, minutes, seconds, mode} :Time & {mode :Mode}) => {
   const dispatch = useContext(DispatchContext)
@@ -235,21 +315,7 @@ export const RestAdjust = memo(({hours, minutes, seconds, mode} :Time & {mode :M
       }
     })
   }
-  
-  return(
-    <Box className="NextRestSection" sx={{
-      ".legend":{display:"inline-block",paddingY:"0.5rem",mr:0.25},
-      ".MuiTextField-root":{width:"3rem", marginX:0.25},
-      ".MuiOutlinedInput-input":{textAlign:"center",padding:0.75},
-      ".MuiTextField-root.seconds":{
-        width:"2rem",
-        ".MuiOutlinedInput-input":{
-          fontSize:"0.6rem",
-          padding:0.5
-      }}
-    }}>
-       <Box sx={{mr:'6px'}} className="legend">{TEXT.NEXT_REST_LEGEND}</Box>
-
+  const fields = useMemo(()=>(<>
       <TextField 
         size="small" 
         label={TEXT.TIME_LABELS.h}
@@ -272,15 +338,34 @@ export const RestAdjust = memo(({hours, minutes, seconds, mode} :Time & {mode :M
         inputRef={secondsRef} 
         onChange={onChange} 
       /> 
+  </>),[hours,minutes,seconds,dispatch])
 
-      <Tooltip {...tooltipMarginProp} title={TEXT.RECALCULATE} placement="bottom-start" arrow >
-        <span><IconButton 
-          sx={mode == Mode.ON ? {display:'none'}:{pb:0,verticalAlign:'top'}}
-          color="primary" 
-          onClick={onRecalculate} 
-          disabled={mode == Mode.ON}
-        ><Update fontSize="small" /></IconButton></span>
-      </Tooltip>
+  const tooltip = useMemo(()=>(
+    <Tooltip {...tooltipMarginProp} title={TEXT.RECALCULATE} placement="bottom-start" arrow >
+      <span><IconButton 
+        sx={mode == Mode.ON ? {display:'none'}:{pb:0,verticalAlign:'top'}}
+        color="primary" 
+        onClick={onRecalculate} 
+        disabled={mode == Mode.ON}
+      ><Update fontSize="small" /></IconButton></span>
+  </Tooltip>
+  ),[mode,dispatch])
+  
+  return(
+    <Box className="NextRestSection" sx={{
+      ".legend":{display:"inline-block",paddingY:"0.5rem",mr:0.25},
+      ".MuiTextField-root":{width:"3rem", marginX:0.25},
+      ".MuiOutlinedInput-input":{textAlign:"center",padding:0.75},
+      ".MuiTextField-root.seconds":{
+        width:"2rem",
+        ".MuiOutlinedInput-input":{
+          fontSize:"0.6rem",
+          padding:0.5
+      }}
+    }}>
+      <Box sx={{mr:'6px'}} className="legend">{TEXT.NEXT_REST_LEGEND}</Box>
+      {fields}
+      {tooltip}
     </Box>
   )
 })
@@ -307,20 +392,40 @@ export const Controls = memo(({working,resting}:{working:boolean,resting:boolean
   )
 })
 
-export const UserAlert = ({value : opened, subType} :{value :(AlarmType | ReactNode | null), subType:AlertType})=>{
-  const value = useLinger(opened)
-
-  let alertProps :Partial<AlertProps> = {variant:"filled", severity:'warning'} 
+export const UserAlert = memo(({warning:opened, alertPos} :{warning:Warning|null, alertPos:AlertPos})=>{
+  const warning = useLinger(opened)
+  
   let message :ReactNode = ''
-  if(value == AlarmType.WORK){
-    message = TEXT.ALERT_WORK
-    alertProps.color = 'secondary' as any // TODO mui type is botched?
-  }else if(value == AlarmType.POM){
-    message = TEXT.ALERT_REST
-    alertProps.color = 'primary' as any
-  }else if(value){
-    message = value
-    alertProps = {variant:"outlined", severity:'error'}
+  let alertProps :Partial<AlertProps> = {variant:"filled", severity:'warning'} 
+
+  switch (warning?.type){
+    case AlarmType.WORK:{
+      message = TEXT.ALERT_WORK
+      alertProps.color = 'secondary' as any // TODO mui type is botched?
+      break
+    }
+    case AlarmType.POM:{
+      message = TEXT.ALERT_REST
+      alertProps.color = 'primary' as any
+      break
+    }
+    case 'ASK_PERMISSION':{
+      message = TEXT.ASK_PERMISSION
+      alertProps.variant = 'outlined'
+      break
+    }
+    case 'ERROR':{
+      message = <>
+        {warning.userMessage}
+        {warning.errorJson && <CopyLink value={TEXT.FEEDBACK_PREPENDED_DATA(warning.errorJson, SUPPORT_EMAIL)} text='error info' />}
+      </>
+      alertProps = { variant: "outlined", severity: 'error' }
+      break
+    }
+    case 'WARNING':{
+      message = warning.message
+      alertProps.variant = 'outlined'
+    }
   }
 
   const dispatch = useContext(DispatchContext)
@@ -336,13 +441,13 @@ export const UserAlert = ({value : opened, subType} :{value :(AlarmType | ReactN
         sx={{color:'inherit'}}
         action={<IconButton
           sx={{ paddingY: "2px" }}
-          onClick={()=>dispatch({type:'CLOSE_ALERT', subType})}//TODO reused as warning
+          onClick={()=>dispatch({type:'CLOSE_ALERT', alertPos})}//TODO reused as warning
         ><Close/>
         </IconButton>}
       ><Typography>{message}</Typography></Alert>
     </Collapse>
   )
-}
+})
 
 export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config) => {
   const dispatch = useContext(DispatchContext)
@@ -370,6 +475,26 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
     type: 'CONFIG',
     config: {dark : !dark}
   })
+
+  const autocomplete = useMemo(()=>(
+    <Autocomplete
+      sx={{ ".MuiAutocomplete-inputRoot .MuiAutocomplete-input": { minWidth: "20px" } }}
+      //open={true}
+      freeSolo disablePortal disableClearable
+      options={POM_TIMES.map(v=>String(v))}
+      value={String(pomTimeMins)}
+      inputValue={String(pomTimeMins)}
+      disabled={!pomActive}
+      onInputChange={setPomTime}
+      renderInput={par => <TextField {...par} 
+        variant="standard" 
+        size="small" 
+        InputProps={{
+          ...par.InputProps, endAdornment: <InputAdornment position="end">m</InputAdornment>
+        }} 
+      />}
+    />
+  ),[pomTimeMins, pomActive, dispatch])
 
   return(
     <Box>
@@ -412,23 +537,7 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
           }
         }}
       >
-        <Autocomplete
-          sx={{ ".MuiAutocomplete-inputRoot .MuiAutocomplete-input": { minWidth: "20px" } }}
-          //open={true}
-          freeSolo disablePortal disableClearable
-          options={POM_TIMES.map(v=>String(v))}
-          value={String(pomTimeMins)}
-          inputValue={String(pomTimeMins)}
-          disabled={!pomActive}
-          onInputChange={setPomTime}
-          renderInput={par => <TextField {...par} 
-            variant="standard" 
-            size="small" 
-            InputProps={{
-              ...par.InputProps, endAdornment: <InputAdornment position="end">m</InputAdornment>
-            }} 
-          />}
-        />
+        {autocomplete}
       </Box>
 
       <Divider />
@@ -549,6 +658,20 @@ export const TogglForm = memo((
     form: {projectId: Number(e.target.value) || null}
   })
 
+  const select = useMemo(()=>(
+    <Select<number|''>
+      size="small" 
+      sx={{width:"7rem"}}
+      value={projectId || ''}
+      onChange={setProject}
+    >
+      {[
+        <MenuItem value={""} key={0}><em>-none-</em></MenuItem>, 
+        ...projects.map(p => <MenuItem value={p.id} key={p.id}>{p.name}</MenuItem>)
+      ]}
+    </Select>
+  ),[projectId,projects, dispatch])
+
   return(
     <Box>
       <Stack direction="row" spacing={1}>
@@ -577,18 +700,9 @@ export const TogglForm = memo((
           value={desc}
           onChange={setDesc} 
         />
+        
+        {select}
 
-        <Select<number|''>
-          size="small" 
-          sx={{width:"7rem"}}
-          value={projectId || ''}
-          onChange={setProject}
-        >
-          {[
-            <MenuItem value={""} key={0}><em>-none-</em></MenuItem>, 
-            ...projects.map(p => <MenuItem value={p.id} key={p.id}>{p.name}</MenuItem>)
-          ]}
-        </Select>
         <Box sx={{m:'0px !important', minWidth:'2.5rem'}}>{
           saved === true ? 
             <Box sx={{
@@ -654,7 +768,7 @@ export const AppPlaceholder = ()=>(
   <Skeleton variant="rectangular" width={APP_WIDTH} height={"25rem"}/>
 )
 
-export const CopyLink = ({value, text, loading = false}:{value:string, text?:string, loading?:boolean})=>{
+export const CopyLink = memo(({value, text, loading = false}:{value:string, text?:string, loading?:boolean})=>{
   const copy = ()=>clipboardCopy(value)
   
   return <Tooltip {...tooltipMarginProp} title={TEXT.COPY} placement="right" followCursor>
@@ -668,9 +782,9 @@ export const CopyLink = ({value, text, loading = false}:{value:string, text?:str
       disabled={loading}
     >{text || value}</Button>
   </Tooltip>
-}
+})
 
-export const Fallback = ({errorString}:{errorString:string}) => {
+export const Fallback = memo(({errorString}:{errorString:string}) => {
   const content = EXTENSION ? 
     <p>{TEXT.FEEDBACK_PREPENDED(
       <CopyLink value={TEXT.FEEDBACK_PREPENDED_DATA(errorString,SUPPORT_EMAIL)} text={TEXT.FEEDBACK_EMAIL_LINK}/>
@@ -693,4 +807,4 @@ export const Fallback = ({errorString}:{errorString:string}) => {
       </Typography>
     </Paper>
   )
-}
+})

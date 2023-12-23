@@ -1,8 +1,10 @@
 import {State, Mode, TogglProject} from './modules/types'
+
+export const EXTENSION = !process.env["REACT_APP_ENV"] //TODO move
 //commited envs
-export const MIN_REST = 4*1000
-export const MAX_REST = 3600*1000
-export const DEFAULT_RATIO = 2
+export const MIN_REST = EXTENSION ? 30*1000 : 5*1000
+export const MAX_REST = 24 * 3600*1000
+export const DEFAULT_RATIO = 6
 export const POM_TIMES = [1, 5, 10, 15, 20, 30, 45, 50, 60] as const
 export const ERROR_MESSAGE = 'Unknown error occured :(' // TODO get other messages here too
 
@@ -14,8 +16,6 @@ export const TOGGL_USER_URL = '/me?with_related_data=true'
 export const CLIENT_NAME = 'Flow Timer Web-Extension'
 
 export const SUPPORT_EMAIL = 'pavlodeshko92@gmail.com'
-
-export const EXTENSION = !process.env["REACT_APP_ENV"] //TODO move
 
 export const DEFAULT_STATE :State = {
   alarms: { work: null, pom: null },

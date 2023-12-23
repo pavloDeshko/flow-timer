@@ -1,4 +1,4 @@
-declare module "@mui/material/styles" {interface TypeBackground {web?:string}}
+declare module "@mui/material/styles" {interface TypeBackground {web:string,backdrop:string}}
 import {createTheme, TypeBackground} from '@mui/material/styles'
 
 const colors = {
@@ -21,9 +21,10 @@ export const lightTheme = createTheme({
     mode:'light',
     ...colors,
     background: {
-      web: '#bfdccf',
+      web: '#cde4e4',
       paper: '#f3fbf5',
-      default: '#bfdccf'
+      default: '#cde4e4',
+      backdrop: '#EEF6F6'
     },
     text: {
       primary: 'rgba(0, 0, 0, 0.8)'
@@ -39,10 +40,13 @@ export const darkTheme = createTheme({
     background: {
       web: 'inherit',
       paper: '#2c2c2c',
-      default: '#1e1e1e'
+      default: '#1e1e1e',
+      backdrop: '#1e1e1e'//TODO
     },
     text: {
       primary: 'rgba(255, 255, 255, 0.87)'
     }
   }
 })
+
+console.log('light theme:', lightTheme, 'dark theme:', darkTheme)

@@ -32,7 +32,7 @@ export type Action = {
   type: 'TOGGL_SAVE_LAST'
 }|{
   type: 'CLOSE_ALERT',
-  subType: 'WARN'|'NOTIFY'
+  alertPos: 'WARN'|'NOTIFY'
 }
 
 export const MessageSchema = z.object({
@@ -40,7 +40,7 @@ export const MessageSchema = z.object({
   subType: z.nativeEnum(AlarmType)
 }).or(z.object({
   type: z.literal('ERROR'),
-  info: Error_Info_Schema
+  errorInfo: Error_Info_Schema
 })).or(z.object({
   type: z.literal('SET_ALARM'),
   subType: z.nativeEnum(AlarmType),
@@ -60,8 +60,8 @@ const eventManager = new Emittery<{
 
 eventManager.on('message', message=>{
   if(message.type == "ERROR"){ 
-    console.error(message.info.userMessage || 'Error with no user message: ', message.info.errorJson)
-    message.info.userMessage && errorSave(message.info)
+    console.error(message.errorInfo.userMessage || 'Error with no user message: ', message.errorInfo.errorJson)
+    message.errorInfo.userMessage && errorSave(message.errorInfo)
   }
 })
 

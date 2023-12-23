@@ -17,16 +17,33 @@ export enum Mode {
   ON = 'ON'
 } 
 
+export enum Status {
+  IDLE = 0,
+  WORKING = 'WORKING',
+  RESTING = 'RESTING'
+}
+
 export enum AlarmType {
   WORK ="WORK",
   POM = "POM"
 }
 
-export enum AlertType {
+export enum AlertPos {
   NOTIFY = 'NOTIFY',
   WARN = 'WARN'
 }
 /// State related ///
+/* To update state schema use:
+  key: z.preprocess(
+    (raw:any)=>typeof raw == 'oldType' ? toNewType(raw) : raw,
+  freshSchema)
+or 
+  key : z.preprocess( (raw:any)=>{
+    const result = oldSchema.safeParse(raw)
+    return result.success ? toNewType(result.data) : raw
+  },freshSchema)
+*/
+
 export const Config_Schema = z.object({
   pomTimeMins: z.number(),
   pomActive: z.boolean(),
@@ -36,10 +53,18 @@ export const Config_Schema = z.object({
 })
 export type Config = z.infer<typeof Config_Schema>
 
+export const WarningSchema = z.discriminatedUnion('type',[
+  z.object({type :z.nativeEnum(AlarmType)}),
+  z.object({type :z.literal("ASK_PERMISSION")}),
+  z.object({type :z.literal('WARNING'), message :z.string()}),
+  z.object({type :z.literal('ERROR'), userMessage: z.string(), errorJson:z.string().optional()})
+])
+export type Warning = z.infer<typeof WarningSchema>
+
 /// Storage related ///
 export const Error_Info_Schema = z.object({ // unify it with action? notification too
   errorJson : z.string(),
-  userMessage : z.string().optional()
+  userMessage : z.string()
 })
 export type Error_Info = z.infer<typeof Error_Info_Schema>
 
@@ -76,7 +101,7 @@ export const State_Schema = z.object({
   config: Config_Schema,
   toggl: Toggl_State_Schema,
   notification: z.nativeEnum(AlarmType).nullable(),
-  warning: Error_Info_Schema.nullable()
+  warning: WarningSchema.nullable()
 })
 export type State = z.infer<typeof State_Schema>
 

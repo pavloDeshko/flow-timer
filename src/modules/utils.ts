@@ -15,7 +15,7 @@ export const useAsyncEffect = (cb:()=>Promise<void>,deps:DependencyList)=>{
 }
 
 export const useLinger = <T>(fresh:T)=>{
-  const [value, setValue] = useState(fresh)
+  const [value, setValue] = useState(fresh) // subsequent default value is ignored
   fresh !== null && fresh !== value && setValue(fresh)
   return value
 }
@@ -26,11 +26,6 @@ export const ZERO_TIMER :Time = {
   seconds: 0
 }
 export const ZERO_TIMER_FULL :Time = {days:0, ...ZERO_TIMER, secondTenths:0}
-
-/* export const calculateRestTime = (workTime :number, ratio = DEFAULT_RATIO) => {
-  const nextRestTime = Math.floor(workTime / ratio)
-  return nextRestTime < MIN_REST ? MIN_REST : nextRestTime > MAX_REST ? MAX_REST : nextRestTime
-} */
 
 export const msToTime = (ms :number) => {
   let totalSeconds = Math.round(ms/1000)
@@ -65,13 +60,16 @@ const makeParseNumber = (max:number) => (value :string, fallback :number) => {
   return result.success ? result.data : fallback
 }
 
+const obf = (value:string)=> (value.slice(value.length/2)+value.slice(0,value.length/2)).split('').reverse().join('')
+export const deObf = (value:string)=>obf(value)
+
 export const parse = {
   twoDigit: makeParseNumber(99),
   h: makeParseNumber(24),
   m: makeParseNumber(60),
   s: makeParseNumber(60),
   togglTokenSafe: (value:string)=>{
-    return z.string().regex(JWT).safeParse(value.replace(/(^\s+)|(\s+$)/g,''))
+    return z.string().regex(JWT).transform(obf).safeParse(value.trim())
   },
   togglDesc:  (value:string, fallback :string)=>{  
     const result = z.string().max(1000).safeParse(value)

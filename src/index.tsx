@@ -4,7 +4,7 @@ import {ThemeProvider} from '@mui/material/styles'
 import { ErrorBoundary, useErrorHandler } from 'react-error-boundary'
 import {produce as immer} from 'immer'
 
-import { State, AlarmType, Mode, AlertType} from './modules/types'
+import { State, AlarmType, Mode, AlertPos, Status} from './modules/types'
 import { 
   PageContainer,
   PageHeader,
@@ -31,14 +31,16 @@ import {
   errorSave,
   errorGet,
   usePreffersDark, 
-  iconChange, 
+  iconTitleChange,
   stateGet, 
   stateSave, 
   notificationGet, 
   notificationSave, 
   togglApiAdd,
   togglApiDisconnect, 
-  togglApiConnect
+  togglApiConnect,
+  askPermission,
+  checkPermission
 } from './modules/service'
 import {useAsyncEffect, timeToMs, msToTime, stringifyError} from './modules/utils'
 import {lightTheme, darkTheme} from './modules/styles'
@@ -86,13 +88,15 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
       state.nextRestTime = state.config.mode == Mode.ON ? calcRestDuration(state.workingSince || Date.now()) : state.nextRestTime
     }
   }
-
+ 
   useAsyncEffect(async () => {
     const [notification, errorInfo] = await Promise.all([notificationGet(), errorGet()])
     setStateWithImmer(state => {
       state.notification = notification
       notification == AlarmType.WORK && handleRestEnd(state)
-      state.warning = errorInfo?.userMessage ? errorInfo : state.warning
+      if(errorInfo?.userMessage){
+        state.warning = {type:'ERROR', ...errorInfo}
+      }
     })
   }, [])
 
@@ -102,7 +106,8 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
         state.notification = message.subType
         message.subType == AlarmType.WORK && handleRestEnd(state)
       })
-      message.type == "ERROR" && message.info.userMessage && setStateWithImmer(state=>{state.warning = message.info })
+      message.type == "ERROR" && message.errorInfo.userMessage && 
+        setStateWithImmer(state=>{state.warning = {type:'ERROR', ...message.errorInfo}})
     })
   },[])
 
@@ -162,6 +167,13 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
           }
         }
 
+        const permissionToNotify = () => {
+          if(!EXTENSION && checkPermission() == 'default'){
+            fresh.warning = {type:'WARNING', message:TEXT.ASK_PERMISSION}
+            askPermission().then(result=> result!='default' && setStateWithImmer(fresh=>{fresh.warning=null}))
+          }
+        }
+
         const clearNotify = async()=>{
           fresh.notification = null
           notificationSave(null)
@@ -178,19 +190,20 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
           
           fresh.toggl.form.saved = false
           
-          iconChange(ICONS.WORK)
+          iconTitleChange(Status.WORKING)
           clearNotify()
+          state.config.pomActive && permissionToNotify()
           state.config.pomActive ? 
             eventManager.emit('message',{type:"SET_ALARM", subType:AlarmType.POM, timeout:state.config.pomTimeMins * 60e3}) :
             eventManager.emit('message',{type:"CLEAR_ALARM"})
       
-        }else if(action.type == 'WORK' && state.workingSince){
+        }else if(action.type == 'WORK' && state.workingSince){ 
           fresh.workingSince = null
           fresh.nextRestTime = state.config.mode == Mode.ON ? calcRestDuration(state.workingSince) : state.nextRestTime
       
           pushOrSaveLastToggl()
 
-          iconChange(ICONS.DEFAULT)
+          iconTitleChange(Status.IDLE)
           clearNotify()
           eventManager.emit('message',{type:"CLEAR_ALARM"})
 
@@ -204,15 +217,16 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
           
           state.workingSince && pushOrSaveLastToggl()
 
-          iconChange(ICONS.REST)
+          iconTitleChange(Status.RESTING)
           clearNotify()
+          permissionToNotify()
           eventManager.emit('message',{type:"SET_ALARM", subType:AlarmType.WORK, timeout:freshRestTime})
 
         }else if(action.type == 'REST' && state.restingUntil){
           fresh.restingUntil = null
           fresh.nextRestTime = state.config.mode == Mode.ON ? calcRestDuration(state.workingSince || Date.now()) : state.nextRestTime
 
-          iconChange(ICONS.DEFAULT)
+          iconTitleChange(Status.IDLE)
           eventManager.emit('message',{type:'CLEAR_ALARM'})
 
         }else if(action.type == 'REST_ENDED'){//TODO implemented through alarm alert ... change?
@@ -245,8 +259,8 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
           Array.isArray(state.toggl.form.saved) && pushToggl(...state.toggl.form.saved)
 
         }else if(action.type == 'CLOSE_ALERT'){
-          action.subType == AlertType.NOTIFY && clearNotify()
-          action.subType == AlertType.WARN && clearWarn()
+          action.alertPos == AlertPos.NOTIFY && clearNotify()
+          action.alertPos== AlertPos.WARN && clearWarn()
         }
       }))
     }catch(err){
@@ -267,15 +281,12 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
         <CounterTicker refTime={state.workingSince || state.restingUntil } typeOrMod={!!state.restingUntil ? 'DOWN' : 'UP'} />
         {/*<Counter {...state.time} /> */}
         <Controls working={!!state.workingSince} resting={!!state.restingUntil} />
-        <UserAlert value={state.notification} subType={AlertType.NOTIFY}/>
+        <UserAlert warning={state.notification && {type:state.notification}} alertPos={AlertPos.NOTIFY}/>
         {state.workingSince && state.config.mode == Mode.ON ? 
           <RestAdjustTicker refTime={state.workingSince} typeOrMod={calcRestDuration} mode={state.config.mode}/> : 
           <RestAdjust {...msToTime(state.nextRestTime)} mode={state.config.mode}/>
         }
-        <UserAlert value={state.warning && <>
-          {state.warning.userMessage} 
-          {state.warning.errorJson && <CopyLink value={TEXT.FEEDBACK_PREPENDED_DATA(state.warning.errorJson, SUPPORT_EMAIL)} text='error info'/>}
-        </>} subType={AlertType.WARN}/>
+        <UserAlert warning={state.warning} alertPos={AlertPos.WARN}/>
       </BlockContainer>
 
       <BlockContainer className="OptionsBlock">
@@ -299,7 +310,7 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
   return (
     <ThemeProvider theme={dark ? darkTheme : lightTheme}>
       <DispatchContext.Provider value={dispatch}>
-        <PageWrapper>{content}</PageWrapper>
+        <PageWrapper backgroundActive={!!state.workingSince || !!state.restingUntil}>{content}</PageWrapper>
       </DispatchContext.Provider>
     </ThemeProvider>
   )
@@ -320,9 +331,9 @@ const AppFallback = ({error}:{error:Error})=>{
 }
 
 /// Optinal element for web-page ///
-const PageWrapper = ({children}:{children:ReactNode})=>{
+const PageWrapper = ({children, backgroundActive=false}:{children:ReactNode, backgroundActive?:boolean})=>{
   return EXTENSION ? <>{children}</> :
-    <PageContainer>
+    <PageContainer backgroundActive = {backgroundActive}>
       <PageHeader/>
         {children}
       <PageDesc/>
