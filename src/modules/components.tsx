@@ -543,7 +543,7 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
       <Divider />
 
       <Button
-        sx={{color:"text.primary", textTransform:"none", fontSize:"1rem", pl:"6px", pb:0}}
+        sx={{color:"text.primary", textTransform:"none", fontSize:"1rem", fontWeight:'normal', pl:"6px", pb:0}}
         size="large"
         startIcon={dark ? <Brightness7 color="primary"/>:<Brightness4 color="primary"/>}
         onClick={setDark}
@@ -574,7 +574,9 @@ const TogglHelpCard = ()=>{
   <Card sx={{maxWidth:HELP_WIDTH}}>
     <CardMedia component="img" height={HELP_WIDTH*(2/3)} width={HELP_WIDTH} alt={TEXT.TOGGL_HELP_IMAGE_ALT} image={IMGS.TOGGL_HELP}/> 
     <CardContent sx={{pb:"0"}}>
-      <Typography>{TEXT.TOGGL_HELP}</Typography> 
+      <Typography component="div" paragraph={true} sx={{"& p":{marginY:'.5rem'}}}>
+        {TEXT.TOGGL_HELP.split('\n').map((line,i)=>(<p key={i}>{line}</p>))}
+      </Typography> 
     </CardContent>
     <CardActions>
       <Button size="small" href={TOGGL_TOKEN_URL} target="_blank">
@@ -718,7 +720,7 @@ export const TogglForm = memo((
             </Box>
           :
             <Tooltip {...tooltipMarginProp} title={TEXT.TOGGL_SAVE_PREV} placement="top-end" arrow>
-              <IconButton color="primary" 
+              <span><IconButton color="primary" 
                 sx={{ 
                   visibility: !!saved ? 'visible':'hidden',
                   ml:'0 !important'
@@ -727,7 +729,7 @@ export const TogglForm = memo((
                 onClick={retroSave}
               >
                 <Save fontSize="medium" />
-              </IconButton>
+              </IconButton></span>
             </Tooltip>
         }</Box>
       </Stack>
@@ -772,7 +774,7 @@ export const CopyLink = memo(({value, text, loading = false}:{value:string, text
   const copy = ()=>clipboardCopy(value)
   
   return <Tooltip {...tooltipMarginProp} title={TEXT.COPY} placement="right" followCursor>
-    <Button sx={{ 
+    <span><Button sx={{ 
         p:0, pl:"0.5rem",
       '.MuiButton-startIcon':{mr:"2px"}}}
       variant="text"
@@ -780,7 +782,7 @@ export const CopyLink = memo(({value, text, loading = false}:{value:string, text
       startIcon={<FileCopyOutlined fontSize="small" />}
       onClick={copy}
       disabled={loading}
-    >{text || value}</Button>
+    >{text || value}</Button></span>
   </Tooltip>
 })
 

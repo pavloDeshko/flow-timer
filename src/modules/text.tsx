@@ -64,7 +64,7 @@ const TEXT = {
   ASK_PERMISSION: 'Please, allow app to notify you when time is up. It will never use it for anything else',
 
   OPTION_FLOW:"Flow - adjust your rest time",
-  OPTION_FLOW_LEGEND:'Minutes for every hour of work:',
+  OPTION_FLOW_LEGEND:'Minutes of rest per Hour of work:',
   OPTION_POMODORO:"Pomodoro reminder every",
   OPTION_DARK_LIGHT:'Dark/light mode',
 
@@ -78,7 +78,7 @@ const TEXT = {
   TOGGL_SAVE_NEXT:'Save next work',
   TOGGL_DESC:'Descritpion',
   TOGGL_SAVED:'saved',
-  TOGGL_SAVE_PREV:'Save previous unsaved work',
+  TOGGL_SAVE_PREV:'Save last unsaved work',
 
   TOGGL_COLLAPSED:'Toggl integration',
   TOGGL_EXIT:'Exit from Toggl',

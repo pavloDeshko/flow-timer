@@ -5,7 +5,7 @@ export const EXTENSION = !process.env["REACT_APP_ENV"] //TODO move
 export const MIN_REST = EXTENSION ? 30*1000 : 5*1000
 export const MAX_REST = 24 * 3600*1000
 export const DEFAULT_RATIO = 6
-export const POM_TIMES = [1, 5, 10, 15, 20, 30, 45, 50, 60] as const
+export const POM_TIMES = [1, 5, 10, 15, 20, 30, 45, 50, 55, 60, 75, 90, 120] as const
 export const ERROR_MESSAGE = 'Unknown error occured :(' // TODO get other messages here too
 
 export const TOGGL_TOKEN_URL = 'https://track.toggl.com/profile#api-token'
@@ -13,7 +13,7 @@ export const TOGGL_URL = 'https://api.track.toggl.com/api/v8'
 export const TOGGL_ADD_URL = '/time_entries'
 export const TOGGL_USER_URL = '/me?with_related_data=true'
 
-export const CLIENT_NAME = 'Flow Timer Web-Extension'
+export const CLIENT_NAME = 'flowtimer.click'
 
 export const SUPPORT_EMAIL = 'pavlodeshko92@gmail.com'
 

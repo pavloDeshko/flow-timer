@@ -71,6 +71,7 @@ if(EXTENSION){
     eventManager.emit('message',{...message,external:true})
   }
   const handleOut =  (message:Message)=>{
+    !message.external && port && console.log('ServiceWorkerGlobalScope' in self ? 'WORKER: ' :'POPUP: ', 'sending ', message)
     !message.external && port && port.postMessage(message)
   }
   
@@ -82,13 +83,16 @@ if(EXTENSION){
       p.onMessage.addListener(handleIn)
       p.onDisconnect.addListener(()=>{
         port=null
+        console.log('WORKER: ','disconected')
       })
     })
 
   }else{
     port = chrome.runtime.connect()/// For front ///
     port.onMessage.addListener(handleIn)
-
+    port.onDisconnect.addListener(()=>{
+      console.log('POPUP: ','disconected ???')//should nullify too? no
+    })
   }
   eventManager.on('message',handleOut) /// For both ///
   //TODO could be romoved by user? not good
