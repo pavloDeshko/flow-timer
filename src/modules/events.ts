@@ -4,14 +4,14 @@ import z from 'zod'
 import {Time, Config, TogglForm, State, AlarmType, Error_Info_Schema} from './types'
 import {EXTENSION} from '../settings'
 import { errorSave } from './service'
+import {stringifyError} from './utils'
+import TEXT from './text'
 
 /// Types and schemas /// 
 export type Action = {
   type: 'WORK'
 }|{
   type: 'REST'
-}|{
-  type: 'REST_ENDED'
 }|{
   type: 'ADJUST',
   time: Time
@@ -31,12 +31,14 @@ export type Action = {
 }|{
   type: 'TOGGL_SAVE_LAST'
 }|{
-  type: 'CLOSE_ALERT',
-  alertPos: 'WARN'|'NOTIFY'
+  type: 'TOGGL_REFRESH'
+}|{
+  type: 'CLOSE_USER_ALERT',
+  alertType: 'WARN'|'NOTIFY'
 }
 
 export const MessageSchema = z.object({
-  type: z.literal('NOTIFY'),
+  type: z.literal('ALARM'),
   subType: z.nativeEnum(AlarmType)
 }).or(z.object({
   type: z.literal('ERROR'),
@@ -48,59 +50,72 @@ export const MessageSchema = z.object({
 })).or(z.object({
   type: z.literal('CLEAR_ALARM')
 })).and(z.object({
-  external:z.boolean().optional()
+  _external:z.boolean().optional()
 }))
 export type Message = z.infer<typeof MessageSchema>
 
+
 /// Event manager setup ///
+const WORKER = 'ServiceWorkerGlobalScope' in self
+
 const eventManager = new Emittery<{
   'action':Action,
   'message':Message
 }>()
 
-eventManager.on('message', message=>{
-  if(message.type == "ERROR"){ 
-    console.error(message.errorInfo.userMessage || 'Error with no user message: ', message.errorInfo.errorJson)
-    message.errorInfo.userMessage && errorSave(message.errorInfo)
+/** Helper for ".emit('message',{type:'ERROR'..." and "console.error(userMessage, errorJson) and "errorSave(errorInfo)"*/
+export const dispatchError = async(err:Error, userMessage:string|null, keepLocal=false)=>{
+  const errorInfo = {errorJson : stringifyError(err), userMessage:userMessage}
+
+  console.error(errorInfo.userMessage || 'Error with no user message: ', errorInfo.errorJson)
+  if(errorInfo.userMessage){
+    await errorSave(errorInfo)
+    eventManager.emit('message',{type:'ERROR', errorInfo : {errorJson : stringifyError(err), userMessage:userMessage}, _external:keepLocal})
   }
-})
+}
 
 if(EXTENSION){
-  const handleIn = (data:any)=>{
-    const message = MessageSchema.parse(data)
-    eventManager.emit('message',{...message,external:true})
-  }
-  const handleOut =  (message:Message)=>{
-    !message.external && port && console.log('ServiceWorkerGlobalScope' in self ? 'WORKER: ' :'POPUP: ', 'sending ', message)
-    !message.external && port && port.postMessage(message)
-  }
-  
   let port :chrome.runtime.Port|null
 
-  if('ServiceWorkerGlobalScope' in self){/// For background ///
+  const handleIn = (data:any)=>{
+    const message = MessageSchema.parse(data)
+    eventManager.emit('message',{...message, _external:true})
+  }
+  const handleOut =  (message:Message)=>{
+    try{
+      !message._external && port?.postMessage(message)
+    }catch(err:any){
+      dispatchError(err, TEXT.BACKGROUND_ERROR, true)
+    }
+  }   
+
+  const connectWorker = ()=>{
     chrome.runtime.onConnect.addListener(p=>{
       port = p
       p.onMessage.addListener(handleIn)
       p.onDisconnect.addListener(()=>{
         port=null
-        console.log('WORKER: ','disconected')
-      })
-    })
-
-  }else{
-    port = chrome.runtime.connect()/// For front ///
-    port.onMessage.addListener(handleIn)
-    port.onDisconnect.addListener(()=>{
-      console.log('POPUP: ','disconected ???')//should nullify too? no
+      }) 
     })
   }
-  eventManager.on('message',handleOut) /// For both ///
-  //TODO could be romoved by user? not good
+  const connectPopup = ()=>{
+    port = chrome.runtime.connect()
+    port.onMessage.addListener(handleIn)
+    port.onDisconnect.addListener(()=>{
+      port = null
+      connectPopup()
+    }) 
+  }
+
+  WORKER ?
+    connectWorker()/// For background ///
+    :connectPopup() /// For front ///
+  eventManager.on('message',handleOut) /// For both ///  //TODO could be removed by user? not good
+
 }else{
   // Nothing needed if in web - they just use the same Emmittabele !
 
   // TODO service worker code goes here
-  // what if code for back and front are differnt?.. check somehow? another var in settings?
 }
 
 export default eventManager

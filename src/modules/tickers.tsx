@@ -15,17 +15,18 @@ const down = (refTime :number)=>{
 
 type TickerProps <P extends Time> = {
   refTime :number|null, 
-  typeOrMod: 'UP' | 'DOWN' | ((refTime:number)=>number)
+  typeOrModifier: 'UP' | 'DOWN' | ((refTime:number)=>number)
 } & Omit<P, keyof Time> & Partial<Record<keyof Time,never>>
 
+/** Makes dumb time showing component into up or down ticker - so change every second is handled by local state*/
 export const withTicker = <P extends Time>(TimerComp: React.FC<P>) => {
-  return ({refTime, typeOrMod = 'UP', ...rest} :TickerProps<P>)=>{
+  return ({refTime, typeOrModifier = 'UP', ...rest} :TickerProps<P>)=>{
     const getValue = ()=>{
       if (refTime === null){return 0}
-      switch (typeOrMod){
+      switch (typeOrModifier){
         case 'UP': return up(refTime)
         case 'DOWN': return down(refTime)
-        default: return typeOrMod(refTime)
+        default: return typeOrModifier(refTime)
       }
     }
     
@@ -49,7 +50,7 @@ export const withTicker = <P extends Time>(TimerComp: React.FC<P>) => {
         res.timeout && clearTimeout(res.timeout)
         res.interval && clearInterval(res.interval)
       }
-    }, [refTime, typeOrMod])
+    }, [refTime, typeOrModifier])
 
     return <TimerComp {...msToTime(value) as P} {...rest}/>
   }

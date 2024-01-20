@@ -1,6 +1,6 @@
 import React from 'react'
 
-import {SUPPORT_EMAIL} from '../settings'
+import {SUPPORT_EMAIL, EXTENSION} from '../settings'
 const TEXT = {
   WORKING_PRE: 'WORKING - ',
   RESTING_PRE: 'RESTING - ',
@@ -20,19 +20,28 @@ const TEXT = {
     'With Flow Timer, productivity bends to your rhythm, not the other way around!'
   ] as const,
 
-  TOGGL_ERROR_SAVE:"Couldn't save Toggl entry :( ",
+/*   TOGGL_ERROR_SAVE:"Couldn't save Toggl entry :( ",
   TOGGL_ERROR_LOG:  `Couldn't log into Toggl :( `,
-  TOGGL_ERROR_GENERIC : `Can't connect to Toggl :(`, //TODO ?
+
+  TOGGL_ERROR_NETWORK : `Can't connect to Toggl :(`, */
+  
+  //TOGGL_ERROR_GENERIC : `Can't connect to Toggl :(`, //TODO ?
+  TOGGL_ERROR_CONNECT:  `Can't connect to Toggl :(`,
+  TOGGL_ERROR_ADD:`Can't save entry to Toggl :(`,
+  TOGGL_ERROR_COMPAT : `Can't make sence of data from Toggl :( ${
+    EXTENSION?'Updating extension might help': 'Contact us if problem persists'}`,// TODO for web
+  TOGGL_TOO_MANY : `Looks like too many requests to Toggl were made :( Try again in a minute`,
   TOGGL_ERROR_TOKEN : `Invalid Toggl token :(`,
-  TOGGL_ERROR_AUTH : `No permission to save Toggl entry :(`,
-  TOGGL_ERROR_NETWORK : `Can't connect to Toggl :(`,
-  TOGGL_ERROR_COMPAT : `Can't make sence of data from Toggl :( Updating extension might help..`,
+  TOGGL_ERROR_AUTH : `Can't authorize to Toggl :( Have you changed your token?`,
+  
+  //const BACKGROUND_ERROR_TEXT = 'Some errors in background, app might misbehave :(',
+  BACKGROUND_ERROR: `Some errors in the background - your alarm may not sound :( Contact us if problem persists`,
 
   STORAGE_ERROR_SAVE : 'Troubles with saving data to storage, your app may misbehave :(',
   STORAGE_ERROR_GET : 'Troubles with getting data from storage, your app may misbehave :(',
   
   NOTIFY_ERROR_SOUND : `Can't play sound to alert you :( Make sure you gave permission`,
-  NOTIFY_ERROR : 'Trobles notifying you when timer is up :( Make sure you gave permission',
+  NOTIFY_ERROR : 'Troubles notifying when timer is up :( Make sure you gave permission',
 
   NOTIFY_WORK_TITLE : 'Time to work!',
   NOTIFY_WORK_MESSAGE : 'your rest time is up',
@@ -69,7 +78,7 @@ const TEXT = {
   OPTION_DARK_LIGHT:'Dark/light mode',
 
   TOGGL_HELP: "At your Toggl profile page go to:\n Profile -> Profile Settings -> API Token -> Click to reveal \n Than copy and paste it to the form below. \nNOTE: You're save - Flow Timer will never send your credentials anywhere - token will be stored on your computer only",
-  TOGGL_HELP_IMAGE_ALT:'',
+  //TOGGL_HELP_IMAGE_ALT:'',
   TOGGL_GOTO_TOKEN: 'Go to Toggl profile',
   
   TOGGL_TOKEN:'Your toggl token goes here',
@@ -78,6 +87,7 @@ const TEXT = {
   TOGGL_SAVE_NEXT:'Save next work',
   TOGGL_DESC:'Descritpion',
   TOGGL_SAVED:'saved',
+  TOGGL_SAVED_EXT:'last work entry saved to Toggl',
   TOGGL_SAVE_PREV:'Save last unsaved work',
 
   TOGGL_COLLAPSED:'Toggl integration',

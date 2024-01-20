@@ -1,5 +1,5 @@
 declare module "@mui/material/styles" {interface TypeBackground {web:string,backdrop:string}}
-import {createTheme, TypeBackground} from '@mui/material/styles'
+import {createTheme} from '@mui/material/styles'
 
 const colors = {
   primary: {
@@ -48,5 +48,3 @@ export const darkTheme = createTheme({
     }
   }
 })
-
-console.log('light theme:', lightTheme, 'dark theme:', darkTheme)

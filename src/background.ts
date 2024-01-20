@@ -1,18 +1,15 @@
-import "./modules/mockDom"
+import "./modules/mockDom"// so same app modules can work both in Worker background and pop-up/web page
 import backgroundSetup from "./modules/backgroundSetup"
 import { EXTENSION } from "./settings"
-import { dispatchError} from "./modules/service"
-import { stringifyError } from "./modules/utils"
+import { dispatchError} from "./modules/events"
+import TEXT from './modules/text'
 
-const BACKGROUND_ERROR_TEXT = 'Some errors in backgroud, app might misbehave :('
 const global = EXTENSION ? self : window
 global.addEventListener('unhandledrejection', (event: any) => {// TODO! in extension only?.. enscap and add them to web somewhere
-  dispatchError({errorJson : stringifyError(event.reason || event.detail?.reason || event.error), userMessage : BACKGROUND_ERROR_TEXT}) //TODO
+  dispatchError(event.reason || event.detail?.reason || event.error, TEXT.BACKGROUND_ERROR) //TODO
 })
 global.addEventListener('error', event => {
-  dispatchError({errorJson : stringifyError(event.error), userMessage : BACKGROUND_ERROR_TEXT})
+  dispatchError(event.error, TEXT.BACKGROUND_ERROR)
 })
 
-EXTENSION && backgroundSetup()    
-
-//setTimeout(()=>{throw new Error('Test background error')}, 5000)
+EXTENSION && backgroundSetup() // For web page setup is done before rendering the app, from index.ts

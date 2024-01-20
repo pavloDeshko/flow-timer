@@ -1,25 +1,24 @@
-import { Time } from './types'
 import { DependencyList, useEffect, useState} from 'react'
-import { z }from 'zod'
+import {z} from 'zod'
 import {serializeError} from 'serialize-error'
 
-import {SUPPORT_EMAIL} from '../settings'
-import TEXT from './text'
+import { Time } from './types'
+import {TOGGL_TOKEN_LENGHT} from '../settings'
 
-const JWT = /^[A-Za-z0-9-_=]+$/
-
-export const stringifyError = (err:Error)=>JSON.stringify(serializeError(err),undefined,2)
-
+/// Hooks ///
+/** Lets async function to be passed to useEffect */
 export const useAsyncEffect = (cb:()=>Promise<void>,deps:DependencyList)=>{
   return useEffect(()=>{cb()},deps)
 }
 
-export const useLinger = <T>(fresh:T)=>{
-  const [value, setValue] = useState(fresh) // subsequent default value is ignored
-  fresh !== null && fresh !== value && setValue(fresh)
-  return value
+/** Will trigger rerender with new value unless it was set to null - in that case old value will linger */
+export const useStateLinger = <T>(fresh:T)=>{
+  const [value, setValue] = useState(fresh) // subsequently default value is ignored by setSetstatet
+  fresh !== null && fresh !== value && setValue(fresh)  // will trigger rerender of calling component
+  return value //new value will be returned on next rerender, but NOT if its null
 }
 
+/// Time related stuff ///
 export const ZERO_TIMER :Time = {
   hours: 0,
   minutes: 0,
@@ -51,31 +50,34 @@ export const timeToMs = (obj :Time) => {
   return Math.floor(seconds)*1000
 }
 
-export const padTwoZeros = (number :number) => {
-  return ('00' + number).slice(-2)
-}
+/// Parsers ///
+const makeParseNumber = (max:number) => (value :string, fallback :number) => 
+  z.number().nonnegative().max(max).int().catch(fallback).parse(Number(value))
 
-const makeParseNumber = (max:number) => (value :string, fallback :number) => {
-  const result = z.number().nonnegative().max(max).int().safeParse(Number(value))
-  return result.success ? result.data : fallback
-}
-
-const obf = (value:string)=> (value.slice(value.length/2)+value.slice(0,value.length/2)).split('').reverse().join('')
-export const deObf = (value:string)=>obf(value)
-
+/** Parses values safely and return fallback (usually prev value) if new valid is invalid. */
 export const parse = {
   twoDigit: makeParseNumber(99),
   h: makeParseNumber(24),
   m: makeParseNumber(60),
   s: makeParseNumber(60),
-  togglTokenSafe: (value:string)=>{
-    return z.string().regex(JWT).transform(obf).safeParse(value.trim())
-  },
-  togglDesc:  (value:string, fallback :string)=>{  
-    const result = z.string().max(1000).safeParse(value)
-    return result.success ? result.data : fallback
-  }
+  togglTokenSafe: (value:string)=>z.string().min(TOGGL_TOKEN_LENGHT[0]).max(TOGGL_TOKEN_LENGHT[1]).regex(JWT).transform(obf).safeParse(value.trim()),
+  togglDesc:  (value:string, fallback :string)=> z.string().max(1000).catch(fallback).parse(value)
 }
+
+/// Misc ///
+const JWT = /^[A-Za-z0-9-_=]+$/
+
+export const stringifyError = (err:Error)=>JSON.stringify(serializeError(err),undefined,2)
+
+export const padTwoZeros = (number :number) => {
+  return ('00' + number).slice(-2)
+}
+
+/** Obfuscate string value */
+export const obf = (value:string)=> (value.slice(value.length/2)+value.slice(0,value.length/2)).split('').reverse().join('')
+/** Reverse obfuscation of string value */
+export const deObf = (value:string)=>obf(value)
+
 
 /* export const log = {
   error: (error? :any, comment? :string, state? :{})=>{

@@ -1,24 +1,27 @@
 import {State, Mode, TogglProject} from './modules/types'
 
 export const EXTENSION = !process.env["REACT_APP_ENV"] //TODO move
+export const APP_WIDTH = 500 // 600px minus scrollbars is max for extension
+
 //commited envs
 export const MIN_REST = EXTENSION ? 30*1000 : 5*1000
 export const MAX_REST = 24 * 3600*1000
 export const DEFAULT_RATIO = 6
-export const POM_TIMES = [1, 5, 10, 15, 20, 30, 45, 50, 55, 60, 75, 90, 120] as const
+export const POM_TIMES = [5, 10, 15, 20, 30, 45, 50, 60] as const
 export const ERROR_MESSAGE = 'Unknown error occured :(' // TODO get other messages here too
 
 export const TOGGL_TOKEN_URL = 'https://track.toggl.com/profile#api-token'
-export const TOGGL_URL = 'https://api.track.toggl.com/api/v8'
-export const TOGGL_ADD_URL = '/time_entries'
+export const TOGGL_URL = 'https://api.track.toggl.com/api/v9'
+export const TOGGL_ADD_URL = (worspace_id:number)=>`/workspaces/${worspace_id}/time_entries`
 export const TOGGL_USER_URL = '/me?with_related_data=true'
+export const TOGGL_TOKEN_LENGHT = [17,48] as const
 
-export const CLIENT_NAME = 'flowtimer.click'
+export const CLIENT_NAME = EXTENSION ? 'Flow Timer Extension' :'flowtimer.click'
 
 export const SUPPORT_EMAIL = 'pavlodeshko92@gmail.com'
 
 export const DEFAULT_STATE :State = {
-  alarms: { work: null, pom: null },
+  //alarms: { work: null, pom: null },
   nextRestTime: MIN_REST, 
   workingSince: null,
   restingUntil: null,
@@ -30,7 +33,7 @@ export const DEFAULT_STATE :State = {
     dark: null
   },
   toggl: {
-    token: null,
+    login: null,
     projects: [] as TogglProject[],
     form: {
       shouldSave: false,
@@ -40,7 +43,7 @@ export const DEFAULT_STATE :State = {
     },
     loaded: true
   },
-  notification: null,
+  alarm: null,
   warning: null
 }
 

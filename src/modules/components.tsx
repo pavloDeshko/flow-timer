@@ -5,7 +5,6 @@ import {
   Typography,
   Button,
   ButtonGroup,
-  ThemeProvider,
   Stack,
   Divider,
   FormControlLabel,
@@ -18,8 +17,6 @@ import {
   InputAdornment,
   Tooltip,
   Collapse,
-  Theme,
-  Checkbox,
   Accordion, AccordionSummary, AccordionDetails,
   Autocomplete,
   Popover,
@@ -33,7 +30,6 @@ import Update from "@mui/icons-material/Update"
 import Save from "@mui/icons-material/Save"
 import Link from "@mui/icons-material/Link"
 import ExitToApp from "@mui/icons-material/ExitToApp"
-import BrightnessMedium from "@mui/icons-material/BrightnessMedium"
 import Brightness4 from '@mui/icons-material/Brightness4'
 import Brightness7 from '@mui/icons-material/Brightness7'
 import Refresh from "@mui/icons-material/Refresh"
@@ -45,25 +41,25 @@ import Close from '@mui/icons-material/Close'
 import DoneOutlineIcon from '@mui/icons-material/DoneOutline'
 import clipboardCopy from 'clipboard-copy'
 import Particles from 'react-particles'
-import { Container, Engine, Vector, Particle } from "tsparticles-engine"
+import { Container, Vector, Particle } from "tsparticles-engine"
 import {loadLinksPreset} from 'tsparticles-preset-links'
 
-import {Time, Config, TogglForm as TogglFormData, TogglProject, Mode, AlarmType, AlertPos, Warning} from './types'
-import {padTwoZeros, parse, useLinger} from './utils'
-import {SUPPORT_EMAIL,POM_TIMES,TOGGL_TOKEN_URL, EXTENSION} from '../settings'
-import {reload} from './service'
+import {Time, Config, TogglForm as TogglFormData, TogglProject, Mode, AlarmType, UserAlertType, UserWarning, UserAlarm} from './types'
+import {padTwoZeros, parse, useStateLinger} from './utils'
+import {SUPPORT_EMAIL,POM_TIMES,TOGGL_TOKEN_URL, EXTENSION, APP_WIDTH} from '../settings'
+import {reload, useIsNarrow} from './service'
 import {IMGS,ICONS} from './assets'
 import TEXT from './text'
 import {Action} from './events'
-//import Background from './Background'
+export {CounterTicker, RestAdjustTicker} from './tickers'
 
-export const DispatchContext = React.createContext((a:Action)=>console.log('Dispached action: ', a))//for testing compts without provider
-const APP_WIDTH = 500 //TODO move to settings? 600px minus scrollbars is max for extension
-
+export const DispatchContext = React.createContext((a:Action)=>{})
 const tooltipMarginProp = {componentsProps:{tooltip:{sx:{m:'4px !important'}}}}
 
+/// Containers ///
 export const PageContainer = ({children, backgroundActive=false}:{children:ReactNode, backgroundActive?:boolean})=>{
   const theme = useTheme()
+  const narrow = useIsNarrow()
   return (
     <Elevation className="fallbackBackground" elevation={0} sx={{
       height:'100vh',
@@ -71,13 +67,14 @@ export const PageContainer = ({children, backgroundActive=false}:{children:React
       backgroundColor:theme.palette.background.backdrop,
       //backgroundImage: `url(${IMGS.BACKGROUND})`
     }}>
-      <ParticlesBackground active={backgroundActive} />
+      {narrow? null : <ParticlesBackground active={backgroundActive} />}
       <Elevation className="Column"
         elevation={10}
+        square={!!narrow}
         sx={{
           marginX: "auto",
           maxWidth: APP_WIDTH,
-          marginY: "0.5rem",
+          marginY: narrow ? 0: "0.5rem",
           position: "relative"
         }}
       >
@@ -90,93 +87,6 @@ export const PageContainer = ({children, backgroundActive=false}:{children:React
         </Elevation>
       </Elevation>
     </Elevation>
-  )
-}
-
-export const ParticlesBackground = ({active}:{active: boolean})=>{
-  const theme = useTheme()
-
-  const containerRef = useRef<Container>()
-  const activeRef = useRef(active)
-  useEffect(()=>{
-    //updated for loaded cb to use if particles are reloaded
-    activeRef.current = active
-    
-    //play/pause for active container
-    const container = containerRef.current
-    if(container){
-      active && container.play()
-      !active && container.pause()
-    }
-  },[active])
-
-  const init = useCallback(async (engine:any) => {
-    await loadLinksPreset(engine)
-  },[])
-  const loaded = useCallback(async(container?:Container)=>{
-    if(!container) return
-    //console.log('loaded called, current active is:', crunchRef.current )
-    containerRef.current = container
-    if(!activeRef.current){
-      setTimeout(()=>container.pause(),1000)
-      //console.log('filter: ', container.particles.filter(()=>true))
-      container.particles.filter(()=>true).forEach((p:Particle) => {
-        const oldVelocity = p.velocity 
-        p.velocity = Vector.create(0, 0)
-        setTimeout(() => p.velocity = oldVelocity, 1100)  
-      })
-    }
-  },[])
-
-  const options = useMemo(()=>({
-    preset: 'links',
-    background: {color: {value:
-      theme.palette.background.backdrop
-    }},
-    particles: {
-      number: {value: 60},
-      shape:{type:'none'},
-      links: {color: {value:
-        theme.palette.mode == 'dark' ? theme.palette.primary.light : theme.palette.secondary.main
-      }},
-      move: {speed: {min:0.25, max:2}}
-    }
-  }),[theme])
-  
-  return (
-    <Particles options={options} init={init} loaded={loaded} />
-  )
-}
-
-export const PageHeader = () => {
-  const theme = useTheme()
-  const splitTitle = TEXT.APP_TITLE.split(' ')
-  return (<BlockContainer square={true} >
-    <Stack direction="row" spacing={2}>
-      <Box sx={{float:"left"}}><img src={ICONS.MAIN} style={{width:"64px", height:"64px"}} alt={TEXT.APP_LOGO_ALT} /></Box>
-      <Box>
-        <Typography variant="h5" component='h1' sx={{
-          '& .title_0':{textShadow:`0px 0px 4px ${theme.palette.primary.main}`},
-          '& .title_1':{textShadow:`0px 0px 4px ${alpha(theme.palette.secondary.light, theme.palette.mode == 'light' ?  0.7 : 1)}`},
-          color:'text.secondary'
-        }}>{
-          <><span className="title_0">{splitTitle[0]}</span> <span className="title_1">{splitTitle[1]}</span></>
-        }</Typography>
-        <Typography>{TEXT.APP_DESC_SHORT}</Typography>
-      </Box>
-    </Stack>
-  </BlockContainer>)
-}
-
-export const PageDesc = ()=>{
-  return (
-    <BlockContainer square={true} sx={{textIndent:'0rem'}}>
-      <Typography variant="h5" component="h2">{TEXT.APP_ABOUT_TITLE}</Typography>
-      <Divider sx={{marginY:"0.5rem"}}/>
-      <Typography component="div" align="justify" sx={{'& .MuiTypography-root':{mb:'0.5rem'}}}>
-        {TEXT.APP_ABOUT.map((t,n)=><Typography paragraph key={n}>{'- '+t}</Typography>)}
-      </Typography>
-  </BlockContainer>
   )
 }
 
@@ -207,7 +117,6 @@ const blockStyles= {
   padding: "1rem",
   "& .MuiDivider-root":{marginY:"0.5rem"}
 } as const
-
 export const BlockContainer = (
   {children, className='', stacked=false, sx = {}, ...rest}:{children:ReactNode, className?:string, stacked?:boolean} & PaperProps
 ) => {
@@ -218,8 +127,7 @@ export const BlockContainer = (
 }
 
 export const AccordionContainer = (
-  {className='', label, children, expanded=false}
-  :{className?:string,label:ReactNode,children:ReactNode[],expanded?:boolean}) => {
+  {className='', label, children, expanded=false}:{className?:string,label:ReactNode,children:ReactNode[],expanded?:boolean}) => {
     const [initialExpanded] = useState(expanded)
 
     return (
@@ -243,6 +151,7 @@ export const AccordionContainer = (
     )
  }
 
+/** Help icon button and popover it opens with content passed down as children */
 const HelpPopover = ({children}:{children:ReactNode})=>{
   const [anchor, setAnchor] = useState<SVGSVGElement | null>(null)
 
@@ -269,14 +178,9 @@ const HelpPopover = ({children}:{children:ReactNode})=>{
   </span>)
 }
 
+/// Main App parts ///
+/** Main time display */
 export const Counter = memo(({hours, minutes, seconds} :Time) => {
-/*   const colors = {
-    [Status.IDLE]:'text',
-    [Status.WORKING]:'secondary',
-    [Status.RESTING]:'primary'
-  } as const
-  const color = status.resting ? 'primary.main' : status.working ? 'secondary.main' : 'text.primary'
- */
   return(
     <Typography sx={{
       '.seconds': {
@@ -293,7 +197,8 @@ export const Counter = memo(({hours, minutes, seconds} :Time) => {
   )
 })
 
-export const RestAdjust = memo(({hours, minutes, seconds, mode} :Time & {mode :Mode}) => {
+/** User adjustable time form*/
+export const RestAdjust = memo(({hours, minutes, seconds, appMode} :Time & {appMode :Mode}) => {
   const dispatch = useContext(DispatchContext)
   
   const hoursRef = useRef<HTMLInputElement>()
@@ -315,6 +220,7 @@ export const RestAdjust = memo(({hours, minutes, seconds, mode} :Time & {mode :M
       }
     })
   }
+
   const fields = useMemo(()=>(<>
       <TextField 
         size="small" 
@@ -343,13 +249,13 @@ export const RestAdjust = memo(({hours, minutes, seconds, mode} :Time & {mode :M
   const tooltip = useMemo(()=>(
     <Tooltip {...tooltipMarginProp} title={TEXT.RECALCULATE} placement="bottom-start" arrow >
       <span><IconButton 
-        sx={mode == Mode.ON ? {display:'none'}:{pb:0,verticalAlign:'top'}}
+        sx={appMode == Mode.ON ? {display:'none'}:{pb:0,verticalAlign:'top'}}
         color="primary" 
         onClick={onRecalculate} 
-        disabled={mode == Mode.ON}
+        disabled={appMode == Mode.ON}
       ><Update fontSize="small" /></IconButton></span>
   </Tooltip>
-  ),[mode,dispatch])
+  ),[appMode,dispatch])
   
   return(
     <Box className="NextRestSection" sx={{
@@ -373,28 +279,24 @@ export const RestAdjust = memo(({hours, minutes, seconds, mode} :Time & {mode :M
 export const Controls = memo(({working,resting}:{working:boolean,resting:boolean}) => {
   const dispatch = useContext(DispatchContext)
 
-  const work = () => dispatch({type: 'WORK'})
-  const rest = () => dispatch({type: 'REST'})
-  
-  //const buttonProps = {variant:'contained',  size:'large', fullWidth:true} as const
-
   return(
     <ButtonGroup sx={{
       '.MuiButton-root, .MuiButton-root:hover':{borderWidth:'2px'}
     }} fullWidth>
-      <Button variant={working? 'contained' : 'outlined'} color="secondary" onClick={work}>
+      <Button variant={working? 'contained' : 'outlined'} color="secondary" onClick={()=>dispatch({type: 'WORK'})}>
         {working ? TEXT.STOP_WORK : TEXT.WORK}
       </Button>
-      <Button variant={resting? 'contained' : 'outlined'} color="primary" onClick={rest}>
+      <Button variant={resting? 'contained' : 'outlined'} color="primary" onClick={()=>dispatch({type: 'REST'})}>
         {resting ? TEXT.STOP_REST : TEXT.REST}
       </Button>
     </ButtonGroup>
   )
 })
 
-export const UserAlert = memo(({warning:opened, alertPos} :{warning:Warning|null, alertPos:AlertPos})=>{
-  const warning = useLinger(opened)
-  
+export const UserAlert = memo(({warning:opened, alertType} :{warning:UserWarning|UserAlarm|null, alertType:UserAlertType})=>{
+  const dispatch = useContext(DispatchContext)
+
+  const warning = useStateLinger(opened)// Needed so collapse is allowed to close with old content when warning is set to null
   let message :ReactNode = ''
   let alertProps :Partial<AlertProps> = {variant:"filled", severity:'warning'} 
 
@@ -409,11 +311,6 @@ export const UserAlert = memo(({warning:opened, alertPos} :{warning:Warning|null
       alertProps.color = 'primary' as any
       break
     }
-    case 'ASK_PERMISSION':{
-      message = TEXT.ASK_PERMISSION
-      alertProps.variant = 'outlined'
-      break
-    }
     case 'ERROR':{
       message = <>
         {warning.userMessage}
@@ -423,12 +320,11 @@ export const UserAlert = memo(({warning:opened, alertPos} :{warning:Warning|null
       break
     }
     case 'WARNING':{
-      message = warning.message
+      message = warning.userMessage
       alertProps.variant = 'outlined'
     }
   }
 
-  const dispatch = useContext(DispatchContext)
   return (
     <Collapse sx={{
       '&':{mt:'0px !important'},
@@ -441,7 +337,7 @@ export const UserAlert = memo(({warning:opened, alertPos} :{warning:Warning|null
         sx={{color:'inherit'}}
         action={<IconButton
           sx={{ paddingY: "2px" }}
-          onClick={()=>dispatch({type:'CLOSE_ALERT', alertPos})}//TODO reused as warning
+          onClick={()=>dispatch({type:'CLOSE_USER_ALERT', alertType})}
         ><Close/>
         </IconButton>}
       ><Typography>{message}</Typography></Alert>
@@ -457,7 +353,6 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
     type: 'CONFIG',
     config: {mode : value ? Mode.ON : Mode.OFF}
   })
-  
   const setRatio = (_:unknown, value:number|number[]) => dispatch({
     type: 'CONFIG',
     config: {ratio : 60 /  (Array.isArray(value) ? (value[0] || 0) : value) } //TODO shitty material union type for range and value slider
@@ -476,7 +371,7 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
     config: {dark : !dark}
   })
 
-  const autocomplete = useMemo(()=>(
+  const autocomplete = useMemo(()=>(// TODO dyou really need it?
     <Autocomplete
       sx={{ ".MuiAutocomplete-inputRoot .MuiAutocomplete-input": { minWidth: "20px" } }}
       //open={true}
@@ -517,7 +412,6 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
         onChangeCommitted={setRatio}
       />
       <Divider />
-
       <FormControlLabel
         sx={{ marginRight: "8px" }}
         control={<Switch
@@ -526,7 +420,6 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
         />}
         label={TEXT.OPTION_POMODORO}
       />
-
       <Box className="AutocompleteContainer"
         sx={{
           display: "inline-block",
@@ -539,9 +432,7 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
       >
         {autocomplete}
       </Box>
-
       <Divider />
-
       <Button
         sx={{color:"text.primary", textTransform:"none", fontSize:"1rem", fontWeight:'normal', pl:"6px", pb:0}}
         size="large"
@@ -552,27 +443,27 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
   )
 })
 
-export const TogglError = memo( ({error}:{error :string | null})=>{
+export const TogglError = memo(({error}:{error :string | null})=>{
   return(
     <Collapse in={!!error}>
       <Box 
         sx={{ mb:"-0.5rem",mt:"0.25rem"}}
-      >
-        <Typography 
+      ><Typography 
           sx={{color:"error.main",fontSize:"0.75rem"}}
-        >
-          {error}
+        >{error}
         </Typography>
       </Box>
     </Collapse>
   )
 })
 
+/** Content passed to HelpPopover */
 const TogglHelpCard = ()=>{
   const HELP_WIDTH = APP_WIDTH * 0.9 //TODO! move out?
+
   return(
-  <Card sx={{maxWidth:HELP_WIDTH}}>
-    <CardMedia component="img" height={HELP_WIDTH*(2/3)} width={HELP_WIDTH} alt={TEXT.TOGGL_HELP_IMAGE_ALT} image={IMGS.TOGGL_HELP}/> 
+  <Card sx={{maxWidth:HELP_WIDTH, '& .MuiCardMedia-img':{height:HELP_WIDTH*(2/3), width:HELP_WIDTH}}}>
+    <CardMedia component="img" image={IMGS.TOGGL_HELP}/> 
     <CardContent sx={{pb:"0"}}>
       <Typography component="div" paragraph={true} sx={{"& p":{marginY:'.5rem'}}}>
         {TEXT.TOGGL_HELP.split('\n').map((line,i)=>(<p key={i}>{line}</p>))}
@@ -587,8 +478,8 @@ const TogglHelpCard = ()=>{
 )}
 
 export const TogglLogin = memo(({loading} :{loading:boolean}) => {
-
   const dispatch = useContext(DispatchContext)
+
   const [token,setToken] = useState('')
   const valid = parse.togglTokenSafe(token).success
  
@@ -602,7 +493,7 @@ export const TogglLogin = memo(({loading} :{loading:boolean}) => {
   
   return( 
     <Stack direction="row">
-        <TextField 
+        <TextField sx={{width:"100%", maxWidth:"14rem"}}
           size="small" 
           type="password" 
           focused
@@ -610,7 +501,8 @@ export const TogglLogin = memo(({loading} :{loading:boolean}) => {
           InputProps={{
             startAdornment:
               <InputAdornment position="start"><Key/></InputAdornment>,
-            sx:{pl:"0.5rem"}
+            sx:{pl:"0.5rem"},
+            inputProps:{sx:{pr:"0.5rem"}}
           }}
           label={
             <Typography component="span" sx={{fontSize:"inherit"}}>
@@ -622,7 +514,6 @@ export const TogglLogin = memo(({loading} :{loading:boolean}) => {
           onChange={ e=>setToken(e.target.value) }
           error={token!=='' && !valid}
         />
-        
         <Tooltip {...tooltipMarginProp} title={TEXT.TOGGL_CONNECT} placement="top-end" arrow>
           <span><IconButton color="primary"
             sx={{pb:"0px"}}
@@ -655,24 +546,60 @@ export const TogglForm = memo((
   const retroSave = () => dispatch({
     type : 'TOGGL_SAVE_LAST'
   })
-  const setProject = (e :SelectChangeEvent<number|''>) => dispatch({
-    type : 'TOGGL_FORM',
-    form: {projectId: Number(e.target.value) || null}
-  })
+  const setProject = (e :SelectChangeEvent<number|''|'REFRESH'>) => {
+    dispatch(e.target.value == 'REFRESH' ? 
+      {type: 'TOGGL_REFRESH'}:
+      {type : 'TOGGL_FORM',form: {projectId: Number(e.target.value) || null}}//TODO what if id is 0}
+    )
+  }
 
   const select = useMemo(()=>(
-    <Select<number|''>
+    <Select<number|''|'REFRESH'>
       size="small" 
       sx={{width:"7rem"}}
-      value={projectId || ''}
+      value={projectId ?? ''}
       onChange={setProject}
     >
       {[
         <MenuItem value={""} key={0}><em>-none-</em></MenuItem>, 
-        ...projects.map(p => <MenuItem value={p.id} key={p.id}>{p.name}</MenuItem>)
+        ...projects.map(p => <MenuItem value={p.id} key={p.id}><span style={{color:p.color}}>|</span>&thinsp;{p.name}</MenuItem>),
+        <MenuItem value={"REFRESH"} key={-1}><em>-refresh-</em></MenuItem>
       ]}
     </Select>
-  ),[projectId,projects, dispatch])
+  ),[projectId,projects, dispatch,/*  refreshed, opened */])
+
+  const savedBit = useMemo(()=>(
+    <Box sx={{m:'0px !important', minWidth:'2.5rem'}}>{
+      saved === true ? 
+        <Tooltip {...tooltipMarginProp} title={TEXT.TOGGL_SAVED_EXT} placement="top-end">
+          <Box sx={{
+            //visibility: !!saved ? 'visible':'hidden',
+            fontSize: '0.7rem',
+            color: 'primary.light',
+            textAlign: 'center',
+            pt: "0.7rem",
+            lineHeight: '0.5rem'
+          }}>
+            <DoneOutlineIcon sx={{ fontSize: '1rem' }} />
+            {TEXT.TOGGL_SAVED}
+          </Box>
+        </Tooltip>
+      : !!saved ?
+        <Tooltip {...tooltipMarginProp} title={TEXT.TOGGL_SAVE_PREV} placement="top-end" arrow>
+          <span><IconButton color="primary" 
+            sx={{ 
+              //visibility: !!saved ? 'visible':'hidden',
+              ml:'0 !important'
+            }}
+            //disabled={!saved}
+            onClick={retroSave}
+          >
+            <Save fontSize="medium" />
+          </IconButton></span>
+        </Tooltip>
+        : null
+    }</Box>
+  ),[saved, dispatch])
 
   return(
     <Box>
@@ -695,43 +622,14 @@ export const TogglForm = memo((
               onChange={setActive} 
             />
         }/>
-
         <TextField size="small"
           label={TEXT.TOGGL_DESC}
           focused
           value={desc}
           onChange={setDesc} 
         />
-        
         {select}
-
-        <Box sx={{m:'0px !important', minWidth:'2.5rem'}}>{
-          saved === true ? 
-            <Box sx={{
-              visibility: !!saved ? 'visible':'hidden',
-              fontSize: '0.7rem',
-              color: 'primary.light',
-              textAlign: 'center',
-              pt: "0.7rem",
-              lineHeight: '0.5rem'
-            }}>
-              <DoneOutlineIcon sx={{ fontSize: '1rem' }} />
-              {TEXT.TOGGL_SAVED}
-            </Box>
-          :
-            <Tooltip {...tooltipMarginProp} title={TEXT.TOGGL_SAVE_PREV} placement="top-end" arrow>
-              <span><IconButton color="primary" 
-                sx={{ 
-                  visibility: !!saved ? 'visible':'hidden',
-                  ml:'0 !important'
-                }}
-                disabled={!saved}
-                onClick={retroSave}
-              >
-                <Save fontSize="medium" />
-              </IconButton></span>
-            </Tooltip>
-        }</Box>
+        {savedBit}
       </Stack>
   </Box>   
   )
@@ -754,8 +652,7 @@ export const TogglCollapsed = memo(({logged}:{logged:boolean}) => {
         {logged && <Tooltip title={TEXT.TOGGL_EXIT} placement="right" arrow>
           <IconButton 
             sx={{p:0}}
-            onClick={logOut} 
-            //disabled={loading}
+            onClick={logOut}
           >
             <ExitToApp
             sx={{fontSize:'1rem'}}
@@ -766,10 +663,7 @@ export const TogglCollapsed = memo(({logged}:{logged:boolean}) => {
   )
 })
 
-export const AppPlaceholder = ()=>(
-  <Skeleton variant="rectangular" width={APP_WIDTH} height={"25rem"}/>
-)
-
+/** Used to copy data (error details) to clipboard when user clicks on the button*/
 export const CopyLink = memo(({value, text, loading = false}:{value:string, text?:string, loading?:boolean})=>{
   const copy = ()=>clipboardCopy(value)
   
@@ -786,6 +680,7 @@ export const CopyLink = memo(({value, text, loading = false}:{value:string, text
   </Tooltip>
 })
 
+/// Some extras ///
 export const Fallback = memo(({errorString}:{errorString:string}) => {
   const content = EXTENSION ? 
     <p>{TEXT.FEEDBACK_PREPENDED(
@@ -810,3 +705,94 @@ export const Fallback = memo(({errorString}:{errorString:string}) => {
     </Paper>
   )
 })
+
+export const AppPlaceholder = ()=>(
+  <Skeleton variant="rectangular" width={APP_WIDTH} height={"25rem"}/>
+)
+
+/// Extras for web-page variant ///
+export const ParticlesBackground = memo(({active}:{active: boolean})=>{
+  const theme = useTheme()
+
+  const containerRef = useRef<Container>()
+  const activeRef = useRef(active)
+
+  useEffect(()=>{
+    //updated for loaded cb to use if particles are reloaded
+    activeRef.current = active
+    
+    //play/pause for active container
+    const container = containerRef.current
+    if(container){
+      active && container.play()
+      !active && container.pause()
+    }
+  },[active])
+
+  const init = useCallback(async (engine:any) => {
+    await loadLinksPreset(engine)
+  },[])
+
+  const loaded = useCallback(async(container?:Container)=>{
+    if(!container) return
+    containerRef.current = container
+    if(!activeRef.current){
+      setTimeout(()=>container.pause(),1000)
+      container.particles.filter(()=>true).forEach((p:Particle) => {
+        const oldVelocity = p.velocity 
+        p.velocity = Vector.create(0, 0)
+        setTimeout(() => p.velocity = oldVelocity, 1100)  
+      })
+    }
+  },[])
+
+  const options = useMemo(()=>({
+    preset: 'links',
+    background: {color: {value:
+      theme.palette.background.backdrop
+    }},
+    particles: {
+      number: {value: 60},
+      shape:{type:'none'},
+      links: {color: {value:
+        theme.palette.mode == 'dark' ? theme.palette.primary.light : theme.palette.secondary.main
+      }},
+      move: {speed: {min:0.25, max:2}}
+    }
+  }),[theme])
+  
+  return (
+    <Particles options={options} init={init} loaded={loaded} />
+  )
+})
+
+export const PageHeader = () => {
+  const theme = useTheme()
+  const splitTitle = TEXT.APP_TITLE.split(' ')
+
+  return (<BlockContainer square={true} >
+    <Stack direction="row" spacing={2}>
+      <Box sx={{float:"left"}}><img src={ICONS.MAIN} style={{width:"64px", height:"64px"}} alt={TEXT.APP_LOGO_ALT} /></Box>
+      <Box>
+        <Typography variant="h5" component='h1' sx={{
+          '& .title_0':{textShadow:`0px 0px 4px ${theme.palette.primary.main}`},
+          '& .title_1':{textShadow:`0px 0px 4px ${alpha(theme.palette.secondary.light, theme.palette.mode == 'light' ?  0.7 : 1)}`},
+          color:'text.secondary'
+        }}>{
+          <><span className="title_0">{splitTitle[0]}</span> <span className="title_1">{splitTitle[1]}</span></>
+        }</Typography>
+        <Typography>{TEXT.APP_DESC_SHORT}</Typography>
+      </Box>
+    </Stack>
+  </BlockContainer>)
+}
+
+export const PageDesc = ()=> (
+  <BlockContainer square={true} sx={{textIndent:'0rem'}}>
+    <Typography variant="h5" component="h2">{TEXT.APP_ABOUT_TITLE}</Typography>
+    <Divider sx={{marginY:"0.5rem"}}/>
+    <Typography component="div" align="justify" sx={{'& .MuiTypography-root':{mb:'0.5rem'}}}>
+      {TEXT.APP_ABOUT.map((t,n)=><Typography paragraph key={n}>{'- '+t}</Typography>)}
+    </Typography>
+</BlockContainer>
+)
