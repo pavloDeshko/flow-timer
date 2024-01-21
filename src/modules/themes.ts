@@ -41,7 +41,7 @@ export const darkTheme = createTheme({
       web: 'inherit',
       paper: '#2c2c2c',
       default: '#1e1e1e',
-      backdrop: '#1e1e1e'//TODO
+      backdrop: '#1e1e1e'
     },
     text: {
       primary: 'rgba(255, 255, 255, 0.87)'

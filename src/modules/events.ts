@@ -113,9 +113,7 @@ if(EXTENSION){
   eventManager.on('message',handleOut) /// For both ///  //TODO could be removed by user? not good
 
 }else{
-  // Nothing needed if in web - they just use the same Emmittabele !
-
-  // TODO service worker code goes here
+  // Nothing needed if in web - they just use the same Emmittabele ! pwa sometime
 }
 
 export default eventManager

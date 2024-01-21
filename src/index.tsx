@@ -25,7 +25,7 @@ import {
   RestAdjust,
   CounterTicker, 
   RestAdjustTicker
-} from './modules/components'
+} from './modules/components/'
 import {
   reload,
   errorSave,
@@ -234,7 +234,7 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
 
         }else if(action.type == 'RECALC'){
           fresh.nextRestTime = calcRestDuration(state.workingSince || Date.now())
-          fresh.config.mode =  state.config.mode == Mode.PAUSED ? Mode.ON : state.config.mode// TODO or better disable when not working?
+          fresh.config.mode =  state.config.mode == Mode.PAUSED ? Mode.ON : state.config.mode// TODO! or better disable when not working?
 
         }else if(action.type == 'CONFIG'){
           fresh.config = {...fresh.config, ...action.config}
@@ -337,7 +337,7 @@ const AppFallback = ({error}:{error:Error})=>{
   const dark = usePreffersDark()
   const errorString = stringifyError(error)
 
-  return (//TODO reuse theme from state?
+  return (
     <ThemeProvider theme={dark ? darkTheme : lightTheme}>
       <PageWrapper>
         <Fallback errorString={errorString} />

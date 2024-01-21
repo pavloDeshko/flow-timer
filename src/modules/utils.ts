@@ -30,7 +30,7 @@ export const msToTime = (ms :number) => {
   let totalSeconds = Math.round(ms/1000)
   const values :Time = {...ZERO_TIMER_FULL}
 
-  values.days = Math.floor(totalSeconds / 86400), totalSeconds %= 86400 //TODO! bitwise?
+  values.days = Math.floor(totalSeconds / 86400), totalSeconds %= 86400 
   values.hours = Math.floor(totalSeconds / 3600), totalSeconds %= 3600
   values.minutes = Math.floor(totalSeconds / 60), totalSeconds %= 60
   values.seconds = Math.floor(totalSeconds / 1), totalSeconds %= 1

@@ -1,8 +1,8 @@
 import React, {useState, useEffect} from 'react'
 
-import {Time} from './types'
-import { msToTime} from './utils'
-import {RestAdjust, Counter} from './components'
+import {Time} from '../types'
+import { msToTime} from '../utils'
+import {RestAdjust, Counter} from './'
 
 const up = ((refTime :number)=>{
   return Math.abs(Math.round(Date.now() - refTime))

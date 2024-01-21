@@ -25,11 +25,11 @@ const TEXT = {
 
   TOGGL_ERROR_NETWORK : `Can't connect to Toggl :(`, */
   
-  //TOGGL_ERROR_GENERIC : `Can't connect to Toggl :(`, //TODO ?
+  //TOGGL_ERROR_GENERIC : `Can't connect to Toggl :(`,
   TOGGL_ERROR_CONNECT:  `Can't connect to Toggl :(`,
   TOGGL_ERROR_ADD:`Can't save entry to Toggl :(`,
   TOGGL_ERROR_COMPAT : `Can't make sence of data from Toggl :( ${
-    EXTENSION?'Updating extension might help': 'Contact us if problem persists'}`,// TODO for web
+    EXTENSION?'Updating extension might help': 'Contact us if problem persists'}`,
   TOGGL_TOO_MANY : `Looks like too many requests to Toggl were made :( Try again in a minute`,
   TOGGL_ERROR_TOKEN : `Invalid Toggl token :(`,
   TOGGL_ERROR_AUTH : `Can't authorize to Toggl :( Have you changed your token?`,

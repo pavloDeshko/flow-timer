@@ -1,3 +1,4 @@
+/// Used by sound.html page too, so put in separate module to minimize its batch size ///
 const retry = (cb:()=>void, reSet?:()=>void, onFail?:(err:unknown)=>void, n = 3, timeout = 300)=>{
   const process = ()=>{
     try{
