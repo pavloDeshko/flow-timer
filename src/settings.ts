@@ -8,7 +8,7 @@ export const MIN_REST = EXTENSION ? 30*1000 : 5*1000
 export const MAX_REST = 24 * 3600*1000
 export const DEFAULT_RATIO = 6
 export const POM_TIMES = [5, 10, 15, 20, 30, 45, 50, 60] as const
-export const ERROR_MESSAGE = 'Unknown error occured :(' // TODO get other messages here too
+export const ALARM_CLEARENCE = 10*1e3 // 15 * 60*1e3
 
 export const TOGGL_TOKEN_URL = 'https://track.toggl.com/profile#api-token'
 export const TOGGL_URL = 'https://api.track.toggl.com/api/v9'

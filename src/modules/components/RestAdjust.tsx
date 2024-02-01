@@ -5,6 +5,7 @@ import {
   TextField,
   Tooltip
 } from '@mui/material'
+import isEqual from 'lodash.isequal'
 import Update from "@mui/icons-material/Update"
 
 import {Time, Mode} from '../types'
@@ -26,13 +27,17 @@ export const RestAdjust = memo(({hours, minutes, seconds, appMode} :Time & {appM
     })
   }
   const onChange = () => {
-    hoursRef.current && minutesRef.current && dispatch({
+    if(!hoursRef.current || !minutesRef.current || !secondsRef.current){return}
+
+    const time = {
+      hours: parse.h(hoursRef.current.value, hours), 
+      minutes: parse.m(minutesRef.current.value, minutes),
+      seconds: parse.s(secondsRef.current.value, seconds)
+    }
+
+    !isEqual(time, {hours, minutes,seconds}) && dispatch({
       type: 'ADJUST',
-      time: {
-        hours: parse.h(hoursRef.current!.value, hours), 
-        minutes: parse.m(minutesRef.current!.value, minutes),
-        seconds: parse.s(secondsRef.current!.value, seconds)
-      }
+      time
     })
   }
 
@@ -61,20 +66,20 @@ export const RestAdjust = memo(({hours, minutes, seconds, appMode} :Time & {appM
       /> 
   </>),[hours,minutes,seconds,dispatch])
 
-  const tooltip = useMemo(()=>(
+  const button = useMemo(()=>(
     <Tooltip {...tooltipMarginProp} title={TEXT.RECALCULATE} placement="bottom-start" arrow >
       <span><IconButton 
-        sx={appMode == Mode.ON ? {display:'none'}:{pb:0,verticalAlign:'top'}}
+        sx={{verticalAlign:'top', display: appMode == Mode.PAUSED ? undefined : 'none'}}
         color="primary" 
         onClick={onRecalculate} 
-        disabled={appMode == Mode.ON}
-      ><Update fontSize="small" /></IconButton></span>
+        //disabled={appMode == Mode.ON}
+      ><Update fontSize="small" /></IconButton></span> 
   </Tooltip>
   ),[appMode,dispatch])
   
   return(
     <Box className="NextRestSection" sx={{
-      ".legend":{display:"inline-block",paddingY:"0.5rem",mr:0.25},
+      ".legend":{display:"inline-block",paddingY:"0.55rem",mr:0.25},
       ".MuiTextField-root":{width:"3rem", marginX:0.25},
       ".MuiOutlinedInput-input":{textAlign:"center",padding:0.75},
       ".MuiTextField-root.seconds":{
@@ -86,7 +91,7 @@ export const RestAdjust = memo(({hours, minutes, seconds, appMode} :Time & {appM
     }}>
       <Box sx={{mr:'6px'}} className="legend">{TEXT.NEXT_REST_LEGEND}</Box>
       {fields}
-      {tooltip}
+      {button}
     </Box>
   )
 })

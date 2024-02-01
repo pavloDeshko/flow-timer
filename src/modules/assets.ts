@@ -17,3 +17,43 @@ export const SOUNDS = {
 } as const
 
 export const IMGS = {TOGGL_HELP: publicPath + "media/togglHelpImg.png"} as const
+
+/* 
+"icons":{"128":"media/main_128.png", "48":"media/main_48.png", "16":"media/idle_16.png"},
+"default_icon":{"16":"media/idle_16.png", "32":"media/idle_32.png", "64":"media/idle_64.png"}, */
+
+/* "icons": [
+  {
+    "src": "static/media/main.svg",
+    "sizes": "any"
+  },
+  {
+    "src":"static/media/main_512.png",
+    "type": "image/png",
+    "sizes": "512x512",
+    "purpose": "any"
+  }
+],
+"screenshots" : [
+  {
+    "src": "screenshot_1.png",
+    "sizes": "1080x1920",
+    "type": "image/png",
+    "label": "abjust work/rest ratio"
+  },{
+    "src": "screenshot_2.png",
+    "sizes": "1080x1920",
+    "type": "image/png",
+    "label": "get notified when it's time to get back to work again"
+  },{
+    "src": "screenshot_3.png",
+    "sizes": "1080x1920",
+    "type": "image/png",
+    "label": "use pomodoro"
+  },{
+    "src": "screenshot_4.png",
+    "sizes": "1080x1920",
+    "type": "image/png",
+    "label": "toggl integration"
+  }
+],   */

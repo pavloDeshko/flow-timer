@@ -18,7 +18,7 @@ export const CopyLink = memo(({value, text, loading = false}:{value:string, text
   
   return <Tooltip {...tooltipMarginProp} title={TEXT.COPY} placement="right" followCursor>
     <span><Button sx={{ 
-        p:0, pl:"0.5rem",
+        p:0, pl:"0.25rem",
       '.MuiButton-startIcon':{mr:"2px"}}}
       variant="text"
       size="small"

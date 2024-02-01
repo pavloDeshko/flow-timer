@@ -4,4 +4,4 @@ export {
   TogglError,
   TogglCollapsed,
   TogglHelpCard
-} from './misc'
+} from './Misc'

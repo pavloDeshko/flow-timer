@@ -11,6 +11,7 @@ import {SUPPORT_EMAIL,EXTENSION, APP_WIDTH} from '../../settings'
 import {reload} from '../service'
 import TEXT from '../text'
 import { CopyLink } from './'
+import { Settings } from '@mui/icons-material'
 
 /// Some extras ///
 export const Fallback = memo(({errorString}:{errorString:string}) => {
@@ -21,7 +22,7 @@ export const Fallback = memo(({errorString}:{errorString:string}) => {
   :
     <p>{TEXT.FEEDBACK(
       <CopyLink value={errorString} text="here"/>,
-      <CopyLink value={'SUPPORT_EMAIL'} />)}
+      <CopyLink value={SUPPORT_EMAIL} text={SUPPORT_EMAIL} />)}
     </p>
 
   return(

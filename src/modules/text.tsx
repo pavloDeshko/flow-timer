@@ -9,13 +9,14 @@ const TEXT = {
   APP_LOGO_ALT : 'Flow Timer logo',
 
   // DESC and about also go to manifest.json and public/web/manifest.json
-  APP_DESC : 'Intelligent Pomodoro with Adaptive Rests. Flow Timer will adjust rest durations according to your work intervals. Toggl Track integration included. Stay in the flow!',
-  APP_DESC_SHORT : 'Intelligent Pomodoro Timer will adjust rest durations according to your work intervals. Stay in the flow!',
+  APP_DESC : 'Intelligent Pomodoro with Adaptive Rests. Flow Timer will adjust rest durations according to your work intervals. Toggl Track integration included. Stay in the Flow!',
+  APP_DESC_SHORT : 'Intelligent Pomodoro Timer will adjust rest durations according to your work intervals. Stay in the Flow!',
+  APP_DESC_SHORTEST : 'will adjust your breaks according to work intervals. Stay in the Flow!',
   //for web and readme
   APP_ABOUT_TITLE :'Why and How?', 
   APP_ABOUT: [
     'Are you fan of the Pomodoro technique? Us too! However, many existing apps lack flexibility, locking users into strict routines :(',
-    'Unlike its counterparts, Flow Timer is an adaptable assistant, which will not only remind you to have a rest in time, but will also adjust break time based on your actual work duration, freeing you from rigid timeframes and allowing you to work as long as you feel being in the zone!',
+    'Unlike its counterparts, Flow Timer is an adaptable assistant, which will not only remind you to have a rest in time, but will also adjust break time based on your actual work duration, freeing you from rigid timeframes and allowing to work as long as you feel being in the zone!',
     'Setup is easy - choose preferred Pomodoro timer duration and set desired number of rest minutes per hour of work. For beginning or ending your work and rest segments, simply use respective buttons.',
     'With Flow Timer, productivity bends to your rhythm, not the other way around!'
   ] as const,
@@ -40,8 +41,8 @@ const TEXT = {
   STORAGE_ERROR_SAVE : 'Troubles with saving data to storage, your app may misbehave :(',
   STORAGE_ERROR_GET : 'Troubles with getting data from storage, your app may misbehave :(',
   
-  NOTIFY_ERROR_SOUND : `Can't play sound to alert you :( Make sure you gave permission`,
-  NOTIFY_ERROR : 'Troubles notifying when timer is up :( Make sure you gave permission',
+  NOTIFY_ERROR_SOUND : `Unable to play alert sound :( Please check sound permissions`,
+  NOTIFY_ERROR : 'Unable to notify you when timer is up :( Please check notification permissions',
 
   NOTIFY_WORK_TITLE : 'Time to work!',
   NOTIFY_WORK_MESSAGE : 'your rest time is up',
@@ -71,6 +72,7 @@ const TEXT = {
   ALERT_REST: 'Time to rest!',
 
   ASK_PERMISSION: 'Please, allow app to notify you when time is up. It will never use it for anything else',
+  ASK_INTERACTION: 'Click anywhere, so app can play sound when alarms are due, thanks!',
 
   OPTION_FLOW:"Flow - adjust your rest time",
   OPTION_FLOW_LEGEND:'Minutes of rest per Hour of work:',

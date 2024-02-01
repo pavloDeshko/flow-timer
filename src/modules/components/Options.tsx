@@ -36,11 +36,12 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
     type: 'CONFIG',
     config: {pomActive : e.target.checked}
   })
-  const setPomTime = (_:unknown, value:string) => 
-    parse.twoDigit(value,pomTimeMins) !== pomTimeMins && dispatch({//reason=="input" TODO! why. what?..
+  const setPomTime = (_:unknown, value:string) => {
+    parse.twoDigit(value,pomTimeMins) !== pomTimeMins && dispatch({
       type: 'CONFIG',
       config: {pomTimeMins : parse.twoDigit(value,pomTimeMins)}
     })
+  }
   const setDark = () => dispatch({
     type: 'CONFIG',
     config: {dark : !dark}
@@ -83,6 +84,7 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
         step={1}
         valueLabelDisplay="auto"
         valueLabelFormat={l => l + ' m'}
+        disabled={!mode}
         defaultValue={Math.floor(60 / initialRatio)}
         onChangeCommitted={setRatio}
       />

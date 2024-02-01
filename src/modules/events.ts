@@ -1,7 +1,7 @@
 import Emittery from 'emittery'
 import z from 'zod'
 
-import {Time, Config, TogglForm, State, AlarmType, Error_Info_Schema} from './types'
+import {Time, Config, TogglForm, State, AlarmType, Error_Info_Schema, UserAlertType} from './types'
 import {EXTENSION} from '../settings'
 import { errorSave } from './service'
 import {stringifyError} from './utils'
@@ -34,7 +34,7 @@ export type Action = {
   type: 'TOGGL_REFRESH'
 }|{
   type: 'CLOSE_USER_ALERT',
-  alertType: 'WARN'|'NOTIFY'
+  alertType: UserAlertType
 }
 
 export const MessageSchema = z.object({
@@ -69,7 +69,7 @@ export const dispatchError = async(err:Error, userMessage:string|null, keepLocal
 
   console.error(errorInfo.userMessage || 'Error with no user message: ', errorInfo.errorJson)
   if(errorInfo.userMessage){
-    await errorSave(errorInfo)
+    EXTENSION && await errorSave(errorInfo)
     eventManager.emit('message',{type:'ERROR', errorInfo : {errorJson : stringifyError(err), userMessage:userMessage}, _external:keepLocal})
   }
 }

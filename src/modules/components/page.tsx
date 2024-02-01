@@ -15,7 +15,7 @@ import {APP_WIDTH} from '../../settings'
 import {useIsNarrow} from '../service'
 import {ICONS} from '../assets'
 import TEXT from '../text'
-import { Elevation, BlockContainer} from './'
+import { Elevation, BlockContainer} from '.'
 
 /// Containers ///
 export const PageContainer = ({children, backgroundActive=false}:{children:ReactNode, backgroundActive?:boolean})=>{
@@ -109,6 +109,7 @@ export const ParticlesBackground = memo(({active}:{active: boolean})=>{
 
 export const PageHeader = () => {
   const theme = useTheme()
+  const narrow = useIsNarrow()
   const splitTitle = TEXT.APP_TITLE.split(' ')
 
   return (<BlockContainer square={true} >
@@ -117,12 +118,14 @@ export const PageHeader = () => {
       <Box>
         <Typography variant="h5" component='h1' sx={{
           '& .title_0':{textShadow:`0px 0px 4px ${theme.palette.primary.main}`},
-          '& .title_1':{textShadow:`0px 0px 4px ${alpha(theme.palette.secondary.light, theme.palette.mode == 'light' ?  0.7 : 1)}`},
+          '& .title_1': theme.palette.mode == 'light' ?
+          {textShadow:`0px 0px 8px ${alpha(theme.palette.secondary.light, 0.6 )}`}:
+          {textShadow:`0px 0px 4px ${alpha(theme.palette.secondary.light, 1)}`},
           color:'text.secondary'
         }}>{
           <><span className="title_0">{splitTitle[0]}</span> <span className="title_1">{splitTitle[1]}</span></>
         }</Typography>
-        <Typography>{TEXT.APP_DESC_SHORT}</Typography>
+        <Typography>{narrow ? TEXT.APP_DESC_SHORTEST : TEXT.APP_DESC_SHORT}</Typography>
       </Box>
     </Stack>
   </BlockContainer>)

@@ -2,7 +2,7 @@ import wretch, {WretcherError} from 'wretch'
 import favicon from 'favicon.js' //write @types TODO
 import useMediaQuery from '@mui/material/useMediaQuery'
 import debounce from '@mui/material/utils/debounce'
-import  { z, ZodTypeAny} from 'zod'
+import  { ZodType, input, ZodTypeAny } from 'zod'
 import {useState} from 'react'
 
 import {
@@ -15,6 +15,7 @@ import {
   AlarmId_Schema,
   ErrorInfo,
   Status,
+  Error_Info_Schema,
 } from './types'
 import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME, EXTENSION, APP_WIDTH} from '../settings'
 import { deObf} from './utils'
@@ -101,7 +102,7 @@ export const iconTitleChange = (status:Status)=>{
     ICONS.DEFAULT
   EXTENSION ? 
     chrome.action.setIcon({path:icon}) : 
-    favicon.change(typeof icon == 'string' ? icon : icon[16]) 
+    favicon.change(typeof icon == 'string' ? icon : icon[16])
 }
 
 export const reload = ()=>{ EXTENSION ? chrome.runtime.reload() : location.reload()}
@@ -125,13 +126,13 @@ const getFromStorage = async (key: string, forSessionOnly = false): Promise<unkn
       JSON.parse(localStorage.getItem(key)||String(null))
   } else {
     EXTENSION && chrome.storage.session &&
-      (data = JSON.stringify((await chrome.storage.session.get(key))[key]))
+      (data = (await chrome.storage.session.get(key))[key])
   }
   return data
 }
 
 type _SaveGet<T> = {save:(data:T|null)=>Promise<void>, get:()=>Promise<T|null>}
-const _makeSaveGet = <T>(key:string, schema:ZodTypeAny, {keepSilent=false, session=false}={}):_SaveGet<T>=>{
+const _makeSaveGet = <T>(key:string, schema:ZodType<T,any,input<ZodTypeAny>>, {keepSilent=false, session=false}={}):_SaveGet<T>=>{
   return {
     save : async(data)=>{
       try{
@@ -153,11 +154,11 @@ const _makeSaveGet = <T>(key:string, schema:ZodTypeAny, {keepSilent=false, sessi
   }
 }
 
-export const {save : _stateSave, get : stateGet} = _makeSaveGet<State>('STORAGE_STATE_KEY',State_Schema)
+export const {save : _stateSave, get : stateGet} = _makeSaveGet<State>('STORAGE_STATE_KEY', State_Schema)
 export const stateSave = debounce(_stateSave,100)
 export const {save : alarmSave, get : alarmGet} = _makeSaveGet<AlarmType>('STORAGE_ALARM_KEY',AlarmType_Schema)
-export const {save : alarmIdSave, get : alarmIdGet} = _makeSaveGet<AlarmId>('STORAGE_ALARM_ID_KEY',AlarmId_Schema)
-export const {save : errorSave, get : errorGet} = _makeSaveGet<ErrorInfo>('STORAGE_ERROR_KEY', z.any(), {keepSilent:true, session:true})
+//export const {save : alarmIdSave, get : alarmIdGet} = _makeSaveGet<AlarmId>('STORAGE_ALARM_ID_KEY',AlarmId_Schema)
+export const {save : errorSave, get : errorGet} = _makeSaveGet<ErrorInfo>('STORAGE_ERROR_KEY', Error_Info_Schema, {keepSilent:true, session:true})
 
 /// Alarms related functions ///
 export const notify = async(type:AlarmType)=>{
@@ -201,7 +202,7 @@ window.Audio && loadAudio()
 
 const playAudio = (pomodoro :boolean) => {
   retry(// The were some errors in loading audio from the first time for no apparent reason
-    ()=>(pomodoro ? pomAudio : workAudio)!.play(),
+    async()=>(pomodoro ? pomAudio : workAudio)!.play(),
     loadAudio,
     (err)=>dispatchError((err as Error), TEXT.NOTIFY_ERROR_SOUND)
   )

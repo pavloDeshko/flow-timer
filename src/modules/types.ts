@@ -31,7 +31,8 @@ export const AlarmType_Schema = z.nativeEnum(AlarmType)
 
 export enum UserAlertType {
   NOTIFY = 'NOTIFY',
-  WARN = 'WARN'
+  WARN = 'WARN',
+  ERROR = 'ERROR'
 }
 
 /// Storage and State related ///

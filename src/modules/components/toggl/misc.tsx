@@ -13,7 +13,7 @@ import ExitToApp from "@mui/icons-material/ExitToApp"
 import {TOGGL_TOKEN_URL, APP_WIDTH} from '../../../settings'
 import {IMGS} from '../../assets'
 import TEXT from '../../text'
-import { DispatchContext } from '../'
+import { DispatchContext } from '..'
 
 export const TogglCollapsed = memo(({logged}:{logged:boolean}) => {
   const dispatch = useContext(DispatchContext)

@@ -38,19 +38,19 @@ export const TogglForm = memo((
   const setProject = (e :SelectChangeEvent<number|''|'REFRESH'>) => {
     dispatch(e.target.value == 'REFRESH' ? 
       {type: 'TOGGL_REFRESH'}:
-      {type : 'TOGGL_FORM',form: {projectId: Number(e.target.value) || null}}//TODO! what if id is 0}
+      {type : 'TOGGL_FORM',form: {projectId: e.target.value !== 'EMPTY' ? Number(e.target.value) : null}}
     )
   }
 
   const select = useMemo(()=>(
     <Select<number|''|'REFRESH'>
       size="small" 
-      sx={{width:"7rem"}}
+      sx={{flexBasis:'8rem', flexShrink:'0.7', overflow:'hidden'}}
       value={projectId ?? ''}
       onChange={setProject}
     >
       {[
-        <MenuItem value={""} key={0}><em>-none-</em></MenuItem>, 
+        <MenuItem value={"EMPTY"} key={0}><em>-none-</em></MenuItem>, 
         ...projects.map(p => <MenuItem value={p.id} key={p.id}><span style={{color:p.color}}>|</span>&thinsp;{p.name}</MenuItem>),
         <MenuItem value={"REFRESH"} key={-1}><em>-refresh-</em></MenuItem>
       ]}
