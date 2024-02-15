@@ -19,3 +19,4 @@ createRoot(document.getElementById('appRoot') as Element).render(
     <App/>
   </ErrorBoundary>
 )
+//setTimeout(()=>{throw new Error('async front test error')},1000)

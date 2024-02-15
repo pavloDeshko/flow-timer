@@ -21,7 +21,7 @@ import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME, EXTENSION, APP_WI
 import { deObf} from './utils'
 import {ICONS, SOUNDS} from './assets'
 import TEXT from './text'
-import {dispatchError} from './events'
+import {dispatchError, isConnected} from './events'
 import retry from './retry'
 
 export const userifyError = (err:Error,userMessage:string):Error=>{
@@ -167,7 +167,7 @@ export const notify = async(type:AlarmType)=>{
   if(window.Audio){
     playAudio(pomodoro)
   }else if(EXTENSION){
-    playAudioWindow(pomodoro)
+    playAudioInWindow(pomodoro)
   }
   
   try{
@@ -208,14 +208,26 @@ const playAudio = (pomodoro :boolean) => {
   )
 }
 
-//Used for extension - tryies to open new window to play audio 
-const playAudioWindow = (pomodoro :boolean) => {
-  chrome.windows.create({
-    type: "popup",
-    focused: true,
-    top: 1,left: 1,height: 1,width: 1,
-    url: 'sound.html?type=' + (pomodoro ? 'pom' : 'work')
-  })
+//Used for extension - tryies to open new window or tab to play audio 
+const playAudioInWindow = async(pomodoro :boolean) => {
+  const currentWindow = await chrome.windows.getCurrent()
+  const url = 'sound.html?type=' + (pomodoro ? 'pom' : 'work')
+
+  if(currentWindow.focused || isConnected()){
+    chrome.windows.create({// open and close new window to play sound
+      type: "popup",
+      focused: true,
+      height: 1,width: 1, left: currentWindow.left,
+      top: Math.trunc((currentWindow.top||1)+(currentWindow.height||1)*0.9), 
+      url
+    })
+  }else{
+    await chrome.tabs.create({// open and close new tab to play sound
+      active:true,
+      index: (await chrome.tabs.query({active:true, currentWindow:true}))[0]?.index,
+      url
+    }) 
+  }
 }
 
 //Notification permissions for Web page 

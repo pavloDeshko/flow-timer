@@ -23,7 +23,8 @@ import {
   RestAdjust,
   CounterTicker, 
   RestAdjustTicker,
-  Fallback
+  Fallback,
+  VersionNotice
 } from './components/'
 import {
   errorSave,
@@ -47,6 +48,7 @@ import TEXT from './text'
 import eventManager, {Action, Message} from "./events"
 
 const App = () => {
+  //throw new Error('sync front test error')
   const [state, setState] = useState<State|null>(null)
   useAsyncEffect(async()=>{
     !state ?
@@ -103,17 +105,17 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
     })
   },[])
 
-  // For EXTENSION on startup - gets notification and error data from storage 
+  // For EXTENSION on startup (popup opened) - gets notification and error data from storage 
   useAsyncEffect(async () => {
     if(!EXTENSION){return}
     
     const [alarm, errorInfo] = await Promise.all([alarmGet(), errorGet()])
     
-    // do some actualising based on retrived state and alarm
-    if(state.restingUntil && alarm !== AlarmType.WORK && state.restingUntil < Date.now()){// in case rest is expired and there's no alarm TODO is it possible?
+    // in case rest is expired and there's no alarm TODO is it possible?
+    if(state.restingUntil && alarm !== AlarmType.REST_END && state.restingUntil < Date.now()){
       setStateWithImmer(fresh=>{fresh.restingUntil = null})
-    }else{// update icon, but also mind thot Work alarm will change state shortly to Idle
-      iconTitleChange(state.restingUntil && alarm !== AlarmType.WORK ? Status.RESTING : state.workingSince ? Status.WORKING : Status.IDLE)
+    }else{// update icon if still working or resting (and no STOP_REST alarw)
+      iconTitleChange(state.restingUntil && alarm !== AlarmType.REST_END ? Status.RESTING : state.workingSince ? Status.WORKING : Status.IDLE)
     }
 
     alarm && handleAlarm(alarm)
@@ -127,13 +129,13 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
     if(state.restingUntil){
       const timeout = state.restingUntil - Date.now()
 
-      if(timeout > 1000){//for future
-        eventManager.emit('message',{type:'SET_ALARM', subType: AlarmType.WORK, timeout: state.restingUntil - Date.now()})
+      if(timeout > 1000){//reset future REST_END timeout
+        eventManager.emit('message',{type:'SET_ALARM', subType: AlarmType.REST_END, timeout: state.restingUntil - Date.now()})
         iconTitleChange(Status.RESTING)
         handleUserNonActive()
-      }else if(timeout > -ALARM_CLEARENCE){//slightly expired
-        handleAlarm(AlarmType.WORK)
-      }else{//for expired
+      }else if(timeout > -ALARM_CLEARENCE){// fire slightly expired timeout
+        handleAlarm(AlarmType.REST_END)
+      }else{// for passed timeout
         setStateWithImmer(fresh=>{fresh.restingUntil = null})
       }
     }
@@ -141,26 +143,26 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
     if(state.workingSince && state.config.pomActive){
       const timeout =  state.config.pomTimeMins * 60e3 - (Date.now()-state.workingSince)
 
-      if(timeout > 1000){
+      if(timeout > 1000){// reset future POM timeout
         eventManager.emit('message',{type:'SET_ALARM', subType: AlarmType.POM, timeout:timeout})
         iconTitleChange(Status.WORKING)
         handleUserNonActive()
-      }else if(timeout > -ALARM_CLEARENCE){
+      }else if(timeout > -ALARM_CLEARENCE){// fire slightly expired POM timeout
         handleAlarm(AlarmType.POM)
       }
     }
   },[])
 
-  /** New notification data handler */ 
+  /** New notification handler */ 
   const handleAlarm = (alarm :AlarmType) => {
     setStateWithImmer(fresh => {
       fresh.alarm = alarm
-      alarm == AlarmType.WORK && fresh.restingUntil && fresh.restingUntil - Date.now() < 1000 && 
+      alarm == AlarmType.REST_END && fresh.restingUntil && fresh.restingUntil - Date.now() < 1000 && 
         (fresh.restingUntil = null)
     })
     EXTENSION && alarmSave(null)
   }
-  /** New error data handler */ 
+  /** New error handler */ 
   const handleError = (errorInfo:ErrorInfo) => {
     if(errorInfo.userMessage && (!errorWarning || errorWarning.userMessage !== errorInfo.userMessage)){
       setErrorWarning({type:'ERROR', ...errorInfo as {userMessage:string, errorJson:string}})
@@ -171,8 +173,8 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
   const handleUserNonActive = ()=>{
     !window.navigator.userActivation.hasBeenActive && 
       setStateWithImmer(fresh=>{
-        fresh.warning = {type:'WARNING',userMessage:TEXT.ASK_INTERACTION
-      }})// TODO botchet type on compile for some reason
+        fresh.warning = {type:'WARNING',userMessage:TEXT.ASK_INTERACTION}
+      })// TODO botchet type on compile for some reason
     window.addEventListener('click',()=>{setStateWithImmer(fresh=>{
       fresh.warning?.userMessage == TEXT.ASK_INTERACTION && (fresh.warning = null)
     })}, {capture:true, once: true})
@@ -244,6 +246,10 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
             )
           }
         }
+
+        const ensureMinTimeout = (timeout :number) => {
+          EXTENSION && (fresh.warning = timeout < MIN_REST ? {type:'WARNING', userMessage: TEXT.WARN_SHORT_TIME} : null)
+        }
         
         /// Main "switch" //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         if(action.type == 'WORK' && !state.workingSince){// Start work
@@ -280,7 +286,8 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
           
           iconTitleChange(Status.RESTING)
           ensurePermissionToNotify()
-          eventManager.emit('message',{type:"SET_ALARM", subType:AlarmType.WORK, timeout:freshRestTime})
+          eventManager.emit('message',{type:"SET_ALARM", subType:AlarmType.REST_END, timeout:freshRestTime})
+          EXTENSION && ensureMinTimeout(freshRestTime)
 
           state.workingSince && pushOrSaveLastToggl()
 
@@ -330,6 +337,7 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
           action.alertType == UserAlertType.NOTIFY && (fresh.alarm = null)
           action.alertType == UserAlertType.WARN && (fresh.warning = null)
           action.alertType == UserAlertType.ERROR && setErrorWarning(null)
+          action.alertType == UserAlertType.VERSION && (fresh.versionNoticed = Date.now())
 
         }
       }))
@@ -373,6 +381,7 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
         }
         <TogglError error={typeof state.toggl.loaded == 'string' ? state.toggl.loaded  : null} />
       </AccordionContainer>
+      {EXTENSION && !state.versionNoticed && <VersionNotice opened={true}/>}
     </AppContainer>
   )
   

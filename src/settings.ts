@@ -18,6 +18,7 @@ export const TOGGL_TOKEN_LENGHT = [17,48] as const
 
 export const CLIENT_NAME = EXTENSION ? 'Flow Timer Extension' :'flowtimer.click'
 
+export const WEB_VERSION_ADRESS = 'https://flowtimer.click'
 export const SUPPORT_EMAIL = 'pavlodeshko92@gmail.com'
 
 export const DEFAULT_STATE :State = {
@@ -44,7 +45,8 @@ export const DEFAULT_STATE :State = {
     loaded: true
   },
   alarm: null,
-  warning: null
+  warning: null,
+  versionNoticed:0
 }
 
 //private envs

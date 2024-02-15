@@ -4,15 +4,15 @@ import {createTheme} from '@mui/material/styles'
 const colors = {
   primary: {
     'main': '#5ea8a7',
-    'contrastText': '#fff'
+    'contrastText': '#deeded'
   },
   secondary: {
     'main': '#ff4447',
-    'contrastText': '#fff'
+    'contrastText': '#ffe6e6'
   },
   error: {
     'main': '#e7472e',
-    'contrastText': '#fff'
+    'contrastText': '#fcebe8'
   }
 }
 

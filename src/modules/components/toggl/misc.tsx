@@ -60,17 +60,28 @@ export const TogglError = memo(({error}:{error :string | null})=>{
 /** Content passed to HelpPopover */
 export const TogglHelpCard = ()=>{
   const HELP_WIDTH = APP_WIDTH * 0.9 //TODO move out?
+  const text = TEXT.TOGGL_HELP
 
   return(
   <Card sx={{maxWidth:HELP_WIDTH, '& .MuiCardMedia-img':{height:HELP_WIDTH*(2/3), width:HELP_WIDTH}}}>
     <CardMedia component="img" image={IMGS.TOGGL_HELP}/> 
     <CardContent sx={{pb:"0"}}>
-      <Typography component="div" paragraph={true} sx={{"& p":{marginY:'.5rem'}}}>
-        {TEXT.TOGGL_HELP.split('\n').map((line,i)=>(<p key={i}>{line}</p>))}
+      <Typography component="div" paragraph={true} sx={{
+          "& p":{marginY:'.5rem'},
+          "p.breadcrumbs":{fontStyle:'italic'},
+          "p.notice":{fontSize:'80%'}
+        }}>
+          <p>{text.INTRO}</p>
+          <p className='breadcrumbs'>{text.BREADCRUMBS}</p>
+          <p>{text.OUTRO}</p>
+          <p className='notice'>{text.NOTICE}</p>
+{/*         {TEXT.TOGGL_HELP.split('\n').map((line,i)=>(//!TODO bs
+          <p key={i} className={line.includes('\u2192') ? 'breadCrumbs' : line.includes('NOTE') ? 'note' : ""}>{line}</p>
+        ))} */}
       </Typography> 
     </CardContent>
     <CardActions>
-      <Button size="small" href={TOGGL_TOKEN_URL} target="_blank">
+      <Button /* size="small"  */href={TOGGL_TOKEN_URL} target="_blank">
         {TEXT.TOGGL_GOTO_TOKEN}
       </Button>
     </CardActions>

@@ -28,7 +28,7 @@
   },
   "scripts": {
     "dev:ext": "webextension-toolbox dev --src ./src --target ./dist/extension/[vendor] chrome",
-    "build:ext": "webextension-toolbox build --src ./src --target ./dist/extension/[vendor] firefox",
+    "build:ext": "webextension-toolbox build --src ./src --target ./dist/extension/[vendor] chrome",
     "dev": "react-app-rewired start",
     "build": "react-app-rewired build",
     "prepack": "build:ext && build",

@@ -112,7 +112,7 @@ export const PageHeader = () => {
   const narrow = useIsNarrow()
   const splitTitle = TEXT.APP_TITLE.split(' ')
 
-  return (<BlockContainer square={true} >
+  return (<BlockContainer square={true} elevation={7}>
     <Stack direction="row" spacing={2}>
       <Box sx={{float:"left"}}><img src={ICONS.MAIN} style={{width:"64px", height:"64px"}} alt={TEXT.APP_LOGO_ALT} /></Box>
       <Box>
@@ -132,7 +132,7 @@ export const PageHeader = () => {
 }
 
 export const PageDesc = ()=> (
-  <BlockContainer square={true} sx={{textIndent:'0rem'}}>
+  <BlockContainer square={true} sx={{textIndent:'0rem'}} elevation={7}>
     <Typography variant="h5" component="h2">{TEXT.APP_ABOUT_TITLE}</Typography>
     <Divider sx={{marginY:"0.5rem"}}/>
     <Typography component="div" align="justify" sx={{'& .MuiTypography-root':{mb:'0.5rem'}}}>

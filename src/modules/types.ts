@@ -1,4 +1,4 @@
-import {z} from 'zod'
+import {number, z} from 'zod'
 
 /// Misc ///
 export type IconObject = {16:string, 32:string, 64:string} 
@@ -24,7 +24,7 @@ export enum Status {
 }
 
 export enum AlarmType {
-  WORK ="WORK",
+  REST_END ="REST_END",
   POM = "POM"
 }
 export const AlarmType_Schema = z.nativeEnum(AlarmType)
@@ -32,7 +32,8 @@ export const AlarmType_Schema = z.nativeEnum(AlarmType)
 export enum UserAlertType {
   NOTIFY = 'NOTIFY',
   WARN = 'WARN',
-  ERROR = 'ERROR'
+  ERROR = 'ERROR',
+  VERSION = 'VERSION'
 }
 
 /// Storage and State related ///
@@ -105,7 +106,9 @@ export const State_Schema = z.object({
   config: Config_Schema,
   toggl: Toggl_State_Schema,
   alarm: AlarmType_Schema.nullable(),
-  warning: User_Warning_Schema.nullable()
+  warning: User_Warning_Schema.nullable(),
+  versionNoticed: z.number()
+    .default(0)
 })
 /** App's main state */
 export type State = z.infer<typeof State_Schema>

@@ -50,10 +50,11 @@ export default function setupBackground(){
     }
   })
    */
+
   /// Triggering actual notification and stuff function when alarm is set off ///
   if(EXTENSION){
     chrome.alarms.onAlarm.addListener(
-      info=>info.name.includes(AlarmType.WORK) ? onAlarm(AlarmType.WORK) : onAlarm(AlarmType.POM)
+      info=>info.name.includes(AlarmType.REST_END) ? onAlarm(AlarmType.REST_END) : onAlarm(AlarmType.POM)
     )
   }
 
@@ -65,8 +66,8 @@ export default function setupBackground(){
     
     EXTENSION && typeof chrome.action.openPopup == 'function' && await chrome.action.openPopup()// TODO wait untel they fix it, not working currently
 
-    if(type == AlarmType.WORK){
-      notify(AlarmType.WORK)
+    if(type == AlarmType.REST_END){
+      notify(AlarmType.REST_END)
       iconTitleChange(Status.IDLE)
     }else{
       notify(AlarmType.POM)
@@ -84,3 +85,6 @@ export const setupGlobalErrorListeners = ()=>{
       dispatchError(event.error, TEXT.BACKGROUND_ERROR)
     })
 }
+
+//setTimeout(()=>{throw new Error('async background test error')},1000)
+//throw new Error('sync background test error')

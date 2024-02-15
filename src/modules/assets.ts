@@ -4,8 +4,8 @@ const publicPath = !EXTENSION ? process.env['PUBLIC_URL'] + 'static/' : ''
 
 export const ICONS = {
   MAIN: publicPath + "media/main.svg",
-  DEFAULT:{16: publicPath + "media/idle_16.png", 32: publicPath + "media/idle_32.png", 64: publicPath + "media/idle_64.png"} ,
-  WORK:{16: publicPath + "media/work_16.png", 32: publicPath + "media/work_32.png", 64: publicPath + "media/idle_64.png"},
+  DEFAULT:{16: publicPath + "media/simple_16.png", 32: publicPath + "media/simple_32.png", 64: publicPath + "media/simple_64.png"} ,
+  WORK:{16: publicPath + "media/work_16.png", 32: publicPath + "media/work_32.png", 64: publicPath + "media/work_64.png"},
   REST:{16: publicPath + "media/rest_16.png", 32: publicPath + "media/rest_32.png", 64: publicPath + "media/rest_64.png"},
   WORK_ALERT: publicPath + 'media/workAlert.png',
   POM_ALERT: publicPath +'media/pomAlert.png' 
@@ -19,8 +19,8 @@ export const SOUNDS = {
 export const IMGS = {TOGGL_HELP: publicPath + "media/togglHelpImg.png"} as const
 
 /* 
-"icons":{"128":"media/main_128.png", "48":"media/main_48.png", "16":"media/idle_16.png"},
-"default_icon":{"16":"media/idle_16.png", "32":"media/idle_32.png", "64":"media/idle_64.png"}, */
+"icons":{"128":"media/main_128.png", "48":"media/main_48.png", "16":"media/simple_16.png"},
+"default_icon":{"16":"media/simple_16.png", "32":"media/simple_32.png", "64":"media/simple_64.png"}, */
 
 /* "icons": [
   {

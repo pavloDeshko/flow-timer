@@ -74,9 +74,8 @@ export const dispatchError = async(err:Error, userMessage:string|null, keepLocal
   }
 }
 
+let port :chrome.runtime.Port|null
 if(EXTENSION){
-  let port :chrome.runtime.Port|null
-
   const handleIn = (data:any)=>{
     const message = MessageSchema.parse(data)
     eventManager.emit('message',{...message, _external:true})
@@ -115,5 +114,7 @@ if(EXTENSION){
 }else{
   // Nothing needed if in web - they just use the same Emmittabele ! pwa sometime
 }
+
+export const isConnected = ()=> !EXTENSION || !!port
 
 export default eventManager

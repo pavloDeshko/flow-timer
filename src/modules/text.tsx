@@ -20,6 +20,7 @@ const TEXT = {
     'Setup is easy - choose preferred Pomodoro timer duration and set desired number of rest minutes per hour of work. For beginning or ending your work and rest segments, simply use respective buttons.',
     'With Flow Timer, productivity bends to your rhythm, not the other way around!'
   ] as const,
+  WEB_VERTION_NOTICE: (link:React.ReactNode)=><>Web version at {link}, works on mobile too!</>,
 
 /*   TOGGL_ERROR_SAVE:"Couldn't save Toggl entry :( ",
   TOGGL_ERROR_LOG:  `Couldn't log into Toggl :( `,
@@ -30,7 +31,7 @@ const TEXT = {
   TOGGL_ERROR_CONNECT:  `Can't connect to Toggl :(`,
   TOGGL_ERROR_ADD:`Can't save entry to Toggl :(`,
   TOGGL_ERROR_COMPAT : `Can't make sence of data from Toggl :( ${
-    EXTENSION?'Updating extension might help': 'Contact us if problem persists'}`,
+    EXTENSION ? 'Updating extension might help' : 'Contact us if problem persists'}`,
   TOGGL_TOO_MANY : `Looks like too many requests to Toggl were made :( Try again in a minute`,
   TOGGL_ERROR_TOKEN : `Invalid Toggl token :(`,
   TOGGL_ERROR_AUTH : `Can't authorize to Toggl :( Have you changed your token?`,
@@ -73,13 +74,26 @@ const TEXT = {
 
   ASK_PERMISSION: 'Please, allow app to notify you when time is up. It will never use it for anything else',
   ASK_INTERACTION: 'Click anywhere, so app can play sound when alarms are due, thanks!',
+  WARN_SHORT_TIME: 'Sorry, notifications may not function well for delays under 30 seconds!',
 
   OPTION_FLOW:"Flow - adjust your rest time",
   OPTION_FLOW_LEGEND:'Minutes of rest per Hour of work:',
   OPTION_POMODORO:"Pomodoro reminder every",
   OPTION_DARK_LIGHT:'Dark/light mode',
+  
+  TOGGL_HELP:{
+    INTRO: 'At your Toggl profile page go to:',
+    BREADCRUMBS: 'Profile \u2192 Profile Settings \u2192 API Token \u2192 Click to reveal',
+    OUTRO: 'Than copy and paste it to the form below.',
+    NOTICE: 'NOTE: Flow Timer will never send your credentials anywhere - token will be stored on your computer only and used exclusively as credentials to save time entries to Toggl'
+  },
 
-  TOGGL_HELP: "At your Toggl profile page go to:\n Profile -> Profile Settings -> API Token -> Click to reveal \n Than copy and paste it to the form below. \nNOTE: You're save - Flow Timer will never send your credentials anywhere - token will be stored on your computer only",
+/*   TOGGL_HELP: `
+    At your Toggl profile page go to:
+    Profile \u2192 Profile Settings \u2192 API Token \u2192 Click to reveal 
+    Than copy and paste it to the form below. 
+    NOTE: Flow Timer will never send your credentials anywhere - token will be stored on your computer only and used exclusively as credentials to save time entries to Toggl
+  `, */
   //TOGGL_HELP_IMAGE_ALT:'',
   TOGGL_GOTO_TOKEN: 'Go to Toggl profile',
   

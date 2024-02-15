@@ -3,24 +3,27 @@ import {
   Typography,
   IconButton,
   Collapse,
-  Alert, AlertProps } from '@mui/material'
+  Alert,
+  AlertProps,
+  Link
+} from '@mui/material'
 import Close from '@mui/icons-material/Close'
 
 import {AlarmType, UserAlertType, UserWarning, UserAlarm} from '../types'
 import {useStateLinger} from '../utils'
-import {SUPPORT_EMAIL} from '../../settings'
+import {SUPPORT_EMAIL, WEB_VERSION_ADRESS} from '../../settings'
 import TEXT from '../text'
 import { CopyLink, DispatchContext } from './'
 
 export const UserAlert = memo(({warning:opened, alertType} :{warning:UserWarning|UserAlarm|null, alertType:UserAlertType})=>{
   const dispatch = useContext(DispatchContext)
-
+  
   const warning = useStateLinger(opened)// Needed so collapse is allowed to close with old content when warning is set to null
   let message :ReactNode = ''
   let alertProps :Partial<AlertProps> = {variant:"filled", severity:'warning'} 
 
   switch (warning?.type){
-    case AlarmType.WORK:{
+    case AlarmType.REST_END:{
       message = TEXT.ALERT_WORK
       alertProps.color = 'secondary' as any // TODO mui type is botched?
       break
@@ -63,3 +66,33 @@ export const UserAlert = memo(({warning:opened, alertType} :{warning:UserWarning
     </Collapse>
   )
 })
+
+export const VersionNotice = ({opened}:{opened:boolean})=>{
+  const dispatch = useContext(DispatchContext)
+
+  return (
+    <Collapse in={opened}>
+      <Alert
+        variant='filled'
+        color={'primary' as any}//TODO type
+        sx={{
+          color:'primary.contrastText',//'text.primary',
+          //lineHeight:'normal',
+          paddingY:0,  
+          '& .MuiAlert-message':{paddingY:'0.4rem'},
+          '& .MuiAlert-action':{paddingTop:'0.1rem'}
+        }}
+        icon={false}
+        //action={<IconButton size='small'><Close fontSize='small'/></IconButton>}
+        onClose={()=>dispatch({type:'CLOSE_USER_ALERT', alertType:UserAlertType.VERSION})} 
+      >
+        {TEXT.WEB_VERTION_NOTICE(<Link
+          sx={{fontWeight:'normal'}}//,fontSize:'1rem'}}
+          color="inherit" 
+          target='_blank'
+          href={WEB_VERSION_ADRESS}
+        >{WEB_VERSION_ADRESS.replace('https://','')}</Link>)}
+      </Alert>
+    </Collapse>
+  )
+}
