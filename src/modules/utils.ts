@@ -1,9 +1,11 @@
-import { DependencyList, useEffect, useState} from 'react'
+import { DependencyList, ReactNode, useEffect, useState, createElement, Fragment, ReactFragment} from 'react'
 import {z} from 'zod'
 import {serializeError} from 'serialize-error'
 
 import { Time } from './types'
-import {TOGGL_TOKEN_LENGHT} from '../settings'
+import {EXTENSION, TOGGL_TOKEN_LENGHT} from '../settings'
+import EN from '../_locales.en.messages.json'
+
 
 /// Hooks ///
 /** Lets async function to be passed to useEffect */
@@ -77,6 +79,72 @@ export const padTwoZeros = (number :number) => {
 export const obf = (value:string)=> (value.slice(value.length/2)+value.slice(0,value.length/2)).split('').reverse().join('')
 /** Reverse obfuscation of string value */
 export const deObf = (value:string)=>obf(value)
+
+
+/// TEXT stuff ///
+type _GetValue<K extends ID> = typeof EN[K]['message']
+type _GetTemplateKeys<T extends string> = T extends `${infer _Start}{{${infer Key}}}${infer Rest}` ? [Key, ..._GetTemplateKeys<Rest>] : []
+
+type ID = keyof typeof EN
+type NoTemplate_ID = {[K in ID]: _GetTemplateKeys<_GetValue<K>> extends [] ? K : never}[keyof typeof EN]
+type Template_ID = Exclude<ID, NoTemplate_ID>
+
+type Values<K extends ID, T extends string|ReactNode> = {[KK in _GetTemplateKeys<typeof EN[K]['message']>[number] ]:T}
+
+const _text = (id:ID) => EXTENSION ? chrome.i18n.getMessage(id)  : EN[id].message //!TODO web other locales
+
+
+// Function to get string value
+export const text :{
+  <T extends NoTemplate_ID>(id:T):_GetValue<T>,
+  <T extends Template_ID>(id:T, values: Values<T, string>):_GetValue<T>
+} = <T extends ID> (id:T, values?: Values<T, string>)=>{
+  let message = _text(id)
+  values && Object.keys(values).forEach(k=>{
+    message = message.replace('{{'+k+'}}', values[k as keyof typeof values])
+  })
+  return message//TODO why its allowed?
+}
+
+let bla = text('WEB_VERTION_NOTICE',{LINK:'bla'})
+
+/** Component return interpolated Fragment */
+export const Text = <T extends ID>(props:(T extends Template_ID ? {id:T, values: Values<T,ReactNode>} : {id:T}))=>{
+  const marker = Symbol('_value')
+  type TempT = ReactNode | { //wrappers for interpoleted elements, so in case of them beign string they are not proccessed again 
+    [marker]: ReactNode
+  }
+  const text = _text(props.id)
+
+  if(!('values' in props)){return createElement(Fragment,undefined,text)}
+
+  let result :TempT[]= [text] 
+  
+  Object.keys(props.values).forEach(placeholder=>{//for each placeholder
+    let found :null|number = null
+    const freshResult = [] as TempT[]
+    
+    result.forEach((element,i)=>{ //for each element in most recent (done for prev placeholder) result
+      if(typeof element == 'string'){
+        element.split('{{'+placeholder+'}}').forEach((part,i,splitted)=>{
+          part != '' && freshResult.push(part) //push string part
+          i < splitted.length-1 && (found = freshResult.push({[marker]:props.values[placeholder as keyof typeof props.values]}))//push value after string part (not the last)
+        })
+      }else{
+        freshResult.push(element) //push non string element without processing
+      }
+    })
+
+    result = freshResult  //updated to be searched for next placeholder
+
+    if(found === null && process.env['NODE_ENV'] != 'production'){throw new Error(`Placeholder ${placeholder} not found.`)}
+  })
+
+  return createElement(Fragment,undefined,...result.map(
+    el=>typeof el == 'object' && el && (marker in el) ? el[marker] : el //unpacking Temps
+  ))
+}
+
 
 
 /* export const log = {

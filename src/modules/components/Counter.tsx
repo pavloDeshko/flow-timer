@@ -6,8 +6,7 @@ import {
 } from '@mui/material'
 
 import {Time} from '../types'
-import {padTwoZeros} from '../utils'
-import TEXT from '../text'
+import {padTwoZeros, text} from '../utils'
 import { DispatchContext } from './'
 
 /** Main time display */
@@ -36,10 +35,10 @@ export const Controls = memo(({working,resting}:{working:boolean,resting:boolean
       '.MuiButton-root, .MuiButton-root:hover':{borderWidth:'2px'}
     }} fullWidth>
       <Button variant={working? 'contained' : 'outlined'} color="secondary" onClick={()=>dispatch({type: 'WORK'})}>
-        {working ? TEXT.STOP_WORK : TEXT.WORK}
+        {working ? text('STOP_WORK') : text('WORK')}
       </Button>
       <Button variant={resting? 'contained' : 'outlined'} color="primary" onClick={()=>dispatch({type: 'REST'})}>
-        {resting ? TEXT.STOP_REST : TEXT.REST}
+        {resting ? text('STOP_REST') : text('REST')}
       </Button>
     </ButtonGroup>
   )

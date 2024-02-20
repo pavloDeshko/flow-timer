@@ -18,9 +18,8 @@ import {
   Error_Info_Schema,
 } from './types'
 import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME, EXTENSION, APP_WIDTH} from '../settings'
-import { deObf} from './utils'
+import { deObf, text} from './utils'
 import {ICONS, SOUNDS} from './assets'
-import TEXT from './text'
 import {dispatchError, isConnected} from './events'
 import retry from './retry'
 
@@ -41,11 +40,11 @@ export const togglApiConnect = async (credential :Toggl_Auth) => {
   .get()
   .json()
   .catch((err:WretcherError)=>{
-    const text = 
-      err.status == 403 ? TEXT.TOGGL_ERROR_TOKEN :
-      err.status == 249 ? TEXT.TOGGL_TOO_MANY :
-      TEXT.TOGGL_ERROR_CONNECT
-    throw userifyError(err, text)
+    const message = 
+      err.status == 403 ? text('TOGGL_ERROR_TOKEN') :
+      err.status == 249 ? text('TOGGL_TOO_MANY') :
+      text('TOGGL_ERROR_CONNECT')
+    throw userifyError(err, message)
   })
 
   try {
@@ -56,7 +55,7 @@ export const togglApiConnect = async (credential :Toggl_Auth) => {
       last: valid.time_entries[0]?.project_id
     }
   }catch(err: any) {
-    throw userifyError(err, TEXT.TOGGL_ERROR_COMPAT)
+    throw userifyError(err, text('TOGGL_ERROR_COMPAT',{TOGGL_RELOAD: text(EXTENSION ? 'TOGGL_RELOAD_EXT':'TOGGL_RELOAD_WEB')})) //TODOt
   }
 }
 
@@ -80,20 +79,20 @@ export const togglApiAdd = async (credential :Toggl_Auth, start :number, stop :n
     .post(data)
     .res()
     .catch((err:WretcherError)=>{
-      const text = 
-        err.status == 403 ? TEXT.TOGGL_ERROR_AUTH :
-        err.status == 249 ? TEXT.TOGGL_TOO_MANY :
-        TEXT.TOGGL_ERROR_ADD
-      throw userifyError(err, text)
+      const message = 
+        err.status == 403 ? text('TOGGL_ERROR_AUTH') :
+        err.status == 249 ? text('TOGGL_TOO_MANY') :
+        text('TOGGL_ERROR_ADD')
+      throw userifyError(err, message)
     })
 }
 
 /// Chrome related stuff ///
 export const iconTitleChange = (status:Status)=>{
   const title = 
-    (status == Status.RESTING ? TEXT.RESTING_PRE:
-    status == Status.WORKING ? TEXT.WORKING_PRE :
-    '') + TEXT.APP_TITLE
+    (status == Status.RESTING ? text('RESTING_PRE'):
+    status == Status.WORKING ? text('WORKING_PRE') :
+    '') + text('APP_TITLE')
   EXTENSION ? chrome.action.setTitle({title}) :(document.title = title)
   
   const icon = 
@@ -138,7 +137,7 @@ const _makeSaveGet = <T>(key:string, schema:ZodType<T,any,input<ZodTypeAny>>, {k
       try{
         await setToStorage(key, data, session)
       }catch(err:any){
-        !keepSilent && dispatchError(err, TEXT.STORAGE_ERROR_SAVE)
+        !keepSilent && dispatchError(err, text('STORAGE_ERROR_SAVE'))
       }
     },
 
@@ -147,7 +146,7 @@ const _makeSaveGet = <T>(key:string, schema:ZodType<T,any,input<ZodTypeAny>>, {k
         const data = await getFromStorage(key, session)
         return data ? schema.parse(data) : null
       }catch(err:any){
-        !keepSilent && dispatchError(err, TEXT.STORAGE_ERROR_GET)
+        !keepSilent && dispatchError(err, text('STORAGE_ERROR_GET'))
         return null
       }
     }
@@ -175,20 +174,20 @@ export const notify = async(type:AlarmType)=>{
       await chrome.notifications.create({// hell it's needed - async error want' be caught otherwise
         type: 'basic',
         silent: false,
-        title: pomodoro ? TEXT.NOTIFY_POM_TITLE : TEXT.NOTIFY_WORK_TITLE,
-        message: pomodoro ? TEXT.NOTIFY_POM_MESSAGE : TEXT.NOTIFY_WORK_MESSAGE,
+        title: pomodoro ? text('NOTIFY_POM_TITLE') : text('NOTIFY_WORK_TITLE'),
+        message: pomodoro ? text('NOTIFY_POM_MESSAGE') : text('NOTIFY_WORK_MESSAGE'),
         iconUrl: chrome.runtime.getURL(pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT)
       })
     }else if(window.Notification?.permission == 'granted' ){
       new window.Notification(
-        pomodoro ? TEXT.NOTIFY_POM_TITLE : TEXT.NOTIFY_WORK_TITLE,{
-          body:pomodoro ? TEXT.NOTIFY_POM_MESSAGE : TEXT.NOTIFY_WORK_MESSAGE,
+        pomodoro ? text('NOTIFY_POM_TITLE') : text('NOTIFY_WORK_TITLE'),{
+          body:pomodoro ? text('NOTIFY_POM_MESSAGE') : text('NOTIFY_WORK_MESSAGE'),
           icon: pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT
         }
       )
     }
   }catch(err:any){
-    dispatchError(err, TEXT.NOTIFY_ERROR)
+    dispatchError(err, text('NOTIFY_ERROR'))
   }
 }
 
@@ -204,7 +203,7 @@ const playAudio = (pomodoro :boolean) => {
   retry(// The were some errors in loading audio from the first time for no apparent reason
     async()=>(pomodoro ? pomAudio : workAudio)!.play(),
     loadAudio,
-    (err)=>dispatchError((err as Error), TEXT.NOTIFY_ERROR_SOUND)
+    (err)=>dispatchError((err as Error), text('NOTIFY_ERROR_SOUND'))
   )
 }
 

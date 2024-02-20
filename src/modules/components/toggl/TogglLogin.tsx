@@ -12,8 +12,7 @@ import Link from "@mui/icons-material/Link"
 import Key from "@mui/icons-material/Key"
 
 import {TogglHelpCard, HelpPopover} from '../'
-import {parse} from '../../utils'
-import TEXT from '../../text'
+import {parse, text} from '../../utils'
 import { DispatchContext, tooltipMarginProp } from '../'
 
 export const TogglLogin = memo(({loading} :{loading:boolean}) => {
@@ -45,7 +44,7 @@ export const TogglLogin = memo(({loading} :{loading:boolean}) => {
           }}
           label={
             <Typography component="span" sx={{fontSize:"inherit"}}>
-              <Box component="span" sx={{position:'relative', bottom:'0.3rem'}}>{TEXT.TOGGL_TOKEN}</Box>
+              <Box component="span" sx={{position:'relative', bottom:'0.3rem'}}>{text('TOGGL_TOKEN')}</Box>
               <HelpPopover><TogglHelpCard/></HelpPopover>
             </Typography>
           } 
@@ -53,7 +52,7 @@ export const TogglLogin = memo(({loading} :{loading:boolean}) => {
           onChange={ e=>setToken(e.target.value) }
           error={token!=='' && !valid}
         />
-        <Tooltip {...tooltipMarginProp} title={TEXT.TOGGL_CONNECT} placement="top-end" arrow>
+        <Tooltip {...tooltipMarginProp} title={text('TOGGL_CONNECT')} placement="top-end" arrow>
           <span><IconButton color="primary"
             sx={{pb:"0px"}}
             onClick={logIn} 

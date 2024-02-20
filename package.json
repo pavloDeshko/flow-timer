@@ -27,13 +27,15 @@
     "zod": "^3.8.2"
   },
   "scripts": {
-    "dev:ext": "webextension-toolbox dev --src ./src --target ./dist/extension/[vendor] chrome",
-    "build:ext": "webextension-toolbox build --src ./src --target ./dist/extension/[vendor] chrome",
-    "dev": "react-app-rewired start",
-    "build": "react-app-rewired build",
+    "dev:ext": "npm run pre && webextension-toolbox dev --src ./src --target ./dist/extension/[vendor] chrome",
+    "build:ext": "npm run pre && webextension-toolbox build --src ./src --target ./dist/extension/[vendor] chrome",
+    "dev": "npm run pre && react-app-rewired start",
+    "build": "npm run pre && react-app-rewired build",
     "prepack": "build:ext && build",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "pre": "sh -c 'echo \"export default $(cat public/common/_locales/en/messages.json) as const\" >  src/_locales.en.messages.json.ts '"
   },
+  "pre-commit":"pre",
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
@@ -50,6 +52,7 @@
     "cpr": "^3.0.1",
     "patch-package": "^6.5.0",
     "postinstall-postinstall": "^2.1.0",
+    "pre-commit": "^1.2.2",
     "react-app-rewired": "^2.2.1",
     "react-scripts": "5.0.1",
     "rimraf": "^3.0.2",

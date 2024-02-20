@@ -1,0 +1,85 @@
+{
+  "APP_TITLE": {"message": "Flow Timer"},
+  "APP_LOGO_ALT": {"message": "Flow Timer logo"},
+
+  "APP_DESC": {"message": "Intelligent Pomodoro with Adaptive Rests. Flow Timer will adjust rest durations according to your work intervals. Toggl Track integration included. Stay in the Flow!"},
+  "APP_DESC_SHORT": {"message": "Intelligent Pomodoro Timer will adjust rest durations according to your work intervals. Stay in the Flow!"},
+  "APP_DESC_SHORTEST": {"message": "will adjust your breaks according to work intervals. Stay in the Flow!"},
+  "APP_ABOUT_TITLE": {"message": "Why and How?"},
+  "APP_ABOUT": {"message": "Are you fan of the Pomodoro technique? Us too! However, many existing apps lack flexibility, locking users into strict routines :(\nUnlike its counterparts, Flow Timer is an adaptable assistant, which will not only remind you to have a rest in time, but will also adjust break time based on your actual work duration, freeing you from rigid timeframes and allowing to work as long as you feel being in the zone!\nSetup is easy - choose preferred Pomodoro timer duration and set desired number of rest minutes per hour of work. For beginning or ending your work and rest segments, simply use respective buttons.\nWith Flow Timer, productivity bends to your rhythm, not the other way around!"},  
+  
+  "WEB_VERTION_NOTICE": {"message": "Web version at {{LINK}}, works on mobile too!"},
+  
+  "NEXT_REST_LEGEND": {"message": "Next rest will be"},
+  "H":{"message":"h"},
+  "M":{"message":"m"},
+  "S":{"message":"s"},
+  "RECALCULATE": {"message": "Recalculate"},
+  "WORK": {"message": "Work"},
+  "REST": {"message": "Rest"},
+  "STOP_WORK": {"message": "Stop working"},
+  "STOP_REST": {"message": "Stop resting"},
+
+  "WORKING_PRE": {"message": "WORKING - "},
+  "RESTING_PRE": {"message": "RESTING - "},
+
+  "ALERT_WORK": {"message": "Time to work!"},
+  "ALERT_REST": {"message": "Time to rest!"},
+
+  "ASK_PERMISSION": {"message": "Please, allow app to notify you when time is up. It will never use it for anything else"},
+  "ASK_INTERACTION": {"message": "Click anywhere, so app can play sound when alarms are due, thanks!"},
+  "WARN_SHORT_TIME": {"message": "Sorry, notifications may not function well for delays under 30 seconds!"},
+
+  "NOTIFY_WORK_TITLE": {"message": "Time to work!"},
+  "NOTIFY_WORK_MESSAGE": {"message": "Your rest time is up"},
+  "NOTIFY_POM_TITLE": {"message": "Pomodoro alert!"},
+  "NOTIFY_POM_MESSAGE": {"message": "You've been working for a long time, take a rest"},
+
+  "ERROR_INFO": {"message": "Erorr Info", "description":"as in click here to copy it"},
+
+  "BACKGROUND_ERROR": {"message": "Some errors in the background - your alarm may not sound :( Contact us if problem persists"},
+  "STORAGE_ERROR_SAVE": {"message": "Troubles with saving data to storage, your app may misbehave :("},
+  "STORAGE_ERROR_GET": {"message": "Troubles with getting data from storage, your app may misbehave :("},
+  "NOTIFY_ERROR_SOUND": {"message": "Unable to play alert sound :( Please check sound permissions"},
+  "NOTIFY_ERROR": {"message": "Unable to notify you when timer is up :( Please check notification permissions"},
+  
+  "OPTION_FLOW": {"message": "Flow - adjust your rest time"},
+  "OPTION_FLOW_LEGEND": {"message": "Minutes of rest per hour of work:"},
+  "OPTION_POMODORO": {"message": "Pomodoro reminder every"},
+  "OPTION_DARK_LIGHT": {"message": "Dark/light mode"},
+
+  "TOGGL_HELP_INTRO": {"message": "At your Toggl profile page go to:"},
+  "TOGGL_HELP_BREADCRUMBS": {"message": "Profile → Profile Settings → API Token → Click to reveal"},
+  "TOGGL_HELP_OUTRO": {"message": "Then copy and paste it to the form below."},
+  "TOGGL_HELP_NOTICE": {"message": "NOTE: Flow Timer will never send your credentials anywhere - token will be stored on your computer only and used exclusively as credentials to save time entries to Toggl"},
+  "TOGGL_GOTO_TOKEN": {"message": "Go to Toggl profile"},
+  "TOGGL_TOKEN": {"message": "Your Toggl token goes here"},
+  "TOGGL_CONNECT": {"message": "Connect to save time entries in Toggl"},
+  "TOGGL_SAVE_NEXT": {"message": "Save next work"},
+  "TOGGL_DESC": {"message": "Description"},
+  "TOGGL_SAVED": {"message": "Saved"},
+  "TOGGL_SAVED_EXT": {"message": "Last work entry saved to Toggl"},
+  "TOGGL_SAVE_PREV": {"message": "Save last unsaved work"},
+  "TOGGL_COLLAPSED": {"message": "Toggl integration"},
+  "TOGGL_EXIT": {"message": "Exit from Toggl"},
+
+  "TOGGL_ERROR_CONNECT": {"message": "Can't connect to Toggl :("},
+  "TOGGL_ERROR_ADD": {"message": "Can't save entry to Toggl :("},
+  "TOGGL_ERROR_COMPAT": {"message": "Can't make sence of data from Toggl :( {{TOGGL_RELOAD}}"},
+  "TOGGL_RELOAD_EXT": {"message": "Updating extension might help"},
+  "TOGGL_RELOAD_WEB": {"message": "Contact us if problem persists'"},
+  "TOGGL_TOO_MANY": {"message": "Looks like too many requests to Toggl were made :( Try again in a minute"},
+  "TOGGL_ERROR_TOKEN": {"message": "Invalid Toggl token :("},
+  "TOGGL_ERROR_AUTH": {"message": "Can't authorize to Toggl :( Have you changed your token?"},
+
+  "COPY": {"message": "Copy to clipboard"},
+  "RELOAD_EXT": {"message": "Reload extension"},
+  "RELOAD_PAGE": {"message": "Reload page"},
+  "HERE": {"message": "here", "description": "as in 'click here'"},
+
+  "FEEDBACK_TITLE": {"message": "Sorry, looks like internals of our app crashed :-/"},
+  "FEEDBACK_WEB": {"message": "Please, drop us a note at {{EMAIL}} about what happened. Click {{DATA}} to copy geeky data and paste it into your email so we can understand what went wrong."},
+  "FEEDBACK_EXT": {"message": "Please, drop us an email so we could understand what went wrong. Click {{DATA}} to copy email address and some geeky data."},
+  "FEEDBACK_EXT_DATA": {"message": "Please email this text to:\n\n{{EMAIL}}\n\n{{DATA}}"},
+  "FEEDBACK_ENDING": {"message": "We will really try to solve the problem asap!"}
+}

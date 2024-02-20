@@ -1,4 +1,4 @@
-import React, {useContext, useState, memo, ChangeEvent, useMemo} from 'react'
+import React, { useContext, useState, memo, ChangeEvent, useMemo } from 'react'
 import {
   Box,
   Stack,
@@ -13,9 +13,8 @@ import {
 import Save from "@mui/icons-material/Save"
 import DoneOutlineIcon from '@mui/icons-material/DoneOutline'
 
-import {TogglForm as TogglFormData, TogglProject} from '../../types'
-import {parse} from '../../utils'
-import TEXT from '../../text'
+import { TogglForm as TogglFormData, TogglProject } from '../../types'
+import { parse, text } from '../../utils'
 import { DispatchContext, tooltipMarginProp } from '../'
 
 export const TogglForm = memo((
@@ -60,7 +59,7 @@ export const TogglForm = memo((
   const savedBit = useMemo(()=>(
     <Box sx={{m:'0px !important', minWidth:'2.5rem'}}>{
       saved === true ? 
-        <Tooltip {...tooltipMarginProp} title={TEXT.TOGGL_SAVED_EXT} placement="top-end">
+        <Tooltip {...tooltipMarginProp} title={text('TOGGL_SAVED_EXT')} placement="top-end">
           <Box sx={{
             //visibility: !!saved ? 'visible':'hidden',
             fontSize: '0.7rem',
@@ -70,11 +69,11 @@ export const TogglForm = memo((
             lineHeight: '0.5rem'
           }}>
             <DoneOutlineIcon sx={{ fontSize: '1rem' }} />
-            {TEXT.TOGGL_SAVED}
+            {text('TOGGL_SAVED')}
           </Box>
         </Tooltip>
       : !!saved ?
-        <Tooltip {...tooltipMarginProp} title={TEXT.TOGGL_SAVE_PREV} placement="top-end" arrow>
+        <Tooltip {...tooltipMarginProp} title={text('TOGGL_SAVE_PREV')} placement="top-end" arrow>
           <span><IconButton color="primary" 
             sx={{ 
               //visibility: !!saved ? 'visible':'hidden',
@@ -102,7 +101,7 @@ export const TogglForm = memo((
               textAlign:'center'
             }
           }}
-          label={TEXT.TOGGL_SAVE_NEXT} 
+          label={text('TOGGL_SAVE_NEXT')} 
           control={
             <Switch
               sx={{mr:-1}}
@@ -112,7 +111,7 @@ export const TogglForm = memo((
             />
         }/>
         <TextField size="small"
-          label={TEXT.TOGGL_DESC}
+          label={text('TOGGL_DESC')}
           focused
           value={desc}
           onChange={setDesc} 

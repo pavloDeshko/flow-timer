@@ -10,9 +10,8 @@ import {
 import Close from '@mui/icons-material/Close'
 
 import {AlarmType, UserAlertType, UserWarning, UserAlarm} from '../types'
-import {useStateLinger} from '../utils'
+import {text, useStateLinger, Text} from '../utils'
 import {SUPPORT_EMAIL, WEB_VERSION_ADRESS} from '../../settings'
-import TEXT from '../text'
 import { CopyLink, DispatchContext } from './'
 
 export const UserAlert = memo(({warning:opened, alertType} :{warning:UserWarning|UserAlarm|null, alertType:UserAlertType})=>{
@@ -24,19 +23,22 @@ export const UserAlert = memo(({warning:opened, alertType} :{warning:UserWarning
 
   switch (warning?.type){
     case AlarmType.REST_END:{
-      message = TEXT.ALERT_WORK
+      message = text('ALERT_WORK')
       alertProps.color = 'secondary' as any // TODO mui type is botched?
       break
     }
     case AlarmType.POM:{
-      message = TEXT.ALERT_REST
+      message = text('ALERT_REST')
       alertProps.color = 'primary' as any
       break
     }
     case 'ERROR':{
       message = <>
         {warning.userMessage}
-        {warning.errorJson && <CopyLink value={TEXT.FEEDBACK_PREPENDED_DATA(warning.errorJson, SUPPORT_EMAIL)} text='error info' />}
+        {warning.errorJson && <CopyLink 
+          value={text('FEEDBACK_EXT_DATA',{EMAIL: SUPPORT_EMAIL, DATA:warning.errorJson})} 
+          message={text('ERROR_INFO')} 
+        />}{/* // TODOt */}
       </>
       alertProps = { variant: "outlined", severity: 'error' }
       break
@@ -86,12 +88,12 @@ export const VersionNotice = ({opened}:{opened:boolean})=>{
         //action={<IconButton size='small'><Close fontSize='small'/></IconButton>}
         onClose={()=>dispatch({type:'CLOSE_USER_ALERT', alertType:UserAlertType.VERSION})} 
       >
-        {TEXT.WEB_VERTION_NOTICE(<Link
+        <Text id='WEB_VERTION_NOTICE' values={{LINK:<Link
           sx={{fontWeight:'normal'}}//,fontSize:'1rem'}}
           color="inherit" 
           target='_blank'
           href={WEB_VERSION_ADRESS}
-        >{WEB_VERSION_ADRESS.replace('https://','')}</Link>)}
+        >{WEB_VERSION_ADRESS.replace('https://','')}</Link>}} />
       </Alert>
     </Collapse>
   )

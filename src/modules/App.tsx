@@ -24,8 +24,7 @@ import {
   CounterTicker, 
   RestAdjustTicker,
   Fallback,
-  VersionNotice
-} from './components/'
+  VersionNotice} from './components/'
 import {
   errorSave,
   errorGet,
@@ -41,10 +40,9 @@ import {
   askPermission,
   checkPermission
 } from './service'
-import {useAsyncEffect, timeToMs, msToTime, stringifyError} from './utils'
+import {useAsyncEffect, timeToMs, msToTime, stringifyError, Text, text} from './utils'
 import {lightTheme, darkTheme} from './themes'
 import {EXTENSION, MAX_REST, MIN_REST, DEFAULT_STATE, ALARM_CLEARENCE} from "../settings"
-import TEXT from './text'
 import eventManager, {Action, Message} from "./events"
 
 const App = () => {
@@ -173,10 +171,10 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
   const handleUserNonActive = ()=>{
     !window.navigator.userActivation.hasBeenActive && 
       setStateWithImmer(fresh=>{
-        fresh.warning = {type:'WARNING',userMessage:TEXT.ASK_INTERACTION}
+        fresh.warning = {type:'WARNING',userMessage: text('ASK_INTERACTION')}
       })// TODO botchet type on compile for some reason
     window.addEventListener('click',()=>{setStateWithImmer(fresh=>{
-      fresh.warning?.userMessage == TEXT.ASK_INTERACTION && (fresh.warning = null)
+      fresh.warning?.userMessage == text('ASK_INTERACTION') && (fresh.warning = null)
     })}, {capture:true, once: true})
   }
 
@@ -200,7 +198,7 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
             })
           } catch (err: any) {
             setStateWithImmer(fresh => {
-              fresh.toggl.loaded =  err.message //|| TEXT.TOGGL_ERROR_SAVE
+              fresh.toggl.loaded =  err.message //|| text('TOGGL_ERROR_SAVE')
               fresh.toggl.form.saved = [start,end]
             })
           }
@@ -231,24 +229,24 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
             })
           }catch(err:any){
             setStateWithImmer(fresh=>{
-              fresh.toggl.loaded = err.message //|| TEXT.TOGGL_ERROR_LOG
+              fresh.toggl.loaded = err.message //|| text('TOGGL_ERROR_LOG')
             })
           }
         }
 
         const ensurePermissionToNotify = () => {
           if(!EXTENSION && checkPermission() == 'default'){
-            fresh.warning = {type:'WARNING', userMessage:TEXT.ASK_PERMISSION}
+            fresh.warning = {type:'WARNING', userMessage: text('ASK_PERMISSION')}
             askPermission().then(result=> 
               result != 'default' && setStateWithImmer(fresh=>{
-                fresh.warning?.userMessage == TEXT.ASK_PERMISSION && (fresh.warning=null)
+                fresh.warning?.userMessage == text('ASK_PERMISSION') && (fresh.warning=null)
               })
             )
           }
         }
 
         const ensureMinTimeout = (timeout :number) => {
-          EXTENSION && (fresh.warning = timeout < MIN_REST ? {type:'WARNING', userMessage: TEXT.WARN_SHORT_TIME} : null)
+          EXTENSION && (fresh.warning = timeout < MIN_REST ? {type:'WARNING', userMessage: text('WARN_SHORT_TIME')} : null)
         }
         
         /// Main "switch" //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -382,6 +380,16 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
         <TogglError error={typeof state.toggl.loaded == 'string' ? state.toggl.loaded  : null} />
       </AccordionContainer>
       {EXTENSION && !state.versionNoticed && <VersionNotice opened={true}/>}
+{/*       <T text="oh{{OH}}oh" values={{OH:'-oh-'}} />
+      <T text="{{F}} {{B}}" values={{F:'foo',B:'bar'}} />
+      <T text="{{A}}{{A}}{{A}}" values={{A:'AH '}} />
+      <T text="title {{P}} footer" values={{P:<p>par</p>}} />
+      <T text="there's a {{L}}, {{Y}}" values={{L: <CopyLink value='link value'/>, Y:'yeah'}} />
+      <br/>
+      <T text="{{A}} bla bla {{B}}" values={{A:'aaa', B:'bbbb'}}/>
+      <br/>
+      <T text="foo foo {{A}} bla bla {{B}}" values={{A:'aaa', B:'bbbb'}}/> */}
+      <Text id='WEB_VERTION_NOTICE' values={{LINK:'bla'}}/>
     </AppContainer>
   )
   

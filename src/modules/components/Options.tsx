@@ -15,9 +15,8 @@ import Brightness4 from '@mui/icons-material/Brightness4'
 import Brightness7 from '@mui/icons-material/Brightness7'
 
 import {Config, Mode} from '../types'
-import {parse} from '../utils'
+import {parse, text} from '../utils'
 import {POM_TIMES} from '../../settings'
-import TEXT from '../text'
 import { DispatchContext } from './'
 
 export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config) => {
@@ -75,9 +74,9 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
           checked={!!mode}
           onChange={setMode}
         />}
-        label={TEXT.OPTION_FLOW}
+        label={text('OPTION_FLOW')}
       />
-      <Typography sx={{mt:'0.25rem'}}>{TEXT.OPTION_FLOW_LEGEND}</Typography>
+      <Typography sx={{mt:'0.25rem'}}>{text('OPTION_FLOW_LEGEND')}</Typography>
       <Slider
         min={1}
         max={60}
@@ -95,7 +94,7 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
           checked={pomActive}
           onChange={setPomActive}
         />}
-        label={TEXT.OPTION_POMODORO}
+        label={text('OPTION_POMODORO')}
       />
       <Box className="AutocompleteContainer"
         sx={{
@@ -115,7 +114,7 @@ export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config
         size="large"
         startIcon={dark ? <Brightness7 color="primary"/>:<Brightness4 color="primary"/>}
         onClick={setDark}
-      >{TEXT.OPTION_DARK_LIGHT}</Button>
+      >{text('OPTION_DARK_LIGHT')}</Button>
     </Box>
   )
 })

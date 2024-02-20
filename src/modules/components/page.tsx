@@ -14,8 +14,8 @@ import {loadLinksPreset} from 'tsparticles-preset-links'
 import {APP_WIDTH} from '../../settings'
 import {useIsNarrow} from '../service'
 import {ICONS} from '../assets'
-import TEXT from '../text'
 import { Elevation, BlockContainer} from '.'
+import { text } from '../utils'
 
 /// Containers ///
 export const PageContainer = ({children, backgroundActive=false}:{children:ReactNode, backgroundActive?:boolean})=>{
@@ -110,11 +110,11 @@ export const ParticlesBackground = memo(({active}:{active: boolean})=>{
 export const PageHeader = () => {
   const theme = useTheme()
   const narrow = useIsNarrow()
-  const splitTitle = TEXT.APP_TITLE.split(' ')
+  const splitTitle = text('APP_TITLE').split(' ')
 
   return (<BlockContainer square={true} elevation={7}>
     <Stack direction="row" spacing={2}>
-      <Box sx={{float:"left"}}><img src={ICONS.MAIN} style={{width:"64px", height:"64px"}} alt={TEXT.APP_LOGO_ALT} /></Box>
+      <Box sx={{float:"left"}}><img src={ICONS.MAIN} style={{width:"64px", height:"64px"}} alt={text('APP_LOGO_ALT')} /></Box>
       <Box>
         <Typography variant="h5" component='h1' sx={{
           '& .title_0':{textShadow:`0px 0px 4px ${theme.palette.primary.main}`},
@@ -125,7 +125,7 @@ export const PageHeader = () => {
         }}>{
           <><span className="title_0">{splitTitle[0]}</span> <span className="title_1">{splitTitle[1]}</span></>
         }</Typography>
-        <Typography>{narrow ? TEXT.APP_DESC_SHORTEST : TEXT.APP_DESC_SHORT}</Typography>
+        <Typography>{narrow ? text('APP_DESC_SHORTEST') : text('APP_DESC_SHORT')}</Typography>
       </Box>
     </Stack>
   </BlockContainer>)
@@ -133,10 +133,12 @@ export const PageHeader = () => {
 
 export const PageDesc = ()=> (
   <BlockContainer square={true} sx={{textIndent:'0rem'}} elevation={7}>
-    <Typography variant="h5" component="h2">{TEXT.APP_ABOUT_TITLE}</Typography>
+    <Typography variant="h5" component="h2">{text('APP_ABOUT_TITLE')}</Typography>
     <Divider sx={{marginY:"0.5rem"}}/>
     <Typography component="div" align="justify" sx={{'& .MuiTypography-root':{mb:'0.5rem'}}}>
-      {TEXT.APP_ABOUT.map((t,n)=><Typography paragraph key={n}>{'- '+t}</Typography>)}
+      {text('APP_ABOUT').split('\n').map((t,n)=>
+        <Typography paragraph key={n}>{'- '+t}</Typography>
+      )} 
     </Typography>
 </BlockContainer>
 )

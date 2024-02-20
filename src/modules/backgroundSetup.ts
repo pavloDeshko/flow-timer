@@ -3,7 +3,7 @@ import {EXTENSION} from '../settings'
 import {AlarmType, Status} from './types'
 import eventManager, { Message} from './events'
 import { dispatchError} from "./events"
-import TEXT from './text'
+import {text} from './utils'
 
 export default function setupBackground(){  
   /// Handling of incoming messages ///
@@ -79,10 +79,10 @@ export default function setupBackground(){
 export const setupGlobalErrorListeners = ()=>{
     const global = EXTENSION ? self : window
     global.addEventListener('unhandledrejection', (event: any) => {
-      dispatchError(event.reason || event.detail?.reason || event.error, TEXT.BACKGROUND_ERROR) //TODO
+      dispatchError(event.reason || event.detail?.reason || event.error, text('BACKGROUND_ERROR')) //TODO
     })
     global.addEventListener('error', event => {
-      dispatchError(event.error, TEXT.BACKGROUND_ERROR)
+      dispatchError(event.error, text('BACKGROUND_ERROR'))
     })
 }
 

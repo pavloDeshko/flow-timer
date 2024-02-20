@@ -4,8 +4,7 @@ import z from 'zod'
 import {Time, Config, TogglForm, State, AlarmType, Error_Info_Schema, UserAlertType} from './types'
 import {EXTENSION} from '../settings'
 import { errorSave } from './service'
-import {stringifyError} from './utils'
-import TEXT from './text'
+import {stringifyError, text} from './utils'
 
 /// Types and schemas /// 
 export type Action = {
@@ -84,7 +83,7 @@ if(EXTENSION){
     try{
       !message._external && port?.postMessage(message)
     }catch(err:any){
-      dispatchError(err, TEXT.BACKGROUND_ERROR, true)
+      dispatchError(err, text('BACKGROUND_ERROR'), true)
     }
   }   
 

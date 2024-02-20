@@ -8,15 +8,15 @@ import {
 import FileCopyOutlined from "@mui/icons-material/FileCopyOutlined"
 import clipboardCopy from 'clipboard-copy'
 
-import TEXT from '../text'
 import {APP_WIDTH} from '../../settings'
+import {text} from '../utils'
 
 export const tooltipMarginProp = {componentsProps:{tooltip:{sx:{m:'4px !important'}}}}
 
-export const CopyLink = memo(({value, text, loading = false}:{value:string, text?:string, loading?:boolean})=>{
+export const CopyLink = memo(({value, message, loading = false}:{value:string, message?:string, loading?:boolean})=>{
   const copy = ()=>clipboardCopy(value)
   
-  return <Tooltip {...tooltipMarginProp} title={TEXT.COPY} placement="right" followCursor>
+  return <Tooltip {...tooltipMarginProp} title={text('COPY')} placement="right" followCursor>
     <span><Button sx={{ 
         p:0, pl:"0.25rem",
       '.MuiButton-startIcon':{mr:"2px"}}}
@@ -25,7 +25,7 @@ export const CopyLink = memo(({value, text, loading = false}:{value:string, text
       startIcon={<FileCopyOutlined fontSize="small" />}
       onClick={copy}
       disabled={loading}
-    >{text || value}</Button></span>
+    >{message || value}</Button></span>
   </Tooltip>
 })
 

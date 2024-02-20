@@ -12,8 +12,9 @@ import ExitToApp from "@mui/icons-material/ExitToApp"
 
 import {TOGGL_TOKEN_URL, APP_WIDTH} from '../../../settings'
 import {IMGS} from '../../assets'
-import TEXT from '../../text'
+import {text} from '../../utils'
 import { DispatchContext } from '..'
+
 
 export const TogglCollapsed = memo(({logged}:{logged:boolean}) => {
   const dispatch = useContext(DispatchContext)
@@ -27,9 +28,9 @@ export const TogglCollapsed = memo(({logged}:{logged:boolean}) => {
         sx={{ color: "primary.main", fontSize: "0.75rem", mr:'0.3rem'}}
         component="span"
       >
-        {TEXT.TOGGL_COLLAPSED}
+        {text('TOGGL_COLLAPSED')}
       </Typography>
-        {logged && <Tooltip title={TEXT.TOGGL_EXIT} placement="right" arrow>
+        {logged && <Tooltip title={text('TOGGL_EXIT')} placement="right" arrow>
           <IconButton 
             sx={{p:0}}
             onClick={logOut}
@@ -60,7 +61,6 @@ export const TogglError = memo(({error}:{error :string | null})=>{
 /** Content passed to HelpPopover */
 export const TogglHelpCard = ()=>{
   const HELP_WIDTH = APP_WIDTH * 0.9 //TODO move out?
-  const text = TEXT.TOGGL_HELP
 
   return(
   <Card sx={{maxWidth:HELP_WIDTH, '& .MuiCardMedia-img':{height:HELP_WIDTH*(2/3), width:HELP_WIDTH}}}>
@@ -71,18 +71,18 @@ export const TogglHelpCard = ()=>{
           "p.breadcrumbs":{fontStyle:'italic'},
           "p.notice":{fontSize:'80%'}
         }}>
-          <p>{text.INTRO}</p>
-          <p className='breadcrumbs'>{text.BREADCRUMBS}</p>
-          <p>{text.OUTRO}</p>
-          <p className='notice'>{text.NOTICE}</p>
-{/*         {TEXT.TOGGL_HELP.split('\n').map((line,i)=>(//!TODO bs
+          <p>{text('TOGGL_HELP_INTRO')}</p>
+          <p className='breadcrumbs'>{text('TOGGL_HELP_BREADCRUMBS')}</p>
+          <p>{text('TOGGL_HELP_OUTRO')}</p>
+          <p className='notice'>{text('TOGGL_HELP_NOTICE')}</p>
+{/*         {text('TOGGL_HELP').split('\n').map((line,i)=>(//!TODO bs
           <p key={i} className={line.includes('\u2192') ? 'breadCrumbs' : line.includes('NOTE') ? 'note' : ""}>{line}</p>
         ))} */}
       </Typography> 
     </CardContent>
     <CardActions>
       <Button /* size="small"  */href={TOGGL_TOKEN_URL} target="_blank">
-        {TEXT.TOGGL_GOTO_TOKEN}
+        {text('TOGGL_GOTO_TOKEN')}
       </Button>
     </CardActions>
   </Card>

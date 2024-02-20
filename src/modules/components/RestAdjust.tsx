@@ -9,8 +9,7 @@ import isEqual from 'lodash.isequal'
 import Update from "@mui/icons-material/Update"
 
 import {Time, Mode} from '../types'
-import {padTwoZeros, parse} from '../utils'
-import TEXT from '../text'
+import {padTwoZeros, parse, text} from '../utils'
 import { DispatchContext, tooltipMarginProp } from './'
 
 /** User adjustable time form*/
@@ -44,21 +43,21 @@ export const RestAdjust = memo(({hours, minutes, seconds, appMode} :Time & {appM
   const fields = useMemo(()=>(<>
       <TextField 
         size="small" 
-        label={TEXT.TIME_LABELS.h}
+        label={text('H')}
         value={padTwoZeros(hours)} 
         inputRef={hoursRef} 
         onChange={onChange}
       />
       <TextField 
         size="small" 
-        label={TEXT.TIME_LABELS.m}
+        label={text('M')}
         value={padTwoZeros(minutes)} 
         inputRef={minutesRef} 
         onChange={onChange} 
       />
       <TextField 
         size="small" 
-        label={TEXT.TIME_LABELS.s}
+        label={text('S')}
         className="seconds" 
         value={padTwoZeros(seconds)}   
         inputRef={secondsRef} 
@@ -67,7 +66,7 @@ export const RestAdjust = memo(({hours, minutes, seconds, appMode} :Time & {appM
   </>),[hours,minutes,seconds,dispatch])
 
   const button = useMemo(()=>(
-    <Tooltip {...tooltipMarginProp} title={TEXT.RECALCULATE} placement="bottom-start" arrow >
+    <Tooltip {...tooltipMarginProp} title={text('RECALCULATE')} placement="bottom-start" arrow >
       <span><IconButton 
         sx={{verticalAlign:'top', display: appMode == Mode.PAUSED ? undefined : 'none'}}
         color="primary" 
@@ -89,7 +88,7 @@ export const RestAdjust = memo(({hours, minutes, seconds, appMode} :Time & {appM
           padding:0.5
       }}
     }}>
-      <Box sx={{mr:'6px'}} className="legend">{TEXT.NEXT_REST_LEGEND}</Box>
+      <Box sx={{mr:'6px'}} className="legend">{text('NEXT_REST_LEGEND')}</Box>
       {fields}
       {button}
     </Box>
