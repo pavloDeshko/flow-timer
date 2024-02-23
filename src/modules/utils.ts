@@ -4,7 +4,7 @@ import {serializeError} from 'serialize-error'
 
 import { Time } from './types'
 import {EXTENSION, TOGGL_TOKEN_LENGHT} from '../settings'
-import EN from '../_locales.en.messages.json'
+import EN from '../locales.en.messages.json'
 
 
 /// Hooks ///

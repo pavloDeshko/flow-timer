@@ -1,6 +1,7 @@
 import {State, Mode, TogglProject} from './modules/types' // TODO! pulls zod for sound :(
 
 export const EXTENSION = !process.env["REACT_APP_ENV"] 
+
 export const APP_WIDTH = 500 // 600px minus scrollbars is max for extension
 
 //commited envs

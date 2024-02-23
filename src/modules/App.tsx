@@ -329,7 +329,7 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
           fresh.toggl.form = {...state.toggl.form, ...action.form }
 
         }else if(action.type == 'TOGGL_SAVE_LAST'){
-          Array.isArray(state.toggl.form.saved) && pushToggl(...state.toggl.form.saved)
+          Array.isArray(state.toggl.form.saved) && pushToggl(...state.toggl.form.saved as [number, number]) //!TODO why strange type?
         
         }else if(action.type == 'CLOSE_USER_ALERT'){
           action.alertType == UserAlertType.NOTIFY && (fresh.alarm = null)
@@ -380,16 +380,6 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
         <TogglError error={typeof state.toggl.loaded == 'string' ? state.toggl.loaded  : null} />
       </AccordionContainer>
       {EXTENSION && !state.versionNoticed && <VersionNotice opened={true}/>}
-{/*       <T text="oh{{OH}}oh" values={{OH:'-oh-'}} />
-      <T text="{{F}} {{B}}" values={{F:'foo',B:'bar'}} />
-      <T text="{{A}}{{A}}{{A}}" values={{A:'AH '}} />
-      <T text="title {{P}} footer" values={{P:<p>par</p>}} />
-      <T text="there's a {{L}}, {{Y}}" values={{L: <CopyLink value='link value'/>, Y:'yeah'}} />
-      <br/>
-      <T text="{{A}} bla bla {{B}}" values={{A:'aaa', B:'bbbb'}}/>
-      <br/>
-      <T text="foo foo {{A}} bla bla {{B}}" values={{A:'aaa', B:'bbbb'}}/> */}
-      <Text id='WEB_VERTION_NOTICE' values={{LINK:'bla'}}/>
     </AppContainer>
   )
   
