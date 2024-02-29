@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react'
 
-import {Time} from '../types'
-import { msToTime} from '../utils'
+import {Time} from '../modules/types'
+import { msToTime} from '../modules/utils'
 import {RestAdjust, Counter} from '.'
 
 const up = ((refTime :number)=>{

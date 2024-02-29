@@ -6,7 +6,10 @@ export default {
     "message": "Flow Timer logo"
   },
   "APP_DESC": {
-    "message": "Intelligent Pomodoro with Adaptive Rests. Flow Timer will adjust rest durations according to your work intervals. Toggl Track integration included. Stay in the Flow!"
+    "message": "Intelligent Pomodoro with Adaptive Rests. Flow Timer will adjust rest durations according to your work intervals."
+  },
+  "APP_DESC_EXTRA": {
+    "message": "Toggl Track integration included. Stay in the Flow!"
   },
   "APP_DESC_SHORT": {
     "message": "Intelligent Pomodoro Timer will adjust rest durations according to your work intervals. Stay in the Flow!"

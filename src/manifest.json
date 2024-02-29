@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Flow Timer",
   "default_locale": "en",
-  "description": "Intelligent Pomodoro with Adaptive Rests. Flow Timer will adjust rest durations according to your work intervals. Toggl Track integration included. Stay in the Flow!",
+  "description": "Intelligent Pomodoro with Adaptive Rests. Flow Timer will adjust rest durations according to your work intervals.",
   "icons": {
     "16": "media/simple_16.png",
     "48": "media/main_48.png",
@@ -11,7 +11,6 @@
   "permissions": [
     "alarms",
     "notifications",
-    "webRequest",
     "storage"
   ],
   "host_permissions": [

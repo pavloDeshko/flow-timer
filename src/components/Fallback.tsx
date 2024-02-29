@@ -7,10 +7,10 @@ import {
 } from '@mui/material'
 import Refresh from "@mui/icons-material/Refresh"
 
-import {SUPPORT_EMAIL,EXTENSION, APP_WIDTH} from '../../settings'
-import {reload} from '../service'
+import {SUPPORT_EMAIL,EXTENSION, APP_WIDTH} from '../settings'
+import {reload} from '../modules/service'
 import { CopyLink } from './'
-import { text, Text } from '../utils'
+import { text, Text } from '../modules/utils'
 
 /// Some extras ///
 export const Fallback = memo(({errorString}:{errorString:string}) => {

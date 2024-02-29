@@ -11,11 +11,11 @@ import Particles from 'react-particles'
 import { Container, Vector, Particle } from "tsparticles-engine"
 import {loadLinksPreset} from 'tsparticles-preset-links'
 
-import {APP_WIDTH} from '../../settings'
-import {useIsNarrow} from '../service'
-import {ICONS} from '../assets'
+import {APP_WIDTH} from '../settings'
+import {useIsNarrow} from '../modules/service'
+import {ICONS} from '../modules/assets'
 import { Elevation, BlockContainer} from '.'
-import { text } from '../utils'
+import { text } from '../modules/utils'
 
 /// Containers ///
 export const PageContainer = ({children, backgroundActive=false}:{children:ReactNode, backgroundActive?:boolean})=>{

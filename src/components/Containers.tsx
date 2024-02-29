@@ -11,7 +11,7 @@ import ExpandMore from  "@mui/icons-material/ExpandMore"
 import HelpOutlineOutlined from '@mui/icons-material/HelpOutlineOutlined'
 import Close from '@mui/icons-material/Close'
 
-import {EXTENSION, APP_WIDTH} from '../../settings'
+import {EXTENSION, APP_WIDTH} from '../settings'
 
 /// Containers ///
 export const AppContainer = ({children}:{children:ReactNode})=>

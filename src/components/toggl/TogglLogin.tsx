@@ -12,7 +12,7 @@ import Link from "@mui/icons-material/Link"
 import Key from "@mui/icons-material/Key"
 
 import {TogglHelpCard, HelpPopover} from '../'
-import {parse, text} from '../../utils'
+import {parse, text} from '../../modules/utils'
 import { DispatchContext, tooltipMarginProp } from '../'
 
 export const TogglLogin = memo(({loading} :{loading:boolean}) => {

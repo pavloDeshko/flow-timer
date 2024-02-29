@@ -1,5 +1,3 @@
-import {State, Mode, TogglProject} from './modules/types' // TODO! pulls zod for sound :(
-
 export const EXTENSION = !process.env["REACT_APP_ENV"] 
 
 export const APP_WIDTH = 500 // 600px minus scrollbars is max for extension
@@ -20,10 +18,9 @@ export const TOGGL_TOKEN_LENGHT = [17,48] as const
 export const CLIENT_NAME = EXTENSION ? 'Flow Timer Extension' :'flowtimer.click'
 
 export const WEB_VERSION_ADRESS = 'https://flowtimer.click'
-export const SUPPORT_EMAIL = 'pavlodeshko92@gmail.com'
+export const SUPPORT_EMAIL = 'journeyman042@gmail.com'
 
-export const DEFAULT_STATE :State = {
-  //alarms: { work: null, pom: null },
+export const DEFAULT_STATE = {
   nextRestTime: MIN_REST, 
   workingSince: null,
   restingUntil: null,
@@ -31,12 +28,12 @@ export const DEFAULT_STATE :State = {
     pomTimeMins: 50,
     pomActive: false,
     ratio: DEFAULT_RATIO, 
-    mode: Mode.ON,
+    mode: "ON" as Mode,
     dark: null
   },
   toggl: {
     login: null,
-    projects: [] as TogglProject[],
+    projects: [],
     form: {
       shouldSave: false,
       saved: false,
@@ -48,7 +45,14 @@ export const DEFAULT_STATE :State = {
   alarm: null,
   warning: null,
   versionNoticed:0
-}
+} 
+
+/// redeclared here so zod is not pulled in sound batch TODO
+enum Mode {
+  OFF = 0,
+  PAUSED = 'PAUSED',
+  ON = 'ON'
+} 
 
 //private envs
 //export const env = process.env['env']

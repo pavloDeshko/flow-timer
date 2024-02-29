@@ -9,9 +9,9 @@ import {
 } from '@mui/material'
 import Close from '@mui/icons-material/Close'
 
-import {AlarmType, UserAlertType, UserWarning, UserAlarm} from '../types'
-import {text, useStateLinger, Text} from '../utils'
-import {SUPPORT_EMAIL, WEB_VERSION_ADRESS} from '../../settings'
+import {AlarmType, UserAlertType, UserWarning, UserAlarm} from '../modules/types'
+import {text, useStateLinger, Text} from '../modules/utils'
+import {SUPPORT_EMAIL, WEB_VERSION_ADRESS} from '../settings'
 import { CopyLink, DispatchContext } from './'
 
 export const UserAlert = memo(({warning:opened, alertType} :{warning:UserWarning|UserAlarm|null, alertType:UserAlertType})=>{

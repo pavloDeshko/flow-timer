@@ -8,8 +8,8 @@ import {
 import FileCopyOutlined from "@mui/icons-material/FileCopyOutlined"
 import clipboardCopy from 'clipboard-copy'
 
-import {APP_WIDTH} from '../../settings'
-import {text} from '../utils'
+import {APP_WIDTH} from '../settings'
+import {text} from '../modules/utils'
 
 export const tooltipMarginProp = {componentsProps:{tooltip:{sx:{m:'4px !important'}}}}
 

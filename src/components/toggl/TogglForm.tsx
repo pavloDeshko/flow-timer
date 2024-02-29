@@ -13,8 +13,8 @@ import {
 import Save from "@mui/icons-material/Save"
 import DoneOutlineIcon from '@mui/icons-material/DoneOutline'
 
-import { TogglForm as TogglFormData, TogglProject } from '../../types'
-import { parse, text } from '../../utils'
+import { TogglForm as TogglFormData, TogglProject } from '../../modules/types'
+import { parse, text } from '../../modules/utils'
 import { DispatchContext, tooltipMarginProp } from '../'
 
 export const TogglForm = memo((

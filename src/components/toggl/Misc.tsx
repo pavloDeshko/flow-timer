@@ -10,9 +10,9 @@ import {
 } from '@mui/material'
 import ExitToApp from "@mui/icons-material/ExitToApp"
 
-import {TOGGL_TOKEN_URL, APP_WIDTH} from '../../../settings'
-import {IMGS} from '../../assets'
-import {text} from '../../utils'
+import {TOGGL_TOKEN_URL, APP_WIDTH} from '../../settings'
+import {IMGS} from '../../modules/assets'
+import {text} from '../../modules/utils'
 import { DispatchContext } from '..'
 
 
@@ -69,7 +69,7 @@ export const TogglHelpCard = ()=>{
       <Typography component="div" paragraph={true} sx={{
           "& p":{marginY:'.5rem'},
           "p.breadcrumbs":{fontStyle:'italic'},
-          "p.notice":{fontSize:'80%'}
+          "p.notice":{fontSize:'60%'}
         }}>
           <p>{text('TOGGL_HELP_INTRO')}</p>
           <p className='breadcrumbs'>{text('TOGGL_HELP_BREADCRUMBS')}</p>

@@ -24,7 +24,7 @@ import {
   CounterTicker, 
   RestAdjustTicker,
   Fallback,
-  VersionNotice} from './components/'
+  VersionNotice} from '../components/'
 import {
   errorSave,
   errorGet,

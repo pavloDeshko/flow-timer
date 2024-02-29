@@ -5,8 +5,8 @@ import {
   ButtonGroup
 } from '@mui/material'
 
-import {Time} from '../types'
-import {padTwoZeros, text} from '../utils'
+import {Time} from '../modules/types'
+import {padTwoZeros, text} from '../modules/utils'
 import { DispatchContext } from './'
 
 /** Main time display */

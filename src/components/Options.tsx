@@ -14,9 +14,9 @@ import {
 import Brightness4 from '@mui/icons-material/Brightness4'
 import Brightness7 from '@mui/icons-material/Brightness7'
 
-import {Config, Mode} from '../types'
-import {parse, text} from '../utils'
-import {POM_TIMES} from '../../settings'
+import {Config, Mode} from '../modules/types'
+import {parse, text} from '../modules/utils'
+import {POM_TIMES} from '../settings'
 import { DispatchContext } from './'
 
 export const Options = memo(({pomTimeMins, pomActive, ratio, mode, dark} :Config) => {

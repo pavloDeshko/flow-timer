@@ -8,8 +8,8 @@ import {
 import isEqual from 'lodash.isequal'
 import Update from "@mui/icons-material/Update"
 
-import {Time, Mode} from '../types'
-import {padTwoZeros, parse, text} from '../utils'
+import {Time, Mode} from '../modules/types'
+import {padTwoZeros, parse, text} from '../modules/utils'
 import { DispatchContext, tooltipMarginProp } from './'
 
 /** User adjustable time form*/
