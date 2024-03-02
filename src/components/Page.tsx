@@ -125,7 +125,7 @@ export const PageHeader = () => {
         }}>{
           <><span className="title_0">{splitTitle[0]}</span> <span className="title_1">{splitTitle[1]}</span></>
         }</Typography>
-        <Typography>{narrow ? text('APP_DESC_SHORTEST') : text('APP_DESC_SHORT')}</Typography>
+        <Typography>{narrow ? text('APP_DESC_WEB_SHORT') : text('APP_DESC_WEB')}</Typography>
       </Box>
     </Stack>
   </BlockContainer>)

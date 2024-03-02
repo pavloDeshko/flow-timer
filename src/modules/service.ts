@@ -12,13 +12,12 @@ import {
   AlarmType, AlarmType_Schema, AlarmId,
   State,
   State_Schema,
-  AlarmId_Schema,
   ErrorInfo,
   Status,
   Error_Info_Schema,
 } from './types'
 import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME, EXTENSION, APP_WIDTH} from '../settings'
-import { deObf, text} from './utils'
+import { deObfuscate, text} from './utils'
 import {ICONS, SOUNDS} from './assets'
 import {dispatchError, isConnected} from './events'
 import retry from './retry'
@@ -29,7 +28,7 @@ export const userifyError = (err:Error,userMessage:string):Error=>{
 }
 
 /// Network relatede stuff ///
-const getAuth = (auth :Toggl_Auth) => 'Basic ' + btoa(typeof auth == 'string' ? `${deObf(auth)}:api_token` : `${auth.user}:${deObf(auth.pass)}`)//TODO ?
+const getAuth = (auth :Toggl_Auth) => 'Basic ' + btoa(typeof auth == 'string' ? `${deObfuscate(auth)}:api_token` : `${auth.user}:${deObfuscate(auth.pass)}`)//TODO ?
 
 const w = wretch()
   .url(TOGGL_URL)
@@ -210,7 +209,7 @@ const playAudio = (pomodoro :boolean) => {
 //Used for extension - tryies to open new window or tab to play audio 
 const playAudioInWindow = async(pomodoro :boolean) => {
   const currentWindow = await chrome.windows.getCurrent()
-  const url = 'sound.html?type=' + (pomodoro ? 'pom' : 'work')
+  const url = 'alertSound.html?type=' + (pomodoro ? 'pom' : 'work')
 
   if(currentWindow.focused || isConnected()){
     chrome.windows.create({// open and close new window to play sound

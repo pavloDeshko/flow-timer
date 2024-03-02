@@ -6,22 +6,19 @@ export default {
     "message": "Flow Timer logo"
   },
   "APP_DESC": {
-    "message": "Intelligent Pomodoro with Adaptive Rests. Flow Timer will adjust rest durations according to your work intervals."
+    "message": "Flow Timer will adjust rest durations according to your work intervals. Toggl Track integration included!"
   },
-  "APP_DESC_EXTRA": {
-    "message": "Toggl Track integration included. Stay in the Flow!"
-  },
-  "APP_DESC_SHORT": {
+  "APP_DESC_WEB": {
     "message": "Intelligent Pomodoro Timer will adjust rest durations according to your work intervals. Stay in the Flow!"
   },
-  "APP_DESC_SHORTEST": {
+  "APP_DESC_WEB_SHORT": {
     "message": "will adjust your breaks according to work intervals. Stay in the Flow!"
   },
   "APP_ABOUT_TITLE": {
     "message": "Why and How?"
   },
   "APP_ABOUT": {
-    "message": "Are you fan of the Pomodoro technique? Us too! However, many existing apps lack flexibility, locking users into strict routines :(\nUnlike its counterparts, Flow Timer is an adaptable assistant, which will not only remind you to have a rest in time, but will also adjust break time based on your actual work duration, freeing you from rigid timeframes and allowing to work as long as you feel being in the zone!\nSetup is easy - choose preferred Pomodoro timer duration and set desired number of rest minutes per hour of work. For beginning or ending your work and rest segments, simply use respective buttons.\nWith Flow Timer, productivity bends to your rhythm, not the other way around!"
+    "message": "Are you fan of the Pomodoro technique? Us too! However, many existing apps lack flexibility, locking users into strict routines :(\nUnlike its counterparts, Flow Timer is an adaptable assistant, which will not only remind you to have a rest in time, but will also adjust break time based on your actual work duration. This will free you from rigid timeframes and allow to work as long as you feel being in the Flow!\nSetup is easy - choose preferred Pomodoro timer duration and set desired number of rest minutes per hour of work. For beginning or ending your work and rest segments, simply use respective buttons.\nWith Flow Timer, productivity bends to your rhythm, not the other way around!"
   },
   "WEB_VERTION_NOTICE": {
     "message": "Web version at {{LINK}}, works on mobile too!"

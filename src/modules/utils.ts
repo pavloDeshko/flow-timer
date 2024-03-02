@@ -30,8 +30,6 @@ export const text :{
   return message//TODO why its allowed?
 }
 
-let bla = text('WEB_VERTION_NOTICE',{LINK:'bla'})
-
 /** Component return interpolated Fragment */
 export const Text = <T extends ID>(props:(T extends Template_ID ? {id:T, values: Values<T,ReactNode>} : {id:T}))=>{
   const marker = Symbol('_value')
@@ -124,7 +122,7 @@ export const parse = {
   h: makeParseNumber(24),
   m: makeParseNumber(60),
   s: makeParseNumber(60),
-  togglTokenSafe: (value:string)=>z.string().min(TOGGL_TOKEN_LENGHT[0]).max(TOGGL_TOKEN_LENGHT[1]).regex(JWT).transform(obf).safeParse(value.trim()),
+  togglTokenSafe: (value:string)=>z.string().min(TOGGL_TOKEN_LENGHT[0]).max(TOGGL_TOKEN_LENGHT[1]).regex(JWT).transform(obfuscate).safeParse(value.trim()),
   togglDesc:  (value:string, fallback :string)=> z.string().max(1000).catch(fallback).parse(value)
 }
 
@@ -138,9 +136,9 @@ export const padTwoZeros = (number :number) => {
 }
 
 /** Obfuscate string value */
-export const obf = (value:string)=> (value.slice(value.length/2)+value.slice(0,value.length/2)).split('').reverse().join('')
+export const obfuscate = (value:string)=> (value.slice(value.length/2)+value.slice(0,value.length/2)).split('').reverse().join('')
 /** Reverse obfuscation of string value */
-export const deObf = (value:string)=>obf(value)
+export const deObfuscate = (value:string)=>obfuscate(value)
 
 
 /* export const log = {
