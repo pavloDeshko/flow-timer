@@ -250,7 +250,7 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
         }
         
         /// Main "switch" //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        if(action.type == 'WORK' && !state.workingSince){// Start work
+        if(action.type == 'START_WORK' && !state.workingSince){// Start work
           fresh.restingUntil = null
           fresh.workingSince = Date.now()
           fresh.alarm = null
@@ -263,7 +263,7 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
           
           fresh.toggl.form.saved = false
       
-        }else if(action.type == 'WORK' && state.workingSince){// End work
+        }else if(action.type == 'STOP_WORK' && state.workingSince){// End work
           fresh.workingSince = null
           fresh.nextRestTime = state.config.mode == Mode.ON ? calcRestDuration(state.workingSince) : state.nextRestTime
           fresh.alarm = null
@@ -273,7 +273,7 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
 
           pushOrSaveLastToggl()
 
-        }else if(action.type == 'REST' && !state.restingUntil){// Start rest
+        }else if(action.type == 'START_REST' && !state.restingUntil){// Start rest
           const freshRestTime = state.workingSince && state.config.mode == Mode.ON ? calcRestDuration(state.workingSince) : state.nextRestTime
 
           fresh.workingSince = null
@@ -289,7 +289,7 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
 
           state.workingSince && pushOrSaveLastToggl()
 
-        }else if(action.type == 'REST' && state.restingUntil){// End rest
+        }else if(action.type == 'STOP_REST' && state.restingUntil){// End rest
           fresh.restingUntil = null
           //fresh.nextRestTime = state.config.mode == Mode.ON ? calcRestDuration(state.workingSince || Date.now()) : state.nextRestTime
 

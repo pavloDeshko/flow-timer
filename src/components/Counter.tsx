@@ -34,10 +34,18 @@ export const Controls = memo(({working,resting}:{working:boolean,resting:boolean
     <ButtonGroup sx={{
       '.MuiButton-root, .MuiButton-root:hover':{borderWidth:'2px'}
     }} fullWidth>
-      <Button variant={working? 'contained' : 'outlined'} color="secondary" onClick={()=>dispatch({type: 'WORK'})}>
+      <Button 
+        variant={working ? 'contained' : 'outlined'} 
+        color="secondary" 
+        onClick={()=>dispatch({type: working?'STOP_WORK':'START_WORK'})}
+      >
         {working ? text('STOP_WORK') : text('WORK')}
       </Button>
-      <Button variant={resting? 'contained' : 'outlined'} color="primary" onClick={()=>dispatch({type: 'REST'})}>
+      <Button 
+        variant={resting ? 'contained' : 'outlined'} 
+        color="primary" 
+        onClick={()=>dispatch({type: resting ? 'STOP_REST' : 'START_REST'})}
+      >
         {resting ? text('STOP_REST') : text('REST')}
       </Button>
     </ButtonGroup>

@@ -19,7 +19,7 @@ import {
 import {TOGGL_URL, TOGGL_ADD_URL, TOGGL_USER_URL, CLIENT_NAME, EXTENSION, APP_WIDTH} from '../settings'
 import { deObfuscate, text} from './utils'
 import {ICONS, SOUNDS} from './assets'
-import {dispatchError, isConnected} from './events'
+import eventManager, {dispatchError, isConnected, WORKER} from './events'
 import retry from './retry'
 
 export const userifyError = (err:Error,userMessage:string):Error=>{
@@ -159,6 +159,7 @@ export const {save : alarmSave, get : alarmGet} = _makeSaveGet<AlarmType>('STORA
 export const {save : errorSave, get : errorGet} = _makeSaveGet<ErrorInfo>('STORAGE_ERROR_KEY', Error_Info_Schema, {keepSilent:true, session:true})
 
 /// Alarms related functions ///
+const ID = 'FLOW_TIMER_NOTIFICATION'
 export const notify = async(type:AlarmType)=>{
   const pomodoro = type == AlarmType.POM;
   
@@ -170,18 +171,29 @@ export const notify = async(type:AlarmType)=>{
   
   try{
     if(EXTENSION){
-      await chrome.notifications.create({// hell it's needed - async error want' be caught otherwise
-        type: 'basic',
-        silent: false,
-        title: pomodoro ? text('NOTIFY_POM_TITLE') : text('NOTIFY_WORK_TITLE'),
-        message: pomodoro ? text('NOTIFY_POM_MESSAGE') : text('NOTIFY_WORK_MESSAGE'),
-        iconUrl: chrome.runtime.getURL(pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT)
-      })
+      await chrome.notifications.clear(ID)
+      await chrome.notifications.create(// hell it's needed - async error want' be caught otherwise
+        ID,
+        {
+          type: 'basic',
+          silent: false,
+          title: pomodoro ? text('NOTIFY_POM_TITLE') : text('NOTIFY_WORK_TITLE'),
+          message: pomodoro ? text('NOTIFY_POM_MESSAGE') : text('NOTIFY_WORK_MESSAGE'),
+          iconUrl: chrome.runtime.getURL(pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT),
+/*           buttons: pomodoro ? 
+            [{title : text('STOP_WORK')}, {title : text('REST')}] :
+            [{title : text('WORK')}, {title : text('STOP_REST')}] */
+        }
+      )
     }else if(window.Notification?.permission == 'granted' ){
       new window.Notification(
-        pomodoro ? text('NOTIFY_POM_TITLE') : text('NOTIFY_WORK_TITLE'),{
+        pomodoro ? text('NOTIFY_POM_TITLE') : text('NOTIFY_WORK_TITLE'),
+        {
           body:pomodoro ? text('NOTIFY_POM_MESSAGE') : text('NOTIFY_WORK_MESSAGE'),
-          icon: pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT
+          icon: pomodoro ? ICONS.POM_ALERT : ICONS.WORK_ALERT,
+          tag:ID,
+          renotify:true
+          //actions:[{action:'BLA',title:'start work'}]
         }
       )
     }
@@ -189,6 +201,14 @@ export const notify = async(type:AlarmType)=>{
     dispatchError(err, text('NOTIFY_ERROR'))
   }
 }
+
+/* if(EXTENSION && WORKER){
+  chrome.notifications.onButtonClicked.addListener(((id,i)=>{
+    eventManager.emit('')
+  }))
+}else if(!EXTENSION){
+
+} */
 
 //Could be used by web page or opened popup 
 let workAudio :HTMLAudioElement, pomAudio :HTMLAudioElement

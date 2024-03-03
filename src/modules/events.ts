@@ -8,9 +8,13 @@ import {stringifyError, text} from './utils'
 
 /// Types and schemas /// 
 export type Action = {
-  type: 'WORK'
+  type: 'START_WORK'
 }|{
-  type: 'REST'
+  type: 'STOP_WORK'
+}|{
+  type: 'START_REST'
+}|{
+  type: 'STOP_REST'
 }|{
   type: 'ADJUST',
   time: Time
@@ -55,7 +59,7 @@ export type Message = z.infer<typeof MessageSchema>
 
 
 /// Event manager setup ///
-const WORKER = 'ServiceWorkerGlobalScope' in self
+export const WORKER = 'ServiceWorkerGlobalScope' in self
 
 const eventManager = new Emittery<{
   'action':Action,
