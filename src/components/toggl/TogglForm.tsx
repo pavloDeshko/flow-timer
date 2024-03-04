@@ -16,6 +16,7 @@ import DoneOutlineIcon from '@mui/icons-material/DoneOutline'
 import { TogglForm as TogglFormData, TogglProject } from '../../modules/types'
 import { parse, text } from '../../modules/utils'
 import { DispatchContext, tooltipMarginProp } from '../'
+import { APP_WIDTH } from 'src/settings'
 
 export const TogglForm = memo((
   {projects, projectId, shouldSave, desc, saved} : {projects :Array<TogglProject>} & TogglFormData
@@ -45,6 +46,7 @@ export const TogglForm = memo((
     <Select<number|''|'REFRESH'>
       size="small" 
       sx={{flexBasis:'8rem', flexShrink:'0.7', overflow:'hidden'}}
+      MenuProps={{disableScrollLock: true, sx:{maxHeight:'25rem'}}}
       value={projectId ?? ''}
       onChange={setProject}
     >
@@ -59,7 +61,7 @@ export const TogglForm = memo((
   const savedBit = useMemo(()=>(
     <Box sx={{m:'0px !important', minWidth:'2.5rem'}}>{
       saved === true ? 
-        <Tooltip {...tooltipMarginProp} title={text('TOGGL_SAVED_EXT')} placement="top-end">
+        <Tooltip {...tooltipMarginProp} title={text('TOGGL_SAVED_EXT')} placement="top-end" arrow>
           <Box sx={{
             //visibility: !!saved ? 'visible':'hidden',
             fontSize: '0.7rem',

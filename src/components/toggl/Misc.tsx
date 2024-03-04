@@ -6,13 +6,14 @@ import {
   IconButton,
   Tooltip,
   Collapse,
-  Card, CardContent, CardActions, CardMedia
+  Card, CardContent, CardActions, CardMedia,
+  Link
 } from '@mui/material'
 import ExitToApp from "@mui/icons-material/ExitToApp"
 
-import {TOGGL_TOKEN_URL, APP_WIDTH} from '../../settings'
+import {TOGGL_TOKEN_URL, APP_WIDTH, PRIVACY_POLICY_ADDRESS} from '../../settings'
 import {IMGS} from '../../modules/assets'
-import {text} from '../../modules/utils'
+import {text, Text} from '../../modules/utils'
 import { DispatchContext } from '..'
 
 
@@ -67,14 +68,15 @@ export const TogglHelpCard = ()=>{
     <CardMedia component="img" image={IMGS.TOGGL_HELP}/> 
     <CardContent sx={{pb:"0"}}>
       <Typography component="div" paragraph={true} sx={{
+          mb:0,
           "& p":{marginY:'.5rem'},
-          "p.breadcrumbs":{fontStyle:'italic'},
-          "p.notice":{fontSize:'60%'}
+          "p.breadcrumbs":{fontStyle:'italic', fontWeight:500},
+          "p.notice":{fontSize:'75%'}
         }}>
           <p>{text('TOGGL_HELP_INTRO')}</p>
           <p className='breadcrumbs'>{text('TOGGL_HELP_BREADCRUMBS')}</p>
           <p>{text('TOGGL_HELP_OUTRO')}</p>
-          <p className='notice'>{text('TOGGL_HELP_NOTICE')}</p>
+          <p className='notice'><Text id='TOGGL_HELP_NOTICE' values={{PRIVACY_LINK:<Link target='_blank' href={PRIVACY_POLICY_ADDRESS}>{text('PRIVACY_POLICY_NAME')}</Link>}}/></p>
 {/*         {text('TOGGL_HELP').split('\n').map((line,i)=>(//!TODO bs
           <p key={i} className={line.includes('\u2192') ? 'breadCrumbs' : line.includes('NOTE') ? 'note' : ""}>{line}</p>
         ))} */}

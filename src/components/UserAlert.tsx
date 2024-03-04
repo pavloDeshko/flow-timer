@@ -11,7 +11,7 @@ import Close from '@mui/icons-material/Close'
 
 import {AlarmType, UserAlertType, UserWarning, UserAlarm} from '../modules/types'
 import {text, useStateLinger, Text} from '../modules/utils'
-import {SUPPORT_EMAIL, WEB_VERSION_ADRESS} from '../settings'
+import {SUPPORT_EMAIL, WEB_VERSION_ADDRESS} from '../settings'
 import { CopyLink, DispatchContext } from './'
 
 export const UserAlert = memo(({warning:opened, alertType} :{warning:UserWarning|UserAlarm|null, alertType:UserAlertType})=>{
@@ -92,8 +92,8 @@ export const VersionNotice = ({opened}:{opened:boolean})=>{
           sx={{fontWeight:'normal'}}//,fontSize:'1rem'}}
           color="inherit" 
           target='_blank'
-          href={WEB_VERSION_ADRESS}
-        >{WEB_VERSION_ADRESS.replace('https://','')}</Link>}} />
+          href={WEB_VERSION_ADDRESS}
+        >{WEB_VERSION_ADDRESS.replace('https://','')}</Link>}} />
       </Alert>
     </Collapse>
   )

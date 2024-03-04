@@ -23,6 +23,9 @@ export default {
   "WEB_VERTION_NOTICE": {
     "message": "Web version at {{LINK}}, works on mobile too!"
   },
+  "PRIVACY_POLICY_NAME": {
+    "message": "Privacy Policy"
+  },
   "NEXT_REST_LEGEND": {
     "message": "Next rest will be"
   },
@@ -124,7 +127,7 @@ export default {
     "message": "Then copy and paste it to the form below."
   },
   "TOGGL_HELP_NOTICE": {
-    "message": "NOTE: Flow Timer will never send your credentials anywhere - token will be stored on your computer only and used exclusively as credentials to save time entries to Toggl"
+    "message": "NOTE: Flow Timer will not send your data anywhere - Token will be stored on your computer only and used exclusively as credentials to save time entries to Toggl Track. See {{PRIVACY_LINK}}."
   },
   "TOGGL_GOTO_TOKEN": {
     "message": "Go to Toggl profile"
