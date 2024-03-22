@@ -19,7 +19,7 @@ export const CLIENT_NAME = EXTENSION ? 'Flow Timer Extension' :'flowtimer.click'
 
 export const WEB_VERSION_ADDRESS = 'https://flowtimer.click'
 export const SUPPORT_EMAIL = 'journeyman042@gmail.com'
-export const PRIVACY_POLICY_ADDRESS = 'https://ext.flowtimer.click/privacy.html'
+export const PRIVACY_POLICY_ADDRESS = EXTENSION ? `https://ext.flowtimer.click/privacy.html` : process.env['PUBLIC_URL'] + 'privacy.html'
 
 export const DEFAULT_STATE = {
   nextRestTime: MIN_REST, 
