@@ -24,7 +24,9 @@ import {
   CounterTicker, 
   RestAdjustTicker,
   Fallback,
-  VersionNotice} from '../components/'
+  ExtensionNotice,
+  MobileNotice
+} from '../components/'
 import {
   errorSave,
   errorGet,
@@ -352,6 +354,7 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
 
   const content = (
     <AppContainer>
+
       <BlockContainer className="CounterBlock" stacked>
         <CounterTicker refTime={state.workingSince || state.restingUntil } typeOrModifier={!!state.restingUntil ? 'DOWN' : 'UP'} />
         <Controls working={!!state.workingSince} resting={!!state.restingUntil} />
@@ -364,6 +367,8 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
         <UserAlert warning={state.warning} alertType={UserAlertType.WARN}/>
         <UserAlert warning={errorWarning} alertType={UserAlertType.ERROR}/>
       </BlockContainer>
+
+      {!EXTENSION && <MobileNotice dismissed={!!state.versionNoticed}/>}
 
       <BlockContainer className="OptionsBlock">
         <Options {...state.config } dark={dark} />
@@ -379,7 +384,8 @@ const AppContent = memo(({state,setState}:{state:State, setState:SetStateT}) => 
         }
         <TogglError error={typeof state.toggl.loaded == 'string' ? state.toggl.loaded  : null} />
       </AccordionContainer>
-      {EXTENSION && !state.versionNoticed && <VersionNotice opened={true}/>}
+
+      {EXTENSION && <ExtensionNotice dismissed={!!state.versionNoticed}/>}
     </AppContainer>
   )
   

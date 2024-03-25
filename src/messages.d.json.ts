@@ -20,8 +20,11 @@ export default {
   "APP_ABOUT": {
     "message": "Are you fan of the Pomodoro technique? Us too! However, many existing apps lack flexibility, locking users into strict routines :(\nUnlike its counterparts, Flow Timer is an adaptable assistant, which will not only remind you to have a rest in time, but will also adjust break time based on your actual work duration. This will free you from rigid timeframes and allow to work as long as you feel being in the Flow!\nSetup is easy - choose preferred Pomodoro timer duration and set desired number of rest minutes per hour of work. For beginning or ending your work and rest segments, simply use respective buttons.\nWith Flow Timer, productivity bends to your rhythm, not the other way around!"
   },
-  "WEB_VERTION_NOTICE": {
+  "WEB_VERSION_NOTICE": {
     "message": "Web version at {{LINK}}, works on mobile too!"
+  },
+  "MOBILE_NOTICE": {
+    "message": "Stay on this tab for alarms to work on mobile :)"
   },
   "PRIVACY_POLICY_NAME": {
     "message": "Privacy Policy"
