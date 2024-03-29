@@ -1,6 +1,6 @@
 # Flow Timer
 
-This repo contains multiplatform code for Flow timer app, available in web version [here](https://flowtimer.click), chrome extension [IN PROGRESS]() and PWA for ANDROID [IN PROGRESS]()
+This repo contains multiplatform code for Flow timer app, available in web version [here](https://flowtimer.click), chrome extension and PWA for ANDROID (in progress).
 ___
 
 ## Why and How?
