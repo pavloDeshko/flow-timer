@@ -1,9 +1,10 @@
 import {EXTENSION} from "../settings"
+import {ReactComponent as Main} from "./main.svg"
 
 const publicPath = !EXTENSION ? process.env['PUBLIC_URL'] + 'static/' : ''
 
 export const ICONS = {
-  MAIN: publicPath + "media/main.svg",
+  MAIN: Main,
   DEFAULT:{16: publicPath + "media/simple_16.png", 32: publicPath + "media/simple_32.png", 64: publicPath + "media/simple_64.png"} ,
   WORK:{16: publicPath + "media/work_16.png", 32: publicPath + "media/work_32.png", 64: publicPath + "media/work_64.png"},
   REST:{16: publicPath + "media/rest_16.png", 32: publicPath + "media/rest_32.png", 64: publicPath + "media/rest_64.png"},

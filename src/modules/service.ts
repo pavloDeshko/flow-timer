@@ -217,7 +217,7 @@ const loadAudio = () => {
   workAudio = new window.Audio(SOUNDS.WORK)
   pomAudio = new window.Audio(SOUNDS.POM)
 }
-window.Audio && loadAudio()
+window.Audio && window.addEventListener('load',()=>loadAudio())
 
 const playAudio = (pomodoro :boolean) => {
   retry(// The were some errors in loading audio from the first time for no apparent reason

@@ -114,7 +114,10 @@ export const PageHeader = () => {
 
   return (<BlockContainer square={true} elevation={7}>
     <Stack direction="row" spacing={2}>
-      <Box sx={{float:"left"}}><img src={ICONS.MAIN} style={{width:"64px", height:"64px"}} alt={text('APP_LOGO_ALT')} /></Box>
+      <Box sx={{float:"left"}}>
+        <ICONS.MAIN style={{width:"64px", height:"64px"}} aria-label={text('APP_LOGO_ALT')} />
+        {/* <img src={ICONS.MAIN} style={{width:"64px", height:"64px"}} alt={text('APP_LOGO_ALT')} /> */}
+      </Box>
       <Box>
         <Typography variant="h5" component='h1' sx={{
           '& .title_0':{textShadow:`0px 0px 4px ${theme.palette.primary.main}`},
