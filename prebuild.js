@@ -23,20 +23,17 @@ const writeData = ()=>{
     `export default ${JSON.stringify(EN,undefined,2)} as const`
   )
   
-  // Used by cra for index.html TODO! just change it in public/index.html
-  const content = 'REACT_APP_APP_DESC='+APP_DESC
-  if(fs.readFileSync('./.env','utf8') !== content){
-    fs.writeFileSync('./.env', content)
-    throw new Error('APP_DESC in .env file was updated, one more build might be needed for changes to take effect.')
-  }
-  
+  // sets desc in index.html
+  const indexPath = './public/web/index.html'
+  fs.writeFileSync(indexPath, 
+    fs.readFileSync(indexPath,'utf8').replace(/(<meta\s+name="description"\s+content=")(.*)(")/, '$1'+APP_DESC+'$3')
+  )  
 }
 
 const getPlugins = (EXTENSION)=>[
   new EventHooksPlugin({'environment': writeData}),
   new EnvPlugin({
     "REACT_APP_ENV": EXTENSION ? "" : "REACT_APP_ENV",
-    //"REACT_APP_APP_DESC": APP_DESC
   }),
   new CopyPlugin({
     patterns: EXTENSION ? 
