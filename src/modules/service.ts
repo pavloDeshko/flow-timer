@@ -32,6 +32,7 @@ const getAuth = (auth :Toggl_Auth) => 'Basic ' + btoa(typeof auth == 'string' ? 
 
 const w = wretch()
   .url(TOGGL_URL)
+  .content('application/json')
 
 export const togglApiConnect = async (credential :Toggl_Auth) => {
   const data = await w.url(TOGGL_USER_URL)
